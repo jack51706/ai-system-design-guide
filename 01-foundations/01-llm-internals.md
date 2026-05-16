@@ -1,6 +1,8 @@
 # LLM Internals
 
-This chapter covers the core concepts behind large language models. Understanding these internals is essential for making informed architectural decisions about AI systems.
+The architectural core of modern LLMs: transformers, MoE, attention math, RoPE, GQA, KV cache, and the inference-optimal scaling shift driving 2026 model design.
+
+This chapter covers the core concepts behind large language models. Understanding these internals is essential for making informed architectural decisions about AI systems. For practical implications of these architectural choices, see [Inference Optimization](../04-inference-optimization/) (KV cache, PagedAttention), [Model Taxonomy](../02-model-landscape/01-model-taxonomy.md) (MoE models in production), and [Glossary](../GLOSSARY.md) for definitions of MoE, RoPE, ALiBi, GQA, MLA.
 
 ## Table of Contents
 
@@ -32,6 +34,27 @@ The Transformer architecture, introduced in "Attention Is All You Need" (Vaswani
 
 **Mental model for distributed systems engineers:**
 Think of recurrence like a single-threaded request pipeline where each step depends on the previous. Self-attention is like a fully connected graph where every node can query every other node in parallel.
+
+```mermaid
+flowchart LR
+    subgraph RNN [RNN sequential]
+        A1[t1] --> A2[t2]
+        A2 --> A3[t3]
+        A3 --> A4[t4]
+    end
+    subgraph TX [Transformer parallel]
+        B1[t1]
+        B2[t2]
+        B3[t3]
+        B4[t4]
+        B1 <--> B2
+        B1 <--> B3
+        B1 <--> B4
+        B2 <--> B3
+        B2 <--> B4
+        B3 <--> B4
+    end
+```
 
 ---
 
@@ -119,6 +142,21 @@ MoE replaces the dense Feed-Forward Network (FFN) with multiple "experts" and a 
     - **Compute constraint**: You only pay for 100B params of FLOPs (faster latency).
 2. **Routing Collapse**: If the router only picks one expert, the others don't learn. Modern models use **load balancing loss** and **auxiliary losses** to ensure all experts are utilized.
 3. **DeepSeek-V3 Refinements**: Introduced **Multi-head Latent Attention (MLA)** and **Auxiliary-loss-free load balancing**, setting the 2025 standard for efficiency.
+
+The routing decision per token, as a flowchart:
+
+```mermaid
+flowchart TD
+    A[Token] --> B[Attention layer]
+    B --> C[Router]
+    C -->|Top-2 routing| D[Expert 1]
+    C -->|Top-2 routing| E[Expert 3]
+    C -.skipped.-> F[Expert 2]
+    C -.skipped.-> G[Expert N]
+    D --> H[Weighted sum]
+    E --> H
+    H --> I[Next layer]
+```
 
 ---
 
@@ -466,6 +504,16 @@ FLOPs per token forward pass ≈ 2 × parameters
 H100 at 990 TFLOPS (FP16):
 - Single token: 140ms theoretical (actual: ~20-50ms with batching)
 ```
+
+---
+
+## Key Takeaways
+
+- The shift from RNN to Transformer was about parallelization, not just quality; this is why GPU scaling laws followed.
+- MoE separates total parameters (memory cost) from active parameters (compute cost): a 1.2T MoE model can serve at the latency of a 100B dense model.
+- Inference-optimal scaling beats Chinchilla in production: over-train small models because inference cost dominates training cost over a model's lifetime.
+- GQA is the single highest-impact KV-cache optimization in current models; understand the N:G ratio before discussing serving cost.
+- Pre-LN with RMSNorm is the modern default; if you see Post-LN in an interview answer, the candidate is referencing 2018 papers.
 
 ---
 

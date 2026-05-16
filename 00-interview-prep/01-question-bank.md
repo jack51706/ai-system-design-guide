@@ -1,6 +1,47 @@
 # AI System Design Interview Question Bank
 
-This chapter provides a comprehensive collection of interview questions organized by topic. Each question includes the depth of answer expected and key points that strong candidates cover.
+A topic-organized bank of 110+ AI system design interview questions with model answers, follow-ups, and signals strong candidates show. Updated through May 2026.
+
+This chapter provides a comprehensive collection of interview questions organized by topic. Each question includes the depth of answer expected and key points that strong candidates cover. Pair this with the [Answer Frameworks](02-answer-frameworks.md) (the meta-skill that turns memorized answers into fluent ones) and the [May 2026 Job Market Trends](06-job-market-trends-2026.md) (the hiring context that shapes what gets asked right now).
+
+## Coverage at a Glance
+
+```mermaid
+mindmap
+  root((110+ Questions))
+    RAG Architecture
+      Pipeline design
+      Chunking
+      Hybrid search
+      Reranking
+      Multi-tenant
+    Agentic Systems
+      ReAct
+      Tool use and MCP
+      Multi-agent
+      Flow engineering
+    Model Selection
+      Frontier vs SLM
+      Reasoning models
+      Embedding models
+    Optimization
+      KV cache
+      Speculative decoding
+      Batching
+      Cost
+    Evaluation
+      RAGAS
+      LLM as judge
+      Online vs offline
+    Production and MLOps
+      Deployment
+      Drift
+      Incidents
+    System Design Scenarios
+    Advanced Dec 2025
+    Advanced Mar 2026
+    Advanced May 2026
+```
 
 ## Table of Contents
 
@@ -18,6 +59,25 @@ This chapter provides a comprehensive collection of interview questions organize
 ---
 
 ## RAG Architecture Questions
+
+A canonical production RAG pipeline maps to questions Q1-Q10. The diagram below is the architecture most strong candidates draw on the whiteboard; the questions probe each stage in turn.
+
+```mermaid
+flowchart LR
+    A[Documents] --> B[Parse and chunk]
+    B --> C[Embed]
+    C --> D[Vector DB]
+    B --> E[Keyword index]
+    F[User query] --> G[Query rewrite]
+    G --> H[Hybrid search]
+    D --> H
+    E --> H
+    H --> I[Rerank]
+    I --> J[Context format]
+    J --> K[LLM generate]
+    K --> L[Cite sources]
+    L --> M[User]
+```
 
 ### Q1: Walk me through the architecture of a production RAG system
 
@@ -416,6 +476,21 @@ I choose the isolation level based on compliance requirements and customer sensi
 ---
 
 ## Agentic Systems Questions
+
+Q11-Q17 explore reasoning loops, tool use, and multi-agent design. The canonical ReAct loop below is the mental model strong candidates anchor their answers to:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Plan
+    Plan --> Act: Choose tool
+    Act --> Observe: Tool result
+    Observe --> Reflect
+    Reflect --> Plan: Need more steps
+    Reflect --> Answer: Goal reached
+    Reflect --> Escalate: Repeated failure
+    Answer --> [*]
+    Escalate --> [*]
+```
 
 ### Q11: What is the difference between an agent and a workflow?
 
@@ -4775,6 +4850,17 @@ The 2026 incidents have established a duty of care. 'The model made it up' is no
 **The framing for product leadership:**
 
 Hallucination is now a P0 incident class, like a security breach. Treat it accordingly: named on-call, runbooks, SLA on disclosure, post-mortem with regulatory notification path. The companies that won't survive 2027 are the ones that treat this as a 'AI being AI' phenomenon rather than a managed product risk."
+
+---
+
+## Key Takeaways
+
+- Practice answers out loud at the level of detail shown here; mumbled hand-waving fails staff-level loops even when the underlying knowledge is correct.
+- Always state the latency, scale, and accuracy assumptions before sketching architecture; interviewers downgrade candidates who design without scope.
+- Strong answers cite a specific tradeoff and a concrete number (latency in ms, cost per token, recall at K); generic answers get scored as junior.
+- The "follow-up to expect" hints under each question are real; prepare a one-paragraph extension for each.
+- The May 2026 section (Q81 onward) reflects what's actually being asked in current loops; older questions test foundational depth, not currency.
+- Pair this bank with the [Answer Frameworks](02-answer-frameworks.md), [Whiteboard Exercises](04-whiteboard-exercises.md), and the [May 2026 Job Market Trends](06-job-market-trends-2026.md).
 
 ---
 

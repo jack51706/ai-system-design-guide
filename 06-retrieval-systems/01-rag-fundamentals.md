@@ -1,6 +1,8 @@
 # RAG Fundamentals (Dec 2025)
 
-Retrieval-Augmented Generation (RAG) is the architectural pattern of providing an LLM with external, verifiable context to ground its responses. In late 2025, RAG has evolved from "simple vector search" to a complex, multi-stage reasoning pipeline.
+RAG in 2025-2026: from naive vector search to agentic and graph-based retrieval. When to choose RAG vs. long context, and the three retrieval gaps that cause production failures.
+
+Retrieval-Augmented Generation (RAG) is the architectural pattern of providing an LLM with external, verifiable context to ground its responses. In late 2025, RAG has evolved from "simple vector search" to a complex, multi-stage reasoning pipeline. Deeper material lives in [Chunking Strategies](02-chunking-strategies.md), [Vector Databases](04-vector-databases.md), [Reranking](06-reranking-strategies.md), [Contextual Retrieval](10-contextual-retrieval.md), [ColBERT Late Interaction](11-late-interaction-colbert.md), and the [GraphRAG reframe](07-graph-rag.md).
 
 ## Table of Contents
 
@@ -46,6 +48,28 @@ Production RAG systems are now categorized by their "Agentic Depth":
 - **Flow**: Extract entities/relationships -> Build Knowledge Graph -> Traverse graph to find "connected knowledge."
 - **Win**: Solves "Aggregative Questions" (e.g., "Summarize all legal risks across 50 documents").
 
+The four variants by agentic depth:
+
+```mermaid
+flowchart TD
+    A[User query] --> B{RAG variant}
+    B -->|Naive| C[Vector search]
+    C --> CG[LLM generate]
+    B -->|Advanced| D[Query rewrite]
+    D --> E[Hybrid search]
+    E --> F[Rerank]
+    F --> FG[LLM generate]
+    B -->|Agentic| G[Agent analyzes query]
+    G --> H[Pick index or tool]
+    H --> I[Retrieve]
+    I --> J{Sufficient}
+    J -->|No| G
+    J -->|Yes| JG[LLM generate]
+    B -->|GraphRAG| K[Extract entities]
+    K --> L[Traverse KG]
+    L --> LG[LLM generate]
+```
+
 ---
 
 ## RAG vs. 2M Context (The "Hybrid Era")
@@ -58,6 +82,21 @@ With context windows like Gemini 1.5 Pro (2M+) and Claude Sonnet 4.5 (1M+), RAG 
 **Architectural Decision**: 
 - If your corpus is > 100k tokens and dynamic: Use **Standard RAG**.
 - If your corpus is < 100k tokens: Use **In-Context RAG**.
+
+Decision tree for picking between standard RAG and in-context RAG:
+
+```mermaid
+flowchart TD
+    A[Corpus size] --> B{Tokens}
+    B -->|Under 50k| C[In-context RAG<br/>Use prompt caching]
+    B -->|50k to 100k| D{Update frequency}
+    D -->|Daily or less| C
+    D -->|Hourly| E[Standard RAG]
+    B -->|Over 100k| E
+    E --> F{Need cross-doc aggregation}
+    F -->|Yes| G[GraphRAG]
+    F -->|No| H[Advanced or Agentic RAG]
+```
 
 ---
 
@@ -87,10 +126,21 @@ Advanced RAG is a **deterministic pipeline** (Linear: Rewrite -> Search -> Reran
 
 ---
 
+## Key Takeaways
+
+- Naive RAG (vector search + top-K + LLM) is deprecated for production in 2026; ship Advanced RAG (hybrid + RRF + rerank) as the new baseline.
+- Long context windows do not kill RAG: cost, latency, freshness, and corpus scale all push you back to retrieval even at 2M context.
+- Choose by corpus size: under 50k tokens go in-context with prompt caching; over 100k go standard RAG; aggregative questions go GraphRAG.
+- Most RAG failures are retrieval failures, not generation failures; diagnose the three gaps (semantic, missing context, lost-in-the-middle) before tuning prompts.
+- Agentic RAG vs. Advanced RAG is a stochastic-loop vs. deterministic-pipeline choice; only adopt agentic when query patterns are too varied for a fixed pipeline.
+
+---
+
 ## References
 - Gao et al. "Retrieval-Augmented Generation for LLMs: A Survey" (2024 update)
 - Microsoft. "From RAG to GraphRAG" (2024)
 - Google. "Long-context LLMs as Retrievers" (2025)
+- [Anthropic. "Introducing Contextual Retrieval" (Sep 2024)](https://www.anthropic.com/news/contextual-retrieval)
 
 ---
 

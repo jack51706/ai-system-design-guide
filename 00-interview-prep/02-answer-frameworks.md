@@ -1,6 +1,8 @@
 # Answer Frameworks for AI System Design Interviews
 
-Strong interview answers follow consistent structures. This chapter provides frameworks for different question types, with examples and anti-patterns.
+Five structured frameworks for AI system design interviews: SPIDER for design questions, ETA for concepts, tradeoff analysis, debugging, and STAR-L for behavioral.
+
+Strong interview answers follow consistent structures. This chapter provides frameworks for different question types, with examples and anti-patterns. Pair these frameworks with worked examples from the [Question Bank](01-question-bank.md) and rehearse with [Whiteboard Exercises](04-whiteboard-exercises.md).
 
 ## Table of Contents
 
@@ -16,7 +18,16 @@ Strong interview answers follow consistent structures. This chapter provides fra
 
 ## System Design Framework (SPIDER)
 
-Use this framework for any system design question involving AI components.
+Use this framework for any system design question involving AI components. The full motion with rough time budget per phase:
+
+```mermaid
+flowchart LR
+    A[S Scope and clarify<br/>5 min] --> B[P Prioritize requirements<br/>3 min]
+    B --> C[I Initial architecture<br/>10 min]
+    C --> D[D Deep dive critical paths<br/>15 min]
+    D --> E[E Evaluation and observability<br/>5 min]
+    E --> F[R Reliability and scale<br/>5 min]
+```
 
 ### S - Scope and Clarify
 
@@ -252,7 +263,17 @@ abstracting the embedding interface."
 
 ## Debugging and Troubleshooting Framework
 
-When asked "How would you debug X?" or "The system is doing Y, how do you fix it?"
+When asked "How would you debug X?" or "The system is doing Y, how do you fix it?" The 4-step diagnostic motion:
+
+```mermaid
+flowchart TD
+    A[Gather information<br/>When, who, what] --> B[Form hypotheses<br/>3 to 5 candidates]
+    B --> C[Diagnostic approach<br/>Traces and isolation]
+    C --> D[Propose fixes<br/>And verification plan]
+    D --> E{Verified}
+    E -->|No| B
+    E -->|Yes| F[Ship fix with monitoring]
+```
 
 ### Step 1: Gather Information
 
@@ -494,6 +515,16 @@ deeper into any specific component, or should I move on to evaluation?"
 | Absolute statements | Use hedging language when appropriate |
 | Dismissing valid options | Acknowledge tradeoffs |
 | Not knowing when to stop | Read interviewer cues |
+
+---
+
+## Key Takeaways
+
+- Frameworks are scaffolding, not scripts; interviewers can tell when a candidate is reciting vs. thinking, so internalize the structure then make it conversational.
+- SPIDER works for any 45-minute system design loop; if the interviewer cuts you off, you have still hit the highest-signal phases.
+- "It depends" is fine ONLY when followed by "it depends on X, Y, Z, and here is how each changes the answer"; otherwise it reads as hedging.
+- Always end deep dives with one sentence on observability and one on failure modes; this is the single biggest gap between senior and staff answers.
+- Behavioral answers without quantified results (STAR-L's R) get scored as anecdotal; bring numbers even if approximate.
 
 ---
 

@@ -768,6 +768,54 @@ When a new client signs on, an agent kicks off a full workflow: creates a projec
 
 ---
 
+## The April 2026 Anthropic Block-and-Reverse Incident
+
+OpenClaw's reliance on Claude Pro and Claude Max subscriptions to power agent work was, until April 2026, treated as a cost-control feature: users could run OpenClaw against their existing personal Claude plan instead of paying API rates. On April 4, 2026, Anthropic changed the policy. A new enforcement clause blocked third-party agent frameworks from acting as a programmatic intermediary for Pro and Max subscriptions. Within hours, OpenClaw instances pointed at Pro and Max accounts began returning errors. Roughly 135,000 active OpenClaw deployments were affected, and a sizeable fraction of those users moved to direct API billing at rates 5x or more above their previous effective cost. Community frustration trended on Hacker News and X for nearly two weeks.
+
+Anthropic reversed the policy mid-April with a new product called Agent SDK Credit, a metered allowance bundled into Pro and Max plans (with a higher allowance for Max) explicitly authorized for programmatic agent use through the Anthropic Agent SDK. Frameworks integrating with the Agent SDK, including OpenClaw, can again drive a personal subscription, but now within a transparent quota and only over the Agent SDK path. Direct Claude.ai web-session scraping remains forbidden.
+
+### Timeline of the Incident
+
+```mermaid
+gantt
+    title April 2026 Anthropic OpenClaw incident
+    dateFormat  YYYY-MM-DD
+    axisFormat  %b %d
+    section Policy actions
+    Block on Pro Max programmatic use      :done, a1, 2026-04-04, 1d
+    Community backlash and migration       :active, a2, 2026-04-05, 13d
+    Agent SDK Credit announcement          :crit, a3, 2026-04-18, 1d
+    Agent SDK Credit GA rollout            :a4, 2026-04-21, 9d
+    section User behavior
+    Mass move to direct API billing        :b1, 2026-04-05, 13d
+    Self-host and multi-provider migration :b2, 2026-04-07, 25d
+```
+
+### What It Means Architecturally
+
+The incident was not a security event. It was a product-policy event with security and reliability consequences. Three lessons follow:
+
+**Provider policy is part of your architecture.** A single line in a vendor's Acceptable Use enforcement is functionally identical, from an availability standpoint, to a service outage that lasts however long the policy stays in force. If your agent platform's economics depend on a specific provider plan, the provider's policy team is on your critical path. Treat their Terms of Service as a runtime dependency, not a legal artifact.
+
+**Multi-provider abstraction is operational hygiene, not optimization.** OpenClaw users who had configured both Anthropic and OpenAI providers, with model routing rules per agent, kept working through the block at degraded quality. Users who had hard-coded a single provider in every agent definition were dead in the water. The abstraction layer is cheap to build and the failure mode it covers is real.
+
+**Self-host backstops matter for personal-data agents.** A meaningful subset of OpenClaw deployments switched their default agent over to a local Ollama model (Llama 3.3 70B was the most common choice) for two weeks, accepting lower quality for guaranteed availability. The lesson is not that local models are competitive with frontier models; it is that having a working fallback path, even at degraded quality, is part of a serious deployment.
+
+### Vendor-Risk Checklist
+
+- Every agent definition routes through a provider-abstraction layer; no agent hard-codes a single provider model name.
+- The configuration includes a documented fallback provider per agent, with a tested switchover script.
+- For personal-data or revenue-critical agents, at least one fallback path uses a self-hostable model (Ollama, vLLM, or a tenant-isolated cloud provider).
+- The deployment's runbook treats provider Terms of Service and Acceptable Use as monitored documents, with subscription to provider security advisories and policy update mailing lists.
+- Cost budgets in the agent config are set against the realistic worst case (direct API rates), not the optimistic case.
+- A weekly canary test invokes each provider through the abstraction layer and alerts on 4xx changes, surfacing policy shifts before they hit production traffic.
+
+**Sources:**
+- [Axios: Anthropic blocks OpenClaw third-party agents](https://www.axios.com/2026/04/06/anthropic-openclaw-subscription-openai)
+- [VentureBeat: OpenClaw reversal with Agent SDK credit](https://venturebeat.com/technology/anthropic-reinstates-openclaw-and-third-party-agent-usage-on-claude-subscriptions-with-a-catch)
+
+---
+
 ## Comparison with Alternatives
 
 | Feature | OpenClaw | Hermes Agent | Claude Code | Open Interpreter |

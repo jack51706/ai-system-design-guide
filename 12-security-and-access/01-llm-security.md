@@ -609,6 +609,98 @@ class LLMRedTeam:
 
 ---
 
+## May 2026: The Offensive-Defensive AI Arms Race Inflection
+
+The week of May 11-14, 2026 will be remembered as the moment AI-driven offense and AI-driven defense both became operationally real, in the same week, from different vendors, against each other. The events compressed several years of expected research into four days.
+
+### Timeline of the Week
+
+- **May 11, Google Security**: Google's Big Sleep program publicly disclosed the first AI-built zero-day used in the wild, a 2FA-bypass exploit chain targeting a widely deployed open-source sysadmin tool. The exploit was caught before mass exploitation, but the precedent was set: novel zero-days no longer require human-speed analysis.
+- **May 11, OpenAI Daybreak launch**: OpenAI announced a cybersecurity product line with three tiers: GPT-5.5 (general-purpose), GPT-5.5 with Trusted Access for Cyber (hardened auth and audit), and GPT-5.5-Cyber (fine-tuned variant trained on offensive and defensive security corpora). Partners include Akamai, Cisco, Cloudflare, CrowdStrike, Fortinet, Oracle, Palo Alto, Zscaler.
+- **May 12, Microsoft MDASH**: Microsoft published results from the Multi-Model Agentic Security Harness, a fleet of 100+ specialized agents running coordinated review. MDASH found 16 Windows CVEs in May Patch Tuesday, including four critical RCEs in tcpip.sys, ikeext.dll, http.sys, and dnsapi.dll. MDASH scored 88.45% on CyberGym, leading the leaderboard.
+- **May 14, Anthropic policy essay**: Anthropic published "2028: Two scenarios for global AI leadership," a forward-looking policy essay framing the choices facing democracies on AI capability, security, and deployment.
+
+### What Changed in the Threat Model
+
+Two things changed at once. First, AI-built offensive tooling crossed from research curiosity to in-the-wild deployment, which means the assumption that an attacker has only human-speed analysis is no longer safe. Second, AI-driven defensive tooling reached a quality bar where running it became table-stakes rather than a nice-to-have. A team that ships an LLM product in late 2026 without a defensive agent harness reviewing its own surface area is shipping uninspected code.
+
+The practical implication is that the security review loop is now agent-to-agent. Your prompt-injection defenses are being probed by an attacker agent; your output validator is being evaluated by a fuzzer agent; your supply chain is being attested by a signing pipeline. Static, periodic, human-led security review is still necessary but is no longer sufficient.
+
+### Defensive Tooling That Became Standard
+
+- **PromptArmor** (ICLR 2026): a guardrail classifier with under 1% false-positive and false-negative rates on the AgentDojo benchmark. Now the most-cited reference implementation for production prompt-injection detection.
+- **Constitutional Classifiers** (Anthropic): a classifier ensemble trained against a written safety constitution. Reduced jailbreak success rates from 86% to 4.4% on Anthropic's internal red-team suite.
+- **Big Sleep** (Google): autonomous vulnerability discovery agent, also offered for defensive use.
+- **MDASH** (Microsoft): the multi-agent defensive harness described above.
+- **Daybreak with GPT-5.5-Cyber** (OpenAI): security-tuned model and product surface.
+- **Sigstore and OpenSSF Model Signing**: signed model artifacts and signed evaluation reports; supply-chain trust for model weights through the same Sigstore plumbing as container images.
+
+### The Attacker-Defender Loop in Production
+
+```mermaid
+flowchart LR
+    A[Attacker agent] -->|crafted input| B[Edge guardrail PromptArmor]
+    B -->|allow| C[Constitutional classifier]
+    B -->|block| L[Reject and log]
+    C -->|allow| D[LLM with hardened system prompt]
+    C -->|block| L
+    D --> E[Output validator and PII scrub]
+    E -->|clean| F[User response]
+    E -->|leak detected| L
+    L --> G[SIEM]
+    G --> H[Defensive agent MDASH style]
+    H -->|signal| B
+    H -->|signal| C
+    H -->|patch suggestion| I[Engineering review]
+```
+
+The diagram shows the steady-state loop. Edge guardrails reject what they recognize, the model handles what they let through, the output validator catches what the model gets wrong, and every block feeds a SIEM that a defensive agent ensemble watches in real time. Updates from the defensive agent flow back into the guardrails as new patterns and into engineering review as patch suggestions.
+
+---
+
+## Indirect Prompt Injection (IPI) Defense in Depth
+
+Google's April 2026 security blog reported a 32% rise in indirect prompt-injection attempts measured across its own products. The growth is not surprising: as more agents read more external content (web pages, retrieved documents, emails, tool outputs), the attack surface for IPI grows proportionally. What used to be a research curiosity is now the most common LLM-layer attack vector observed in production telemetry.
+
+The defense is layered. No single layer is sufficient; each catches a different class of attack.
+
+### Layered Defense Architecture
+
+1. **Content trust tagging at ingestion**: every piece of text that flows into the model is tagged with a trust level (system, user, retrieved-trusted, retrieved-untrusted, tool-output). The trust level travels with the content through the entire pipeline and is visible to the model in the prompt.
+2. **Guardrail classifier**: a fast model (PromptArmor or equivalent) scans retrieved-untrusted content for injection patterns before the content reaches the main model.
+3. **Structural quoting**: untrusted content is wrapped in a clearly delimited block (XML tags or a fenced section) with explicit instructions to the main model that text inside the block is data, not instructions.
+4. **Capability gating**: the agent's tool set is restricted based on the trust level of the content currently in context. If the agent is reading retrieved-untrusted text, write-capable tools are disabled by default and require human approval to invoke.
+5. **Output validation**: the response is scanned for known exfiltration markers (out-of-band URLs, base64 payloads, instruction echoes) before being returned to the user or fed to downstream tools.
+
+### Defense Pipeline
+
+```mermaid
+flowchart TD
+    A[External content fetched] --> B[Trust tag: retrieved-untrusted]
+    B --> C[PromptArmor guardrail classifier]
+    C -->|injection detected| X[Drop and log]
+    C -->|clean| D[Structural quoting wrapper]
+    D --> E[Capability gating policy applied]
+    E --> F[LLM with hardened system prompt]
+    F --> G[Output validator: exfil markers and PII]
+    G -->|clean| H[Response to user or next tool]
+    G -->|suspicious| X
+```
+
+Two design principles deserve emphasis. First, the trust level is data, not metadata: it travels in the same channel as the content, so the model itself can reason about it. Second, capability gating is the most underused defense; many teams add a guardrail classifier and stop there, but a model that cannot write to the database when reading a hostile email is structurally safer than one that can.
+
+**Sources:**
+- [Bloomberg: First AI-built zero-day in the wild (May 11, 2026)](https://www.bloomberg.com/news/articles/2026-05-11/hackers-used-ai-to-build-zero-day-attack-google-researchers-say)
+- [Google Cloud Threat Intelligence: adversaries leverage AI](https://cloud.google.com/blog/topics/threat-intelligence/ai-vulnerability-exploitation-initial-access)
+- [OpenAI Daybreak announcement](https://openai.com/daybreak/)
+- [Microsoft MDASH: Defense at AI Speed](https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-tops-leading-industry-benchmark/)
+- [Anthropic 2028: Two scenarios for global AI leadership](https://www.anthropic.com/research/2028-ai-leadership)
+- [Anthropic Constitutional Classifiers](https://www.anthropic.com/research/constitutional-classifiers)
+- [Google Security: AI Threats in the Wild (April 2026, 32% IPI rise)](https://security.googleblog.com/2026/04/ai-threats-in-wild-current-state-of.html)
+- [Sigstore Model Signing (sigstore/model-transparency)](https://github.com/sigstore/model-transparency)
+
+---
+
 ## Interview Questions
 
 ### Q: How do you defend against prompt injection?

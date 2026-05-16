@@ -1,6 +1,8 @@
-# Agent Memory and State (Dec 2025)
+# Agent Memory and State
 
-Memory is what allows an agent to learn and maintain context over time. In late 2025, agent memory has evolved from simple "Chat History" to a **Multi-Tiered Cognitive Architecture** that includes persistent episodic and semantic layers.
+Memory is what allows an agent to learn and maintain context over time. Agent memory has matured from "Chat History" into a **Multi-Tiered Cognitive Architecture** with four named layers (Working, Episodic, Semantic, Procedural), each with its own write pattern, latency budget, and failure modes. Production systems (Mem0, Letta, Anthropic Memory Tool + Skills, Zep/Graphiti, LangMem) now treat memory selection as a first-class architecture decision.
+
+The 2026 research wave shaping this chapter: A-MEM (NeurIPS 2025), HippoRAG (multi-hop graph retrieval), Multi-Layered Memory Architectures, HaluMem (operation-level memory hallucination benchmark), MINJA / MemoryGraft (query-only memory poisoning attacks), and NVIDIA's TTT-E2E test-time-training approach that compresses context into weights.
 
 ## Table of Contents
 
@@ -9,6 +11,9 @@ Memory is what allows an agent to learn and maintain context over time. In late 
 - [Episodic Memory: Past Experiences](#episodic)
 - [Semantic Memory: The Persona](#semantic)
 - [Procedural Memory: Learned Skills and Workflows](#procedural-memory-learned-skills-and-workflows)
+- [Tradeoffs: Where Does Fact X Go?](#tradeoffs)
+- [Production Implementations (May 2026)](#production-implementations)
+- [Failure Modes and Mitigations](#failure-modes)
 - [Mem0 and Personalization](#mem0)
 - [Interview Questions](#interview-questions)
 - [References](#references)
@@ -25,6 +30,24 @@ Agents use a tiered approach to storage:
 | **L2** | Episodic Memory | Vector DB / Graph | "What did I do last time?" |
 | **L3** | Semantic Memory | SQL / Knowledge Graph | User preferences, "The Truth" |
 | **L4** | Procedural Memory | Skills Registry / Tool Policies / Workflow Graph | "How do I perform this task?" |
+
+### Practical Properties of Each Tier
+
+The tiers differ on more than purpose. Read pattern, write pattern, latency budget, and freshness expectations each push toward different storage tech:
+
+| Dimension | L1 Working | L2 Episodic | L3 Semantic | L4 Procedural |
+|---|---|---|---|---|
+| **What it holds** | Active turn, tool outputs, scratchpad, system prompt | Past sessions, trajectories, observations with timestamps | Distilled facts, preferences, entity relationships | Skills, playbooks, system-prompt instructions, code/tool sequences |
+| **Read pattern** | Every token, every turn (in-attention) | Top-k on similarity + recency + importance | Triggered lookup on entity/topic mention | Loaded when matching task signature |
+| **Write pattern** | Continuous append by inference engine; KV-cache mutation | Append-only log; commit at turn boundary | Extract, dedupe, upsert; conflict resolution at write | Reflective write after success/failure; explicit human or self-edit |
+| **Latency budget** | <50ms (resident in GPU HBM) | 100-300ms (vector ANN + rerank) | 200-800ms (graph traversal + LLM extraction) | 50-500ms (file read or small index lookup) |
+| **Freshness expectation** | Token-fresh; lost at session end | Hours to months; tolerates staleness | Should reflect *current* state; staleness is a bug | Slow-changing; updates are deliberate |
+| **Storage tech** | KV cache in HBM (vLLM PagedAttention blocks) | Vector DB (Pinecone, Weaviate, Qdrant), append-only log | Knowledge graph (Neo4j, Graphiti), KV store, bitemporal relational rows | Filesystem (Claude `/memories/`, Skills as `SKILL.md`), prompt registry, fine-tuned LoRA |
+| **Query semantics** | Position + attention | Similarity + recency + importance (Park et al. weighted) | Entity-relation match, structured query, bitemporal filter | Task-signature match, often filename or tag lookup |
+| **Eviction** | Sliding window, LRU on KV block hash | Decay scoring, consolidation into L3, archival to cold storage | Supersession via temporal `valid_to`; explicit deletion for GDPR | Manual deprecation, A/B against newer skill, version pinning |
+
+**What this means in practice:** when a fact arrives, the architecture question is not "should we remember it?" but "*at which tier*, with which freshness contract, and with which eviction rule?" Picking the wrong tier produces predictable failure modes (a session preference promoted to L3 leaks across sessions; a stable user fact left in L2 gets evicted in two weeks). See [Tradeoffs: Where Does Fact X Go?](#tradeoffs) below.
+
 ---
 
 ## Short-Term: The Reasoning Trace
@@ -55,19 +78,142 @@ Semantic memory stores "Facts" about the user or the environment.
 
 ## Procedural Memory: Learned Skills and Workflows
 
-Procedural memory stores how to do things. While episodic memory answers, “What happened before?” and semantic memory answers, “What is true?”, procedural memory answers:
+Procedural memory stores how to do things. While episodic memory answers, "What happened before?" and semantic memory answers, "What is true?", procedural memory answers:
 
-“What is the correct process for completing this type of task?”
+"What is the correct process for completing this type of task?"
 
 This layer captures reusable skills, tool-use patterns, operating procedures, and workflow preferences.
 
 Examples:
 
-* “When generating a weekly report, first pull metrics from Snowflake, then validate against the dashboard, then summarize anomalies.”
-* “When responding to a customer complaint, classify urgency, retrieve policy, draft response, and escalate if confidence is low.”
-* “When writing SQL, always inspect the schema first, generate a query, run validation, and explain assumptions.”
+* "When generating a weekly report, first pull metrics from Snowflake, then validate against the dashboard, then summarize anomalies."
+* "When responding to a customer complaint, classify urgency, retrieve policy, draft response, and escalate if confidence is low."
+* "When writing SQL, always inspect the schema first, generate a query, run validation, and explain assumptions."
 
 Procedural memory is especially important for agentic systems because many tasks are not just about remembering facts. They require following the right sequence of actions.
+
+---
+
+## Tradeoffs: Where Does Fact X Go?
+
+The first-order decision is not "which tier" but *"who pays the cost of being wrong?"* A missed retrieval in L2 fails one turn. A bad fact in L3 fails *every* turn until corrected. A poisoned skill in L4 propagates to every future invocation.
+
+### Tier-selection table
+
+| Fact / concern | Tier | Reasoning |
+|---|---|---|
+| "The user's API rate limit is 1000 req/min" | L3 with bitemporal `valid_to` | Tenant-scoped fact; queryable by entity; must support supersession. Not L4 - it's data, not procedure. |
+| "Steps to deploy our service" | L4 as a versioned skill | Multi-step recipe with conditional branches. Skills compose; semantic triples do not. |
+| "The agent's last failed attempt at this task" | L2 raw, *then* reflect a lesson into L4 if generalizable | Raw trajectory belongs in episodic; the generalized lesson ("never run migrations during peak hours") earns a Reflexion-style write to L4. |
+| "User prefers terse responses" | L3 | Stable preference, queryable by `user_id`, single triple. |
+| "User asked for terse responses *in this conversation*" | L1 only | Session-scoped; do not pollute L3 with potentially-transient preferences. |
+| Current weather, today's stock price | None: call the tool | Fast-changing facts with a source of truth elsewhere should never enter memory. |
+| "Project Phoenix has team members A, B, C" | L3 as a graph fragment | Multi-hop traversal value; Graphiti or Neo4j-style storage. |
+
+### Cost tradeoffs
+
+- **L1 dominates *latency cost***: TTFT scales with context size; longer working memory means slower first token. KV-cache pressure pushes premium accelerator memory toward saturation.
+- **L2 dominates *storage cost* at scale**: append-only logs grow linearly with usage. The [Day-30 problem](https://cipherbuilds.ai/blog/day-30-agent-memory-problem) describes how unpruned episodic stores rot agent quality after a month.
+- **L3 dominates *write-amplification cost***: every turn potentially triggers extract, dedupe, conflict resolve. Mem0's design explicitly trades retrieval speed for write-time work.
+- **L4 dominates *governance cost***: a bad skill propagates to every future invocation. Anthropic's "[Claude Dreaming](https://www.mindstudio.ai/blog/what-is-claude-dreaming-anthropic-agent-memory)" scheduled consolidation acknowledges this by gating skill updates through review.
+
+### The graduation rule
+
+The interesting design question is *when an L2 episode graduates to L3 or L4*. The defensible rule is threshold-based, not implicit-decay:
+
+1. **N independent observations** of the same pattern (N=3 to 5 is typical).
+2. **Confidence-weighted** by source: user-stated > tool-output > model-inferred.
+3. **Human or LLM-judge review** at the consolidation step (not per turn).
+4. **Scheduled batch consolidation**, not synchronous per-turn writes (avoids write amplification).
+5. **Bidirectional**: semantic facts in L3 can be re-instantiated as episodic context for specific tasks. Memory is not a one-way street.
+
+---
+
+## Production Implementations (May 2026)
+
+The named systems differ less on "what they store" and more on *write discipline*, *retrieval algorithm*, and *governance posture*.
+
+| System | Sweet spot | What it does well | Where it falls short |
+|---|---|---|---|
+| **[Mem0](https://github.com/mem0ai/mem0)** | Cross-session personalization at scale | Hybrid graph + vector + KV. Hits 92.5 on LoCoMo and 94.4 on LongMemEval after April 2026 single-pass redesign ([benchmarks](https://mem0.ai/blog/ai-memory-benchmarks-in-2026)). Beats OpenAI's built-in memory by 26% accuracy in head-to-head. | 8K char per-memory cap (not for documents); cloud-first posture creates data sovereignty friction; no formal belief-status model (overwrite-or-append only). |
+| **[Letta (formerly MemGPT)](https://docs.letta.com/concepts/memgpt/)** | Long-running autonomous agents where coherence is the product | OS-style virtual context paging across core / recall / archival tiers; agent uses tool calls to page data in/out. Best when the user experience is "agent remembers forever". | Higher per-turn latency than Mem0-style. Not optimized for cross-user retrieval precision. |
+| **[Anthropic Memory Tool + Skills](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool)** | Filesystem-mounted L3 and L4 in one substrate | Memory at `/memories/`; Skills as `SKILL.md` packages plus optional scripts; Managed Agents mount memory at `/mnt/memory/` per session with immutable versioning (April 23, 2026 GA). Scheduled "Claude Dreaming" consolidates between sessions. | Filesystem semantics push complexity to the agent (the agent must structure its own directories well). |
+| **[Zep + Graphiti](https://github.com/getzep/graphiti)** | Temporal facts where "when did this become true?" matters | Open-source temporal knowledge graph. Each edge has `valid_from` / `valid_to` / `invalid_at`. Beats MemGPT 94.8% to 93.4% on DMR. Bitemporal queries enable "what did we believe on March 12?" vs "what is true now?" | Heavier write path (graph extraction, dedup, conflict resolution) than vector-only stores. |
+| **[LangMem + LangGraph](https://langchain-ai.github.io/langmem/)** | When you want all four memory types with LangGraph orchestration | Supports episodic, semantic, *and* procedural. Procedural memory in LangMem lets the agent update its own system prompt based on feedback. Background extraction runs out-of-band. | LangGraph-coupled; less attractive if you are not on the LangChain stack. |
+| **[OpenAI ChatGPT Memory](https://openai.com/index/memory-and-new-controls-for-chatgpt/)** | Consumer-grade chat continuity, not production-grade agent memory | Two-layer architecture: explicit "saved memories" plus lightweight conversation summaries pre-injected into context. Skips a retrieval step at inference for low latency. | Loses precision vs Mem0-style retrieval. No fine-grained programmatic API for enterprise integration. |
+| **Cursor / Windsurf** | Codebase-aware L2/L3 for software engineering agents | Codebase indexed on project open; `@`-mentions for explicit context. Windsurf "Memories" learns architecture patterns over ~48 hours of use. | Domain-locked to code. Not a general-purpose memory layer. |
+| **[Cognition Devin](https://cognition.ai/blog/devin-sonnet-4-5-lessons-and-challenges)** | Repo-scoped engineering agents | Repository wiki auto-indexed every few hours; explicit compacting/summarization preferred over model-managed state. Devin Search is an agentic codebase memory query interface. | Opinionated to engineering workflows. |
+
+**Generative Agents (Park et al. 2023)** remains the reference architecture cited in every survey. The recency / importance / relevance retrieval formula (`alpha_recency * recency + alpha_importance * importance + alpha_relevance * relevance`, each normalized to [0,1] with importance rated 1-10 by an LLM) is still in production use across most of the systems above.
+
+**Emerging frameworks worth tracking** (May 2026): [Supermemory](https://supermemory.ai), [Recallr](https://recallrai.com), AWS [Bedrock AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory-integrate-lang.html), [Oracle AI Agent Memory](https://blogs.oracle.com/developers/oracle-ai-agent-memory-a-governed-unified-memory-core-for-enterprise-ai-agents).
+
+---
+
+## Failure Modes and Mitigations
+
+Production memory systems have six recurring failure modes. Knowing them by name is the difference between a junior and staff-level architecture conversation.
+
+### 1. Memory poisoning via prompt injection
+
+Untrusted input gets written to L3/L4 and replayed later as authoritative. [MINJA (NeurIPS 2025)](https://openreview.net/forum?id=QVX6hcJ2um) and [MemoryGraft (Dec 2025)](https://arxiv.org/html/2512.16962v1) demonstrate *query-only* poisoning attacks reaching 95% injection rate and 70% attack success rate *without* elevated privileges. [Palo Alto Unit 42's writeup](https://unit42.paloaltonetworks.com/indirect-prompt-injection-poisons-ai-longterm-memory/) shows poison planted weeks before it fires.
+
+**Mitigations:**
+- **Provenance tags** on every memory write: `source = user_stated | model_inferred | tool_output`.
+- **Write-time guardrail model** that refuses suspicious instruction-shaped writes ("ignore previous and instead...", role confusion, embedded system-prompt fragments).
+- **Trust tiers**: low-trust memories require corroboration before influencing high-stakes decisions.
+- **Bulkhead isolation** so poison in one tenant cannot pivot into another.
+
+### 2. Stale facts
+
+Yesterday's preference vs today's. The classic "user said dark mode last month but uses light mode now."
+
+**Mitigations:**
+- **Bitemporal storage** (Zep/Graphiti pattern): every fact has `valid_from`, `valid_to`, `invalid_at`.
+- **TTL on session-scoped preferences** so they auto-expire.
+- **Decay weighting** in retrieval scoring.
+- **Explicit re-confirmation** prompts for high-stakes facts older than N days.
+
+### 3. Conflicting facts
+
+User said X, now says Y. Three different conflict types deserve different responses:
+
+| Conflict type | Right response |
+|---|---|
+| Temporal update ("I moved to Berlin") | Supersede the old fact with `valid_to = now` |
+| Correction ("I never said that") | Retract with audit trail |
+| Preference change ("I want concise responses now") | Add new fact; let decay handle the old |
+| Outright contradiction (no obvious resolution) | Ask the user; never silently overwrite |
+
+Track belief status (`ACTIVE` / `SUPERSEDED` / `RETRACTED`) using AGM belief revision rather than last-write-wins.
+
+### 4. Memory drift
+
+Quality degrades over time as low-quality writes dilute high-quality ones. The [Day-30 problem](https://cipherbuilds.ai/blog/day-30-agent-memory-problem) documents agent performance dropping ~30 days into production as the episodic store fills with noise.
+
+**Mitigations:**
+- **Quality-weighted retrieval**: boost memories with high verification scores.
+- **Scheduled consolidation jobs** that merge duplicates and prune low-utility memories.
+- **Canary fact tests in CI**: "agent should still recall the user's name after 50 turns."
+
+### 5. Hallucinated memory writes
+
+Agent infers a fact, stores it as ground truth, then cites it later as authority. Cascading failure where one bad write poisons future retrievals. The [HaluMem benchmark (Nov 2025)](https://arxiv.org/abs/2511.03506) shows existing systems accumulate errors at write time that propagate forward through the QA stage.
+
+**Mitigations:**
+- **Schema-enforced memory objects** with separate fields for `confirmed_facts` (with source) vs `inferred_facts` (with confidence).
+- Never auto-promote inferences to confirmed without explicit user signal or tool-output corroboration.
+- HaluMem-style staged evaluation in CI: measure extraction precision, update correctness, and QA accuracy separately, not as a single end-to-end metric.
+
+### 6. Cross-tenant leakage
+
+Vector ANN returns a neighbor from another tenant; cached prompts contain another tenant's data. [Field measurements](https://medium.com/@isuruig/multi-tenant-ai-infrastructure-the-5-isolation-layers-that-determine-whether-your-customers-data-stays-separate-340aaeef4922) show ~95% organic leakage rates on benign queries in unisolated multi-tenant RAG.
+
+**Mitigations:**
+- **Physical separation**: per-tenant collections, not metadata-filtered shared index.
+- Enforce tenant scope at the *store* layer via service-account permissions, not application code.
+- Separate KV-cache prefix per tenant.
+- Per-tenant encryption keys on memory blobs so cross-namespace reads fail at the cryptographic layer.
 
 ---
 
@@ -90,7 +236,7 @@ Conflicting memories (e.g., the user said "I like blue" last week but says "I li
 ### Q: Why is the "Context Window" alone insufficient for a staff-level Agent architecture?
 
 **Strong answer:**
-First, **Cost and Latency**: Filling 1M tokens of context for every turn is prohibitively expensive even with context caching. Second, **Signal-to-Noise**: Large context windows suffer from "In-context Learning" degradation—the model gets distracted by irrelevant historical turns. A Staff-level architecture uses **Selective Memory Retrieval** (RAG over history) to only pull in the 3-5 most relevant historical interactions, keeping the Reasoning Engine focused on the current sub-goal.
+First, **Cost and Latency**: Filling 1M tokens of context for every turn is prohibitively expensive even with context caching. Second, **Signal-to-Noise**: Large context windows suffer from "In-context Learning" degradation: the model gets distracted by irrelevant historical turns. A Staff-level architecture uses **Selective Memory Retrieval** (RAG over history) to only pull in the 3-5 most relevant historical interactions, keeping the Reasoning Engine focused on the current sub-goal.
 
 ### Q: How would you design procedural memory for a production AI agent?
 
@@ -98,12 +244,137 @@ First, **Cost and Latency**: Filling 1M tokens of context for every turn is proh
 
 I would design procedural memory as a combination of a **skills registry, workflow graph, and tool-use policies**. Each procedure would define the task type, required steps, available tools, validation checks, failure modes, and escalation rules. After each run, the agent can perform reflection and update the procedure if it discovers a better approach. For example, if an NL2SQL agent repeatedly fails because it skips schema inspection, we can encode schema inspection as a required first step in the procedural memory for all SQL-generation tasks.
 
+### Q: When does episodic memory become a liability rather than an asset?
+
+**Strong answer:**
+
+Episodic memory becomes a liability in three named patterns. First, **index overload**: adding 1,000 low-quality observations buries the 10 high-quality ones in retrieval. This is catastrophic forgetting in the RAG sense. Second, the **Day-30 drift pattern**: agent quality degrades roughly 30 days into production as the episodic store fills with noise that retrieval cannot distinguish from signal. Third, **stale-context bleeding**: past trajectories that succeeded under one configuration become *wrong* context under a new one. A successful tool sequence for Stripe is actively misleading when the user has switched to Adyen.
+
+The mitigations are quality-weighted retrieval, consolidation into L3, and hard recency cutoffs for context-sensitive trajectories. The deeper lesson: episodic memory needs a *pruning policy* from day one. Without one, it is technical debt that compounds linearly with usage.
+
+### Q: How do you prevent memory poisoning when agents can write to their own long-term store?
+
+**Strong answer:**
+
+The hard part is that recent attacks (MINJA, MemoryGraft) are *query-only* - no elevated privileges required. Poison gets planted weeks before it fires. So the threat model is "every input can become a future authoritative memory." The defense has four layers:
+
+1. **Provenance at write time**: every memory carries `source` (user-stated, model-inferred, tool-output), `timestamp`, and `trust_tier`.
+2. **Write-time guardrail model**: a smaller classifier refuses suspicious instruction-shaped writes before they hit the store.
+3. **Corroboration thresholds**: high-stakes decisions cannot be made on a single low-trust memory; they require multiple independent corroborating writes.
+4. **Canary tests in CI**: synthetic poison payloads must not propagate into outputs. Run weekly.
+
+The architectural separation that matters most: the agent's tool surface and its memory write surface should not share trust. Tool outputs should pass through a sanitizer before becoming memory.
+
+### Q: Memory tier selection: where would you put each of these and why? (a) the user's API rate limit, (b) the steps to deploy our service, (c) the agent's last failed attempt at this task, (d) today's stock price.
+
+**Strong answer:**
+
+(a) **L3 semantic** with bitemporal validity. It is a tenant-scoped fact with a supersession lifetime. Not L4, because it is data, not procedure.
+
+(b) **L4 procedural** as a versioned skill or playbook. It is a multi-step recipe with conditional branches. Skills compose; semantic triples do not.
+
+(c) **L2 episodic raw**, with a *reflection hop* to L4 if the failure reveals a generalizable lesson. Raw trajectory belongs in episodic. The lesson ("never run migrations during peak hours") earns a Reflexion-style write to procedural.
+
+(d) **None - call the tool.** Fast-moving facts with a live source of truth should never enter memory. They become stale by definition.
+
+The general rule: data goes in L3, procedures in L4, observations in L2, and never store fast-moving facts that have a live source.
+
+### Q: Walk me through the consolidation policy you would design for episodic-to-semantic transition. When does an episode become a fact?
+
+**Strong answer:**
+
+I use a threshold-based graduation policy, not implicit decay:
+
+- **Frequency threshold**: N independent observations of the same pattern (3 to 5 is typical).
+- **Confidence weighting**: user-stated > tool-output > model-inferred.
+- **Judge review**: a scheduled batch consolidation job runs an LLM judge (or human reviewer for high-stakes domains) over candidate graduations.
+- **Scheduled, not synchronous**: consolidation happens out-of-band on a cron, not per-turn. This avoids write amplification.
+- **Bidirectional**: semantic facts in L3 can be re-instantiated as episodic context for specific tasks. Memory flows both ways.
+
+The trap to avoid is implicit consolidation through decay weights alone. It works at small scale and silently fails at production scale because there is no audit trail for "why did this fact appear in L3?"
+
+### Q: Your agent's memory store has 50M memories across 10K tenants. How do you guarantee cross-tenant isolation and what's your blast radius if isolation fails?
+
+**Strong answer:**
+
+The architecture has five isolation layers:
+
+1. **Physical separation at the store layer**: per-tenant collections or shards, not metadata-filtered shared indexes. The shared-index-with-tenant-id pattern fails open under bugs.
+2. **Enforcement via service-account scoping**: the application code cannot opt out of tenant scope; the database role does not have visibility to other tenants.
+3. **Separate KV-cache prefix per tenant**: prevents cached prompts from leaking between tenants.
+4. **Per-tenant encryption keys**: cross-namespace bytes are unreadable even if returned by a bug.
+5. **Audit logging of every cross-namespace query attempt**: detection in depth.
+
+**Blast radius if isolation fails**: a single bad vector query could leak the *neighborhood* of one query's embedding - potentially hundreds of records from one tenant. Field measurements show ~95% organic leakage rates in unisolated multi-tenant RAG. The mitigation is not "more careful application code"; it is structural separation that cannot be bypassed by application bugs.
+
+### Q: HaluMem shows memory hallucinations accumulate at write time, then propagate. How would you instrument production memory to catch this?
+
+**Strong answer:**
+
+The trap most teams fall into is measuring memory quality only at the QA stage (end-to-end). HaluMem demonstrates that 60-80% of memory errors originate at *extraction* (write) time and propagate. You need to instrument three separate metrics:
+
+1. **Extraction precision**: when the agent writes a fact to L3, is the fact actually supported by the source observation? Sample writes daily, evaluate with a stronger judge.
+2. **Update correctness**: when conflicting facts arrive, did the conflict-resolution logic produce the right outcome? Use bitemporal queries to detect "facts that flipped without supersession metadata."
+3. **QA accuracy**: end-to-end recall correctness.
+
+On top of that, run **shadow-mode replay**: writes go through a verifier model in shadow mode; mismatches between live writes and shadow-verifier writes flag potential hallucinations for review. **Canary facts** in CI ensure the memory system does not silently regress. **Periodic full-store audits** sample random memories and ask "is this still consistent with the source conversation?"
+
+### Q: NVIDIA's TTT-E2E compresses context into weights via test-time training. Where does this fit in the L1-L4 hierarchy, and what new failure mode does it introduce?
+
+**Strong answer:**
+
+TTT-E2E sits *between* L1 and L4. It makes context-derived information part of the model itself for the rest of the session. The appeal is latency: constant cost regardless of context length (2.7x speedup at 128K, 35x at 2M tokens on H100 per NVIDIA's benchmarks).
+
+The new failure mode is governance. In-weights memory has:
+
+- **No audit trail**: you cannot inspect "what does this model now believe?"
+- **No eviction interface**: you cannot delete a memory once compressed into weights without rolling back the model state.
+- **GDPR right-to-be-forgotten challenges**: the regulatory framework assumes data is at rest, not in weights.
+- **Harder poisoning detection**: there is no inspectable store to scan for canary signatures.
+
+The right framing: TTT-E2E moves memory governance from the storage layer to the training and deployment pipeline. The cost is not eliminated; it is relocated. For most production teams in May 2026, this is a research direction to track, not a deployable architecture yet.
+
 ---
 
 ## References
-- Mem0. "The Memory Layer for AI Agents" (2024/2025)
-- Park et al. "Generative Agents: Interactive Simulacra of Human Behavior" (2023)
-- LlamaIndex. "Managed Index for Agentic Memory" (2025)
+
+### Production Frameworks
+- [Mem0: Production-Ready AI Agents with Scalable Long-Term Memory (ECAI 2025)](https://arxiv.org/abs/2504.19413)
+- [Mem0 AI Memory Benchmarks 2026](https://mem0.ai/blog/ai-memory-benchmarks-in-2026)
+- [Letta (formerly MemGPT) documentation](https://docs.letta.com/concepts/memgpt/)
+- [MemGPT: Towards LLMs as Operating Systems (arXiv 2310.08560)](https://arxiv.org/abs/2310.08560)
+- [Anthropic Memory Tool documentation](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool)
+- [Anthropic Claude Sonnet 4.6 Skills announcement](https://www.anthropic.com/news/claude-sonnet-4-6)
+- [Claude Dreaming: scheduled memory consolidation](https://www.mindstudio.ai/blog/what-is-claude-dreaming-anthropic-agent-memory)
+- [Zep: Temporal Knowledge Graph Architecture (arXiv 2501.13956)](https://arxiv.org/abs/2501.13956)
+- [Graphiti GitHub](https://github.com/getzep/graphiti)
+- [LangMem documentation](https://langchain-ai.github.io/langmem/)
+- [OpenAI Memory and new controls for ChatGPT](https://openai.com/index/memory-and-new-controls-for-chatgpt/)
+- [Cognition: Rebuilding Devin for Claude Sonnet 4.5](https://cognition.ai/blog/devin-sonnet-4-5-lessons-and-challenges)
+
+### Research (2023-2026)
+- [Generative Agents: Interactive Simulacra of Human Behavior (Park et al. 2023)](https://arxiv.org/abs/2304.03442)
+- [Reflexion: Language Agents with Verbal Reinforcement Learning (Shinn et al. 2023)](https://arxiv.org/abs/2303.11366)
+- [HippoRAG: Neurobiologically Inspired Long-Term Memory (Gutierrez et al. 2024)](https://arxiv.org/abs/2405.14831)
+- [A-MEM: Agentic Memory for LLM Agents (Xu et al. NeurIPS 2025)](https://arxiv.org/abs/2502.12110)
+- [Multi-Layered Memory Architectures (arXiv 2603.29194, March 2026)](https://arxiv.org/abs/2603.29194)
+- [Memp: Exploring Agent Procedural Memory (Aug 2025)](https://arxiv.org/html/2508.06433v2)
+- [LEGOMem: Modular Procedural Memory for Multi-agent LLM (Oct 2025)](https://arxiv.org/pdf/2510.04851)
+- [Rethinking Memory Mechanisms of Foundation Agents (Feb 2026 survey)](https://arxiv.org/abs/2602.06052)
+- [Position: Episodic Memory is the Missing Piece (arXiv 2502.06975)](https://arxiv.org/pdf/2502.06975)
+
+### Safety, Poisoning, and Hallucinations
+- [HaluMem: Operation-Level Memory Hallucination Benchmark (Nov 2025)](https://arxiv.org/abs/2511.03506)
+- [MINJA Memory Injection Attack (NeurIPS 2025)](https://openreview.net/forum?id=QVX6hcJ2um)
+- [MemoryGraft Persistent Memory Compromise (Dec 2025)](https://arxiv.org/html/2512.16962v1)
+- [Palo Alto Unit 42: Indirect prompt injection poisons AI long-term memory](https://unit42.paloaltonetworks.com/indirect-prompt-injection-poisons-ai-longterm-memory/)
+- [Multi-tenant AI Infrastructure: 5 Isolation Layers](https://medium.com/@isuruig/multi-tenant-ai-infrastructure-the-5-isolation-layers-that-determine-whether-your-customers-data-stays-separate-340aaeef4922)
+- [The Day-30 Problem: agent memory drift](https://cipherbuilds.ai/blog/day-30-agent-memory-problem)
+
+### Infrastructure
+- [NVIDIA TTT-E2E: Reimagining LLM Memory (May 2026)](https://developer.nvidia.com/blog/reimagining-llm-memory-using-context-as-training-data-unlocks-models-that-learn-at-test-time/)
+- [vLLM PagedAttention](https://docs.vllm.ai/en/latest/design/paged_attention/)
+- [Anthropic Effective Context Engineering for AI Agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
 
 ---
 

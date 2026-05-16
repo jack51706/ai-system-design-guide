@@ -8,13 +8,19 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/Updated-May%202026-blue.svg" alt="Last Updated"></a>
+  <a href="https://github.com/ombharatiya/ai-system-design-guide/commits/main"><img src="https://img.shields.io/github/last-commit/ombharatiya/ai-system-design-guide?label=updated&color=blue" alt="Last commit"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
   <a href="#-contributing"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
-  <a href="https://github.com/ombharatiya/ai-system-design-guide"><img src="https://img.shields.io/github/stars/ombharatiya/ai-system-design-guide?style=social" alt="Stars"></a>
+  <a href="https://github.com/ombharatiya/ai-system-design-guide/stargazers"><img src="https://img.shields.io/github/stars/ombharatiya/ai-system-design-guide?style=social" alt="Stars"></a>
+  <a href="https://github.com/ombharatiya/ai-system-design-guide/graphs/contributors"><img src="https://img.shields.io/github/contributors/ombharatiya/ai-system-design-guide?color=blueviolet" alt="Contributors"></a>
+  <a href="https://github.com/ombharatiya/ai-system-design-guide/issues"><img src="https://img.shields.io/github/issues/ombharatiya/ai-system-design-guide?color=orange" alt="Open issues"></a>
 </p>
 
 > **The living reference for production AI systems.** Continuously updated. Interview-ready depth.
+
+A practical, continuously updated guide to AI system design, RAG architectures, LLM engineering, agentic AI, MCP and A2A protocols, and AI engineering interview preparation. Covers production patterns, model selection, evaluation, and real-world case studies from staff-level interviews.
+
+**New here?** Jump to the [110-question Interview Bank](00-interview-prep/01-question-bank.md), the [RAG Fundamentals chapter](06-retrieval-systems/01-rag-fundamentals.md), or pick the [right LLM for production](02-model-landscape/01-model-taxonomy.md).
 
 ---
 
@@ -35,6 +41,24 @@
 | **Find the best courses to learn AI** | [Recommended Courses & Learning Paths](COURSES.md) |
 | **Transition from my current role to AI** | [Role Transition Guide](TRANSITION_GUIDE.md) |
 | **Understand the 2026 AI job market** | [Job Market Trends - May 2026](00-interview-prep/06-job-market-trends-2026.md) ⭐ *NEW* |
+| **Look up a term** | [Glossary](GLOSSARY.md) (every term defined) |
+
+### Pick a path
+
+```mermaid
+flowchart TD
+    A[New visitor] --> B{Your goal}
+    B -->|Interview prep| C[Question Bank]
+    B -->|Build RAG| D[RAG Fundamentals]
+    B -->|Build agents| E[Agent Fundamentals]
+    B -->|Pick a model| F[Model Taxonomy]
+    B -->|Evaluate AI| G[AI Evals Guide]
+    C --> H[Answer Frameworks]
+    D --> I[Chunking + Vector DBs]
+    E --> J[MCP and Tool Use]
+    F --> K[Pricing 2026]
+    G --> L[Phoenix or LangWatch]
+```
 
 ---
 
@@ -49,6 +73,25 @@
 | Real pricing with May 2026 verification dates | Already wrong |
 | Staff-level interview Q&A (110 questions through May 2026) + Job Market Trends | Generic questions |
 
+**Quick model picker (May 2026):** Claude Opus 4.7 for tool-use and long-context reasoning, GPT-5.5 for general production, Gemini 3.1 Pro for multimodal, DeepSeek V4 Pro and Llama 4 for self-hosted. Full breakdown in [Model Taxonomy](02-model-landscape/01-model-taxonomy.md).
+
+---
+
+## 🎯 What This Guide Is (and Is Not)
+
+**This guide IS:**
+- A staff-level reference for designing production AI systems (RAG, agents, MCP, eval pipelines, multi-tenant isolation).
+- An interview-prep companion with 110+ real questions, answer frameworks, and whiteboard exercises through May 2026.
+- A living document tracking new model releases, protocol changes, and emerging patterns as they ship.
+- Opinionated about tradeoffs: latency vs cost, accuracy vs faithfulness, single-agent vs multi-agent.
+- Free, MIT-licensed, and open to PRs from practitioners.
+
+**This guide is NOT:**
+- A tutorial on Python, PyTorch, or basic ML fundamentals (start with a course; see [COURSES.md](COURSES.md)).
+- A vendor-neutral hedge; it names specific models, prices, and frameworks because real systems require real choices.
+- A replacement for hands-on building; read it alongside a project, not instead of one.
+- A research paper digest; it cites papers when they change practice, not for completeness.
+
 ---
 
 ## 📖 Guide Structure
@@ -59,7 +102,7 @@
 ├── 02-model-landscape/          # Claude Opus 4.7, GPT-5.5, Gemini 3.1, DeepSeek V4, Llama 4, Kimi K2.6, Qwen 3.6, Mistral Medium 3.5
 ├── 03-training-and-adaptation/  # Fine-tuning, LoRA, DPO, distillation
 ├── 04-inference-optimization/   # KV cache, PagedAttention, vLLM
-├── 05-prompting-and-context/    # CoT, Extended Thinking, DSPy, prompt injection
+├── 05-prompting-and-context/    # Prompt engineering, CoT, Extended Thinking, DSPy, prompt injection
 ├── 06-retrieval-systems/        # RAG, chunking, GraphRAG, Agentic RAG, ColBERT, Contextual Retrieval
 ├── 07-agentic-systems/          # MCP 2.0, A2A protocol, multi-agent, computer-use
 ├── 08-memory-and-state/         # L1-L3 memory tiers, Mem0, caching
@@ -70,14 +113,43 @@
 ├── 13-reliability-and-safety/   # Guardrails, red-teaming
 ├── 14-evaluation-and-observability/ # RAGAS, LangSmith, drift detection
 ├── 15-ai-design-patterns/       # Pattern catalog, anti-patterns
-├── 17-tool-use-and-computer-agents/ # OpenClaw, Computer Use, tool agents, safety
 ├── 16-case-studies/             # Real-world architectures with diagrams
+├── 17-tool-use-and-computer-agents/ # OpenClaw, Computer Use, tool agents, safety
 ├── GLOSSARY.md                  # Every term defined
 │
 ├── ai_evals_comprehensive_study_guide.md      # 🔬 Deep-dive: AI Evals (Phoenix + Langfuse)
 └── ai_evals_complete_guide_langwatch_langfuse.md  # 🔬 Deep-dive: AI Evals (LangWatch + Langfuse)
 └── COURSES.md                   # 🎓 Recommended courses & learning paths
 └── TRANSITION_GUIDE.md          # 🔄 Transition from Backend/QA/PM/EM to AI roles
+```
+
+### Chapters by AI System Lifecycle Stage
+
+```mermaid
+mindmap
+  root((AI System Design Guide))
+    Foundations
+      LLM Internals
+      Model Landscape
+      Training and Adaptation
+    Build
+      Prompting and Context
+      Retrieval Systems
+      Agentic Systems
+      Tool Use and Computer Agents
+    Operate
+      Inference Optimization
+      Memory and State
+      Frameworks and Tools
+      Infrastructure and MLOps
+    Govern
+      Security and Access
+      Reliability and Safety
+      Evaluation and Observability
+    Apply
+      Design Patterns
+      Case Studies
+      Interview Prep
 ```
 
 ---
@@ -126,7 +198,7 @@ Two companion guides (3,000+ lines each) covering AI evaluation end-to-end - for
 
 ## 🎓 For Interview Prep
 
-AI system design interviews ask questions like:
+AI engineering and system design interviews ask questions like:
 
 > "Design a multi-tenant RAG system where competitors cannot see each other's data."
 
@@ -135,6 +207,46 @@ AI system design interviews ask questions like:
 This guide gives you **concrete patterns**, **real tradeoffs**, and **production failure modes**: the depth interviewers expect at senior levels.
 
 ➡️ Start with [Interview Prep](00-interview-prep/)
+
+---
+
+## ❓ Frequently Asked Questions
+
+### What is AI system design?
+AI system design is the discipline of architecting production-grade systems built around LLMs, retrieval, agents, and evaluation. It covers model selection, RAG pipelines, agent orchestration, memory, observability, and safety. See [LLM Internals](01-foundations/01-llm-internals.md) and [AI Design Patterns](15-ai-design-patterns/) to get oriented.
+
+### How do I prepare for an AI engineering interview?
+Start with the [Question Bank](00-interview-prep/01-question-bank.md) (110 questions through May 2026), then practice with [Answer Frameworks](00-interview-prep/02-answer-frameworks.md) and [Whiteboard Exercises](00-interview-prep/04-whiteboard-exercises.md). Most senior interviews test RAG design, agent debugging, multi-tenant isolation, and cost/latency tradeoffs, all covered in the [Case Studies](16-case-studies/).
+
+### What is RAG (Retrieval-Augmented Generation)?
+RAG is a pattern where an LLM retrieves relevant context from an external knowledge source (vector DB, search index, graph) before generating an answer, reducing hallucinations and grounding responses in your data. The full pipeline is covered in [RAG Fundamentals](06-retrieval-systems/01-rag-fundamentals.md) and scaled in [Production RAG at Scale](06-retrieval-systems/14-production-rag-at-scale.md).
+
+### What are AI agents and how are they different from chatbots?
+AI agents are LLM-driven systems that plan, call tools, and act over multiple steps to accomplish goals, whereas chatbots typically respond in a single turn. Agents introduce loops, memory, error recovery, and tool-use via protocols like MCP. Start with [Agent Fundamentals](07-agentic-systems/01-agent-fundamentals.md).
+
+### What is MCP (Model Context Protocol) and how does it compare to A2A?
+MCP is an open protocol that lets LLMs discover and call external tools and data sources in a standardized way. A2A (Agent-to-Agent) is a complementary protocol for inter-agent communication. They solve different layers: MCP is the tool boundary, A2A is the agent boundary. See [Tool Use and MCP](07-agentic-systems/03-tool-use-and-mcp.md).
+
+### Which LLM should I use in production: Claude, GPT, Gemini, or open-source?
+It depends on latency budget, context length, cost per million tokens, tool-use quality, and data residency. The [Model Taxonomy](02-model-landscape/01-model-taxonomy.md) and [Pricing](02-model-landscape/03-pricing-and-costs.md) chapters give a head-to-head for Claude Opus 4.7, GPT-5.5, Gemini 3.1 Pro, DeepSeek V4, Llama 4, and others as of May 2026.
+
+### How do I evaluate an LLM or RAG system in production?
+Combine offline evals (LLM-as-a-judge with ground-truth calibration), online metrics (faithfulness, context recall, answer relevance), and continuous tracing. The companion deep-dives [AI Evals: Phoenix + Langfuse](ai_evals_comprehensive_study_guide.md) and [AI Evals: LangWatch + Langfuse](ai_evals_complete_guide_langwatch_langfuse.md) walk through this end-to-end.
+
+### How do I build a multi-tenant RAG system safely?
+Use defense-in-depth: per-tenant indexes or namespaces, query-time access checks, and prompt-layer guards. The [Multi-Tenant RAG Isolation](12-security-and-access/04-multi-tenant-rag-isolation.md) chapter and [Multi-Tenant SaaS Case Study](16-case-studies/08-multi-tenant-saas.md) cover the patterns that hold up in interviews and production.
+
+### What is agentic RAG?
+Agentic RAG combines retrieval with an agent loop that can decide what to search, when to re-query, and when to escalate, instead of running a single fixed retrieve-then-generate pass. See [Agentic RAG](06-retrieval-systems/08-agentic-rag.md) for the architectures and tradeoffs.
+
+### Is this guide free? Can I contribute?
+Yes, MIT-licensed and free. PRs are welcome; see [Contributing Guide](CONTRIBUTING.md). If you have production failure modes, new model benchmarks, or interview questions to add, open a PR.
+
+### How often is this guide updated?
+Continuously. New model releases, protocol changes (MCP, A2A), and emerging patterns are added as they ship. Recent additions include [Tool-Use and Computer Agents](17-tool-use-and-computer-agents/01-tool-use-landscape.md) and the [May 2026 Job Market Trends](00-interview-prep/06-job-market-trends-2026.md).
+
+### Can I use this guide if I am transitioning from backend, QA, PM, or EM into AI?
+Yes. The [Role Transition Guide](TRANSITION_GUIDE.md) maps existing skills to AI engineering, MLE, and AI architect tracks, with reading paths per role. Pair it with [COURSES.md](COURSES.md) for curated learning resources.
 
 ---
 
@@ -169,5 +281,3 @@ MIT License. See [LICENSE](LICENSE).
   <a href="https://x.com/ombharatiya"><img src="https://img.shields.io/badge/Twitter-Follow-1DA1F2?logo=twitter" alt="Twitter"></a>
   <a href="https://linkedin.com/in/ombharatiya"><img src="https://img.shields.io/badge/LinkedIn-Connect-0A66C2?logo=linkedin" alt="LinkedIn"></a>
 </p>
-
-<p align="center"><i>Last updated: May 2026</i></p>

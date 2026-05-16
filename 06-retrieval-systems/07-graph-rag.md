@@ -4,6 +4,8 @@ GraphRAG is the combination of **Knowledge Graphs (KG)** and **Retrieval-Augment
 
 ## Table of Contents
 
+- [When GraphRAG Actually Wins (and When It Doesn't)](#when-graphrag-actually-wins-and-when-it-doesnt)
+- [Graph as Reranker Pattern (May 2026)](#graph-as-reranker-pattern-may-2026)
 - [The Limitations of Vector RAG](#limitations)
 - [GraphRAG Architecture (Extract-Build-Query)](#architecture)
 - [Community Summarization (Microsoft Pattern)](#communities)
@@ -11,6 +13,110 @@ GraphRAG is the combination of **Knowledge Graphs (KG)** and **Retrieval-Augment
 - [When to Use GraphRAG](#when)
 - [Interview Questions](#interview-questions)
 - [References](#references)
+
+---
+
+## When GraphRAG Actually Wins (and When It Doesn't)
+
+GraphRAG is a specialized tool for graph-shaped questions, not a default upgrade over vector RAG. For roughly 80% of production retrieval workloads, a hybrid BM25-plus-dense retriever followed by a cross-encoder reranker is cheaper to build, cheaper to operate, and competitive on answer quality. The graph is worth building only when the question genuinely requires multi-hop traversal that vector similarity cannot recover.
+
+The decision should be data-driven, not aesthetic. Pull 100 failed retrievals from your existing RAG system, tag each failure into one of three buckets, and let the distribution decide:
+
+1. **Lexical or chunking failures**: the answer was in the corpus but the retriever did not surface it. Fix the retriever (better embeddings, hybrid scoring, larger top-k, a reranker, or Contextual Retrieval).
+2. **Synthesis failures**: the retriever surfaced the right chunks but the generator combined them poorly. Fix the prompt, the reranker, or the model.
+3. **Graph-shaped failures**: the answer required following a chain of relationships across documents that share no surface text. This is the GraphRAG bucket.
+
+If the third bucket is less than 30% of failures, do not build a graph. The construction and maintenance cost will not pay back. If it is 30% or more, GraphRAG (or a graph-as-reranker hybrid, covered below) is the right next investment.
+
+### Workloads Where GraphRAG Is the Right Tool
+
+The pattern across these is the same: the question requires connecting entities that do not co-occur in any single chunk, and the relationships themselves carry semantic weight that surface embeddings do not capture.
+
+- **Drug discovery and biomedical research**: tracing pathways across genes, proteins, compounds, and diseases. UMLS-grounded variants like GraLC-RAG are tuned for this domain.
+- **Financial fraud rings**: connecting accounts, devices, locations, and transactions across documents that never name each other.
+- **Legal precedent chains**: following case citations through multiple jurisdictional layers, where each case only references its immediate parents.
+- **Enterprise org charts and policy ownership**: questions like "who approves an exception to policy X in region Y" require traversing reporting lines and policy-ownership edges.
+- **Code intelligence at repo scale**: call graphs, type hierarchies, and dependency relationships are inherently graph-shaped; vector similarity over source-code chunks loses the structure that makes the answer findable.
+
+### Decision Flow
+
+```mermaid
+flowchart TD
+    A[Existing RAG failing] --> B[Pull 100 failed retrievals]
+    B --> C[Tag each failure]
+    C --> D{Graph-shaped share >= 30 percent}
+    D -->|No| E{Retriever or synthesis failure}
+    E -->|Retriever| F[Hybrid plus reranker]
+    E -->|Synthesis| G[Contextual Retrieval and better generator]
+    D -->|Yes| H{Corpus small and stable}
+    H -->|Yes| I[Full GraphRAG with community summaries]
+    H -->|No| J[Graph as reranker pattern]
+    F --> K[Measure and iterate]
+    G --> K
+    I --> K
+    J --> K
+```
+
+### The Maintenance Tail
+
+GraphRAG's hidden cost is not extraction; it is maintenance. The corpus drifts: new documents arrive, entities change names, relationships get rewritten. A graph built in January is meaningfully wrong by April. Plan for a quarterly refresh that re-runs extraction on changed documents and reconciles entity identity across the diff. Budget the LLM cost and the engineering time for this refresh up front, or do not build the graph. Teams that skip this step end up with a graph that retrieves confidently and wrongly, which is worse than no graph at all.
+
+---
+
+## Graph as Reranker Pattern (May 2026)
+
+The dominant production pattern in 2026 is not full GraphRAG. It is graph-as-reranker, which delivers most of the multi-hop benefit at a fraction of the construction cost. The intuition is that you do not need a graph index over the entire corpus; you need a graph that covers the entities that show up in the top-k vector results, expanded just enough to find connected evidence.
+
+The flow is:
+
+1. Vector retrieves the top-50 chunks for the user query, using whatever hybrid scoring you already have.
+2. An entity extractor (a small fine-tuned model or a structured-output LLM call) pulls the named entities from those 50 chunks.
+3. A graph traversal from those entities, one or two hops deep, returns connected entities and the chunks where they appear.
+4. The expanded candidate set (original 50 plus graph-expanded chunks) goes to a cross-encoder reranker.
+5. The top-k reranked chunks feed the generator.
+
+You build only the slice of graph that the query touches, lazily, rather than a global graph index. Construction cost drops by an order of magnitude. The maintenance tail shrinks because you are not re-indexing untouched regions. Empirically, teams report 70-80% of full GraphRAG's quality lift at roughly 20% of the upfront cost.
+
+### Pattern Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant V as Vector Index
+    participant E as Entity Extractor
+    participant G as Graph Store
+    participant R as Reranker
+    participant L as Generator
+
+    U->>V: query
+    V-->>U: top 50 chunks
+    U->>E: extract entities from top K
+    E-->>U: entity set
+    U->>G: traverse 1 to 2 hops from entities
+    G-->>U: expanded chunks
+    U->>R: rerank original plus expanded
+    R-->>U: top 8 chunks
+    U->>L: generate answer with citations
+    L-->>U: response
+```
+
+### Recent Variants (2024 to 2026)
+
+A short tour of the variants worth knowing:
+
+- **HippoRAG and HippoRAG 2** (Princeton, 2024 and 2025): treat retrieval as a Personalized PageRank problem over a memory graph, with strong results on multi-hop benchmarks at lower index cost than Microsoft GraphRAG.
+- **LightRAG** (HKU, 2024): entity-centric retrieval with a simpler indexing pipeline; trades some recall on global questions for substantially faster construction and updates.
+- **GraLC-RAG** (March 2026): graph-aware late chunking paired with UMLS grounding for biomedical use cases, strong published result on multi-hop biomedical QA.
+- **Microsoft GraphRAG indexing pipeline v2** (2025): the original community-summarization approach, rearchitected for incremental updates and significantly cheaper extraction; this is what to use if you genuinely need global summarization rather than local multi-hop.
+
+The general direction across all four variants is the same: less monolithic indexing, more incremental and lazy graph construction, and a clearer separation between "global summary" workloads (where Microsoft-style communities still win) and "local multi-hop" workloads (where HippoRAG-style traversal is cheaper and competitive).
+
+**Sources:**
+- [Microsoft GraphRAG](https://microsoft.github.io/graphrag)
+- [HippoRAG: Neurobiologically Inspired Long-Term Memory](https://arxiv.org/abs/2405.14831)
+- [Edge et al., From Local to Global: A GraphRAG Approach](https://arxiv.org/abs/2404.16130)
+- [Graph-aware late chunking (arXiv 2603.22633)](https://arxiv.org/html/2603.22633v1)
+- [Anthropic Contextual Retrieval (Sep 2024)](https://www.anthropic.com/news/contextual-retrieval)
 
 ---
 

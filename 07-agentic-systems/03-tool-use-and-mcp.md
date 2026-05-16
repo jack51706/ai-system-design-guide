@@ -91,7 +91,7 @@ Instead of waiting for the full JSON to generate, the system starts "prefetching
 The MCP 2.0 specification (ratified March 2026) introduced two major changes:
 
 ### 1. Streamable HTTP Transport
-Previous MCP used `stdio` or basic HTTP with SSE. MCP 2.0 adds **Streamable HTTP** — a single long-lived HTTP connection that handles bidirectional streaming:
+Previous MCP used `stdio` or basic HTTP with SSE. MCP 2.0 adds **Streamable HTTP** - a single long-lived HTTP connection that handles bidirectional streaming:
 
 ```
 [MCP Client] ←── Streamable HTTP POST /mcp ──→ [MCP Server]
@@ -146,7 +146,7 @@ MCP defines how an agent connects to **tools and data**. A2A defines how an **or
 
 - Built on **HTTP, SSE, and JSON-RPC** (same foundation as MCP, for easy integration)
 - Supports enterprise-grade authentication with parity to OpenAPI auth schemes
-- **Agent Cards**: JSON metadata documents that describe an agent's capabilities, skills, and endpoint — analogous to MCP Server Cards but for agents
+- **Agent Cards**: JSON metadata documents that describe an agent's capabilities, skills, and endpoint - analogous to MCP Server Cards but for agents
 
 ### A2A Task Lifecycle
 
@@ -203,13 +203,92 @@ In production enterprise systems (2026), multiple protocols operate at different
 
 **ACP note**: The IBM-originated Agent Communication Protocol (ACP) team merged efforts with the Google A2A team in September 2025 to develop a unified agent communication standard. New projects should target A2A as the primary agent-to-agent protocol.
 
-> *Verified April 2026.*
+---
+
+## A2A v1.0 GA and the May 2026 MCP Production Story
+
+A2A v1.0 reached general availability at Google Cloud Next 2026 (April) with public commitments from 150+ organizations including AWS, Microsoft, Salesforce, SAP, ServiceNow, Workday, and IBM. The project moved under the Linux Foundation's Agentic AI Foundation, which now governs A2A alongside the merged ACP work. A point release (v1.2) added cryptographically signed Agent Cards: cards are signed JWS documents tied to the agent operator's public key, so a client agent can verify that a remote agent at `https://refunds.acme.com/.well-known/agent.json` actually belongs to ACME before issuing a task. Native A2A client/server support shipped in Google ADK 1.0, LangGraph, CrewAI, LlamaIndex, Semantic Kernel, and AutoGen.
+
+### Composition Pattern: Support Agent Delegating Refunds
+
+A LangGraph customer-support agent owns conversation state and a set of MCP tools (CRM, ticket search, knowledge base). When the user asks for a refund, that work belongs to a different team's Finance refund agent, which lives behind an A2A endpoint and enforces its own policy, audit log, and SOX controls. The support agent does not call the refund database directly; it issues an A2A task and lets the Finance agent decide.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Support as Support Agent (LangGraph)
+    participant CRM as MCP CRM Server
+    participant KB as MCP KB Server
+    participant Refund as Refund Agent (A2A)
+    participant Ledger as MCP Ledger Server
+
+    User->>Support: I want a refund for order 8821
+    Support->>CRM: tools.call lookup_customer
+    CRM-->>Support: customer profile
+    Support->>KB: tools.call search_policy
+    KB-->>Support: refund policy snippet
+    Support->>Refund: tasks.create refund order 8821
+    Refund->>Ledger: tools.call post_credit
+    Ledger-->>Refund: credit id
+    Refund-->>Support: task status complete with artifact
+    Support-->>User: refund confirmed
+```
+
+The Support agent never sees the ledger. The Refund agent owns ledger access through its own MCP server and enforces a different policy. The A2A task is asynchronous: the Support agent can yield to the user with a hold message while the refund processes and reattach when the artifact arrives.
+
+### MCP 2026 Roadmap Highlights
+
+The MCP roadmap for the remainder of 2026 concentrates on two areas. **Transport scalability** targets multi-instance and load-balanced deployments: Streamable HTTP gains session resumption and sticky-session hints so an MCP server can run as a horizontally scaled Kubernetes Deployment without breaking long-lived tool sessions. **Enterprise-managed auth** formalizes the OAuth Resource Server posture: MCP servers are now classified as Resource Servers under RFC 8707, which means tokens are audience-bound to a specific server URI and cannot be replayed across servers.
+
+### MCP Production Hardening (post-May-2026)
+
+May 2026 surfaced a class of vulnerability in the MCP STDIO transport: STDIO MCP servers had implicitly assumed that the process boundary was the trust boundary, but a crafted tool argument from an upstream model could trick a poorly written STDIO server into invoking host commands with the host user's privileges. The architectural fix is two-step:
+
+1. **Migrate STDIO MCP servers to HTTP transport with TLS** wherever possible. HTTP transport forces an explicit trust boundary (the network) and enables OAuth 2.1 Resource Server enforcement, which STDIO cannot provide.
+2. **For STDIO servers that cannot migrate**, run each server in a dedicated container with no host filesystem mounts, no network egress, a strict CPU and memory budget, and a read-only image. Treat the container as the trust boundary; the blast radius of compromise is the container.
+
+**Defense-in-Depth Checklist for Production MCP:**
+
+- All remote MCP servers run behind OAuth 2.1 with PKCE and audience-bound tokens (RFC 8707).
+- STDIO servers run inside a container with `network: none`, read-only root filesystem, no host volume mounts, and a `nproc` and `memory` cap.
+- Every tool invocation is logged with user identity, bound token audience, tool name, argument hash, and result hash. Logs ship to an append-only store.
+- A rate limiter sits in front of every MCP server, scoped by user identity. Burst budgets are tight for write-capable tools.
+- Tool arguments pass through a content filter before reaching the server: pattern-based prompt-injection detection on string fields, schema validation on structured fields, hard rejection for shell metacharacters in tools that do not need them.
+- Tool results pass through an output validator before being fed back to the model: PII detection, secret detection, size cap, content filter for known exfiltration markers.
+- Dangerous tools (file write, shell execution, outbound HTTP) require a human approval step or a signed capability token rather than relying on the model to call them safely.
+
+Request flow with all defensive layers:
+
+```mermaid
+flowchart TD
+    A[User request to agent] --> B[OAuth 2.1 token check]
+    B -->|invalid| X[Reject 401]
+    B -->|valid| C[Rate limiter per identity]
+    C -->|over budget| Y[Reject 429]
+    C -->|ok| D[Tool argument content filter]
+    D -->|injection or malformed| Z[Reject and log]
+    D -->|clean| E[MCP server in sandbox]
+    E --> F[Tool execution]
+    F --> G[Result output validator]
+    G -->|PII or secret| W[Redact and log]
+    G -->|clean| H[Append-only audit log]
+    H --> I[Return result to model]
+```
+
+The pipeline is deliberately conservative. Every layer can reject; only the result that survives all five gates reaches the model.
+
+**Sources for this section:**
+- [Google Cloud A2A v1.0 GA at Cloud Next 2026](https://cloud.google.com/blog/products/ai-machine-learning/agent2agent-protocol-is-getting-an-upgrade)
+- [MCP 2026 Roadmap (The New Stack)](https://thenewstack.io/model-context-protocol-roadmap-2026/)
+- [RFC 8707: Resource Indicators for OAuth 2.0](https://www.rfc-editor.org/rfc/rfc8707)
+- [Adversa AI: Top MCP Security Resources May 2026](https://adversa.ai/blog/top-mcp-security-resources-may-2026/)
+- [Anthropic Constitutional Classifiers](https://www.anthropic.com/research/constitutional-classifiers)
 
 ---
 
 ## Computer-Use Tools (Anthropic)
 
-Claude 3.5+ introduced native **computer-use** tools — the model can directly control a desktop or web browser. These are available via the Anthropic API:
+Claude 3.5+ introduced native **computer-use** tools - the model can directly control a desktop or web browser. These are available via the Anthropic API:
 
 | Tool | Capability | Notes |
 |------|------------|-------|
@@ -246,7 +325,7 @@ response = client.beta.messages.create(
 
 ## Context7: Live Documentation MCP
 
-One of the most practical MCP servers in 2026 is **Context7** — it resolves the "stale training data" problem for coding agents:
+One of the most practical MCP servers in 2026 is **Context7** - it resolves the "stale training data" problem for coding agents:
 
 ```
 # Without Context7:
@@ -290,7 +369,7 @@ Separation of concerns. If the tool logic (e.g., a Python scraper) lives in a se
 ### Q: How do MCP and A2A work together in a production multi-agent system?
 
 **Strong answer:**
-They address **different communication layers**. MCP is the agent-to-tool protocol — it gives any agent standardized access to databases, APIs, and files through MCP servers. A2A is the agent-to-agent protocol — it enables an orchestrator agent (from Vendor X) to delegate a task to a specialist agent (from Vendor Y) without sharing memory or context. In production, I use MCP for every tool connection and A2A when I need cross-vendor agent coordination. For example, a procurement orchestrator built on LangGraph uses MCP to query an inventory database, then uses A2A to delegate compliance checking to a specialized agent hosted by a different team. The key design principle is: MCP within an agent's own tool stack, A2A across organizational or vendor boundaries.
+They address **different communication layers**. MCP is the agent-to-tool protocol - it gives any agent standardized access to databases, APIs, and files through MCP servers. A2A is the agent-to-agent protocol - it enables an orchestrator agent (from Vendor X) to delegate a task to a specialist agent (from Vendor Y) without sharing memory or context. In production, I use MCP for every tool connection and A2A when I need cross-vendor agent coordination. For example, a procurement orchestrator built on LangGraph uses MCP to query an inventory database, then uses A2A to delegate compliance checking to a specialized agent hosted by a different team. The key design principle is: MCP within an agent's own tool stack, A2A across organizational or vendor boundaries.
 
 ---
 
