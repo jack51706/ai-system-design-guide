@@ -103,6 +103,30 @@ This case study walks through designing a production customer support agent for 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+Rendered as a layered flow. The orchestration layer dispatches to three parallel context sources, then assembles them in the response generator:
+
+```mermaid
+flowchart TD
+    Client[Web / App Client] --> GW[Gateway<br/>Auth + Tenant]
+    GW --> ORCH
+
+    subgraph ORCH[Orchestration Layer]
+        IC[Intent Classifier]
+        QR[Query Router]
+        RG[Response Generator]
+        WE[Workflow Engine]
+        IC --> QR --> RG --> WE
+    end
+
+    QR --> KB[(Knowledge Base<br/>RAG)]
+    QR --> AC[(Account Context<br/>Service)]
+    QR --> AT[Action Tools<br/>refund, ticket, etc.]
+
+    KB --> RG
+    AC --> RG
+    AT --> RG
+```
+
 ### Conversation Flow
 
 ```
@@ -146,6 +170,28 @@ User Message
          │
          ▼
     Response / Escalation
+```
+
+A turn is a state machine. The two gates that matter for cost and trust are *safety* (must pass before leaving the system) and *confidence* (decides escalation vs auto-reply):
+
+```mermaid
+stateDiagram-v2
+    [*] --> Classify : user message
+    Classify --> Route : intent + entities
+    Route --> RAG : knowledge needed
+    Route --> Account : account-specific
+    Route --> Action : tool call
+    RAG --> Generate
+    Account --> Generate
+    Action --> Generate
+    Generate --> Safety : draft response
+    Safety --> Confidence : passed
+    Safety --> Block : PII or harmful
+    Confidence --> Reply : score above threshold
+    Confidence --> Escalate : score below threshold
+    Reply --> [*]
+    Escalate --> [*]
+    Block --> [*]
 ```
 
 ---
@@ -244,6 +290,23 @@ class EscalationHandler:
             "competitor", "data breach"
         ]
         return any(kw in message.lower() for kw in sensitive_keywords)
+```
+
+The escalation decision combines three independent signals. Any one of them triggers handoff. Visualizing it as a decision tree makes the OR semantics obvious and easy to extend with a fourth signal:
+
+```mermaid
+flowchart TD
+    R[Draft Response] --> C1{Confidence<br/>below 0.7}
+    R --> C2{Intent =<br/>escalation_request}
+    R --> C3{Sensitive<br/>keyword match}
+    C1 -->|yes| E[Escalate to Human]
+    C2 -->|yes| E
+    C3 -->|yes| E
+    C1 -->|no| K{All clear}
+    C2 -->|no| K
+    C3 -->|no| K
+    K -->|yes| A[Auto-Reply]
+    E --> H[Queue for Human Agent<br/>with context bundle]
 ```
 
 ### Multi-Turn Memory

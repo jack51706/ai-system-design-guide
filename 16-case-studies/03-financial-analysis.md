@@ -82,6 +82,18 @@ This case study covers designing a high-reliability AI system for generating equ
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+The pipeline as a flow. Each stage uses a different model class on purpose: extraction wants multimodal (charts and tables), generation wants narrative quality, audit wants reasoning depth, panel wants cheap-but-many for diversity:
+
+```mermaid
+flowchart LR
+    S1[Stage 1: Extraction<br/>Gemini 3 Pro<br/>Self-Consistency k=5] --> S2
+    S2[Stage 2: Analysis<br/>Mixture of Agents<br/>Quant + Narrative + Risk] --> S3
+    S3[Stage 3: Verification<br/>Multi-Agent Debate<br/>3 models per claim] --> S4
+    S4[Stage 4: Final Review<br/>Panel of Judges<br/>Quality score] --> D{Auto-publish<br/>threshold met}
+    D -->|yes| P[Publish]
+    D -->|no| H[Human Review Queue]
+```
+
 ### Data Flow
 
 ```
@@ -134,6 +146,22 @@ This case study covers designing a high-reliability AI system for generating equ
         │ Auto-Publish│         │Human Review │
         │ (high conf) │         │ (low conf)  │
         └─────────────┘         └─────────────┘
+```
+
+The data lineage in Mermaid, showing how three input sources converge into one verified output:
+
+```mermaid
+flowchart TD
+    F1[10-K and 10-Q Filings] --> ING[Data Ingestion]
+    F2[Earnings Calls] --> ING
+    F3[Analyst Reports] --> ING
+    ING --> EX[Extraction<br/>k=5 Self-Consistency]
+    EX --> SD[(Structured Data<br/>verified metrics)]
+    SD --> MOA[MoA Generation<br/>3 specialized agents]
+    MOA --> DEB[Debate Verification<br/>flag disagreements]
+    DEB --> PAN[Panel Review<br/>quality score]
+    PAN --> AP[Auto-Publish<br/>high confidence]
+    PAN --> HR[Human Review<br/>low confidence]
 ```
 
 ---
@@ -189,6 +217,39 @@ class AuditorAgent:
 ```
 
 ### Stage 3: Fact Verification with Multi-Agent Debate
+
+The debate stage is what catches the subtle hallucinations a single model misses. Three independent debaters verify each claim in parallel; consensus wins, dissent flags the claim for human review:
+
+```mermaid
+sequenceDiagram
+    participant CE as Claim Extractor
+    participant D1 as Debater A<br/>Claude 4.5 Opus
+    participant D2 as Debater B<br/>GPT-5.2
+    participant D3 as Debater C<br/>Gemini 3 Pro
+    participant CON as Consensus Logic
+    participant OUT as Verification Result
+
+    CE->>CE: extract factual claims<br/>from report
+    Note over CE,D3: For each claim, debaters verify independently
+    par Independent verification
+        CE->>D1: claim + source docs
+        D1-->>CON: verdict (supported/inferred/unsupported/contradicted)
+    and
+        CE->>D2: claim + source docs
+        D2-->>CON: verdict
+    and
+        CE->>D3: claim + source docs
+        D3-->>CON: verdict
+    end
+    CON->>CON: check consensus
+    alt all agree supported
+        CON->>OUT: verified
+    else any contradiction
+        CON->>OUT: flagged for human review
+    else split verdicts
+        CON->>OUT: low confidence
+    end
+```
 
 ```python
 class FactVerificationDebate:

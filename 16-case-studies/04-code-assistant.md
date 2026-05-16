@@ -98,6 +98,28 @@ This case study covers designing a production code assistant that provides real-
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+The architecture as a flow. Three service tiers split by latency vs quality (completion is sub-200ms, generation and explanation are quality-prioritized) all share one model layer:
+
+```mermaid
+flowchart TD
+    IDE[IDE Extension<br/>VS Code / JetBrains]
+    IDE --> GW
+
+    subgraph GW[Gateway / Router]
+        DB[Debounce]
+        AU[Auth]
+        FF[Feature Flags]
+    end
+
+    GW --> CS[Completion Service<br/>fast: under 200ms]
+    GW --> GS[Generation Service<br/>quality: 1-5s]
+    GW --> ES[Explanation Service<br/>quality: 1-5s]
+
+    CS --> ML[Model Layer]
+    GS --> ML
+    ES --> ML
+```
+
 ### Context Assembly
 
 ```python
@@ -173,6 +195,21 @@ class CodeContextAssembler:
         return f"{before_text}\n<CURSOR>\n{after_text}"
 ```
 
+Context assembly is a priority-driven budget allocation. The model only sees what survives the 4000-token cap, so the order matters: immediate code first (always fits), then related definitions, then other open files only if budget remains:
+
+```mermaid
+flowchart TD
+    Start[Cursor event<br/>budget = 4000 tokens]
+    Start --> P1[P1: Immediate context<br/>2000 tokens before+after cursor<br/>70/30 split toward before]
+    P1 --> R1{Remaining<br/>over 500}
+    R1 -->|no| Final[Format context<br/>send to model]
+    R1 -->|yes| P2[P2: Related definitions<br/>imports, types, callees<br/>up to 1000 tokens]
+    P2 --> R2{Remaining<br/>over 500}
+    R2 -->|no| Final
+    R2 -->|yes| P3[P3: Other open files<br/>same module / package<br/>fill remaining budget]
+    P3 --> Final
+```
+
 ---
 
 ## Code Generation Pipeline
@@ -224,6 +261,22 @@ class AgenticGeneration:
 ## Quality Assurance
 
 ### Multi-Stage Verification
+
+The verifier is a fail-fast gauntlet. Cheap checks (syntax) run first and block hard; expensive checks (test execution) run last and only when context allows. Any blocking failure short-circuits the rest:
+
+```mermaid
+flowchart TD
+    G[Generated Code] --> SY[Stage 1: Syntax Check<br/>fast, blocking]
+    SY -->|fail| RJ[Reject: syntax_error]
+    SY -->|ok| SEC[Stage 2: Security Scan<br/>medium, blocking]
+    SEC -->|critical| RJV[Reject: vulnerability]
+    SEC -->|ok or warnings| TY[Stage 3: Type Check<br/>medium, advisory<br/>typescript / python]
+    TY --> TST{Test context<br/>available}
+    TST -->|yes| TR[Stage 4: Test Execution<br/>slow, optional]
+    TST -->|no| PASS[Present to user<br/>with warnings]
+    TR -->|pass| PASS
+    TR -->|fail| WARN[Present to user<br/>with test-fail label]
+```
 
 ```python
 class CodeVerifier:

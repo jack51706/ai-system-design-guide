@@ -117,6 +117,40 @@ A financial services company wants to build an AI-powered search system for thei
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+Rendered as a flow diagram (the layered system fans out through the query pipeline and converges through the data layer):
+
+```mermaid
+flowchart TD
+    UI[User Interface<br/>Web / Slack / API]
+    GW[API Gateway<br/>Auth + rate limit]
+    QS[Query Service<br/>Permission + orchestration]
+
+    UI --> GW --> QS
+
+    subgraph PIPELINE[Query Pipeline]
+        RS[Retrieval<br/>Hybrid search]
+        RR[Reranker<br/>Cross-encoder]
+        GS[Generation<br/>Gemini 3 Pro]
+        RS --> RR --> GS
+    end
+
+    QS --> PIPELINE
+
+    subgraph DATA[Data Layer]
+        VDB[(Vector DB)]
+        ES[(Search Index)]
+        DOC[(Doc Store)]
+        META[(Metadata)]
+    end
+
+    RS -.semantic.-> VDB
+    RS -.keyword.-> ES
+    GS -.full text.-> DOC
+    QS -.acl.-> META
+
+    GS --> UI
+```
+
 ### Technology Choices (Dec 2025 Update)
 
 | Component | Choice | Rationale |
@@ -193,6 +227,31 @@ class IngestionPipeline:
             id=document.id,
             body={"text": parsed.text, **metadata.to_dict()}
         )
+```
+
+The code reads as a linear sequence, but four of the writes happen in parallel. A sequence diagram makes the fanout explicit, which matters for understanding partial-failure modes:
+
+```mermaid
+sequenceDiagram
+    participant U as Upload Event
+    participant P as Parser
+    participant C as Chunker
+    participant E as Embedder
+    participant V as Vector DB
+    participant S as Search Index
+    participant D as Doc Store
+    participant M as Metadata DB
+
+    U->>P: document
+    P->>C: parsed text + metadata
+    C->>E: chunks
+    par Parallel writes
+        E->>V: chunk vectors + payloads
+        P->>S: full text + metadata
+        P->>D: full document blob
+        P->>M: document metadata + ACL
+    end
+    Note over V,M: Document is queryable only<br/>after all four writes commit
 ```
 
 ### Query Processing
@@ -336,6 +395,24 @@ class HybridRetriever:
         
         sorted_ids = sorted(scores.keys(), key=lambda x: scores[x], reverse=True)
         return [docs[id] for id in sorted_ids]
+```
+
+The hybrid retrieval flow at a glance. Two parallel retrievers, then RRF fuses them with weighted ranks, then a cross-encoder reranks the top candidates before context formatting:
+
+```mermaid
+flowchart LR
+    Q[User Query] --> EMB[Embed Query]
+    Q --> KW[Extract Keywords]
+
+    EMB --> VS[Vector Search<br/>top 100]
+    KW --> KS[Keyword Search<br/>BM25 top 100]
+
+    VS --> RRF[Reciprocal Rank Fusion<br/>0.7 semantic / 0.3 keyword]
+    KS --> RRF
+
+    RRF --> RR[Cross-Encoder Rerank<br/>top 50 to top 10]
+    RR --> CTX[Context Format<br/>with citations]
+    CTX --> LLM[Generation<br/>Gemini 3 Pro 2.5M ctx]
 ```
 
 ### Generation with Massive Context (Dec 2025)

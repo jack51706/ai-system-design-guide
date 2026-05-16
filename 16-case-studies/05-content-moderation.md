@@ -112,6 +112,22 @@ This case study covers designing an AI-powered content moderation system for a s
 └──────────────────────────────────────────────────────────┘│    │
 ```
 
+The tiered pipeline as a decision tree. Each tier escalates only what it cannot decide cheaply. The cost-per-decision ratio between Tier 1 and Tier 4 is roughly 1:5000, so getting routing right is the main lever for unit economics:
+
+```mermaid
+flowchart TD
+    IN[Content Ingestion] --> T1{Tier 1: Fast Filters<br/>hash + keyword + pattern<br/>under 10ms, $0.0001}
+    T1 -->|blocked: 5%| B1[Block + Report]
+    T1 -->|elevated: pattern hit| T2
+    T1 -->|pass clean: 85%| T2
+    T2{Tier 2: ML Models<br/>vision + text + multimodal<br/>under 100ms, $0.001}
+    T2 -->|high confidence: 85% of T2| AA1[Auto Action]
+    T2 -->|low confidence: 15% of T2| T3
+    T3{Tier 3: LLM Review<br/>nuanced reasoning<br/>under 3s, $0.01}
+    T3 -->|confident| AA2[Auto Action]
+    T3 -->|uncertain: 2%| HR[Human Review<br/>minutes, $0.50]
+```
+
 ### Processing Tiers
 
 | Tier | Method | Latency | Cost | Coverage |
@@ -222,6 +238,31 @@ class NuanceReviewer:
 ## Human-in-the-Loop
 
 ### Review Queue Management
+
+Every piece of content traverses a lifecycle from submission to a terminal state. The lifecycle as a state machine makes SLOs concrete: each priority lane has a different target time-to-terminal, and an appeal can transition back to pending:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Submitted : new post
+    Submitted --> Tier1 : enter pipeline
+    Tier1 --> Blocked : hash or keyword hit
+    Tier1 --> Tier2 : pass or elevate
+    Tier2 --> AutoAction : high confidence
+    Tier2 --> Tier3 : low confidence
+    Tier3 --> AutoAction : confident
+    Tier3 --> CriticalQueue : CSAM or violence
+    Tier3 --> HighQueue : hate speech
+    Tier3 --> StandardQueue : other violation
+    CriticalQueue --> HumanReview : SLO 15 min
+    HighQueue --> HumanReview : SLO 1 hr
+    StandardQueue --> HumanReview : SLO 24 hr
+    HumanReview --> AutoAction : decision logged
+    AutoAction --> [*]
+    Blocked --> Appealed : user appeals
+    AutoAction --> Appealed : user appeals
+    Appealed --> AppealQueue
+    AppealQueue --> HumanReview : SLO 7 days
+```
 
 ```python
 class ReviewQueueManager:
