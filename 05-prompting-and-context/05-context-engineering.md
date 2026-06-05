@@ -5,6 +5,7 @@ Context engineering is the science of filling the LLM's finite "working memory" 
 ## Table of Contents
 
 - [The Long Context Paradigm (1M+ Tokens)](#long-context)
+- [Agentic Context Engineering](#agentic-context-engineering)
 - [Extended Thinking & Budget Tokens](#extended-thinking)
 - [Lost-in-the-Middle](#lost-in-the-middle)
 - [Context Budgeting & Token Awareness](#budgeting)
@@ -21,6 +22,42 @@ Models like Gemini 3.1 Pro (1M), Claude Sonnet 4.6 (1M), Claude Opus 4.7 (1M), a
 
 **Insight**: "Context is the new RAG."
 For datasets under 100,000 documents, it is often more accurate and faster to put the entire dataset in the context window than to use an external vector database. This is called **"In-Context RAG."**
+
+---
+
+## Agentic Context Engineering
+
+Prompt engineering writes one good instruction. **Context engineering** curates the full set of tokens the model sees on **every inference turn** of an agent loop: system prompt, tools, retrieved data, prior tool results, and running message history. The distinction matters because an agent accumulates context turn after turn, so the curation problem is continuous, not one-shot. This is the framework Anthropic, OpenAI, and Google now build their agent harnesses around.
+
+### Context Rot: Why Context Is a Finite Resource
+
+A 1M-token window does not mean you should fill it. Models suffer **context rot**: accuracy degrades as the token count grows, because attention scales with n-squared pairwise relationships and training data skews toward shorter sequences. Treat context as a budget with diminishing returns, not free space. The job is to keep the **smallest high-signal set of tokens** that still lets the model act correctly.
+
+### The Five Core Techniques
+
+| Technique | What it does | Use when |
+|-----------|--------------|----------|
+| **Compaction** | Summarize the message history and reinitialize the loop with the compressed summary plus the few most-recent artifacts | Long back-and-forth sessions approaching the window limit |
+| **Just-in-time loading** | Keep lightweight identifiers (file paths, URLs, row IDs) in context and load the full content on demand via a tool | Large corpora or databases that cannot all fit, exploratory tasks |
+| **Structured note-taking** | Agent writes progress notes to a file or memory store outside the window, then reads them back later | Long-horizon tasks spanning dozens of tool calls |
+| **Sub-agent isolation** | Spawn a focused sub-agent with a clean window for a sub-task; it returns only a 1k-2k token summary | Parallel research, deep search, anything that would flood the main window with intermediate detail |
+| **System prompt calibration** | Aim for the "Goldilocks zone": specific enough to be reliable, general enough to not be brittle; use clear XML or Markdown sections | Always, as the foundation under the other four |
+
+### Compaction
+
+When the history grows large, pass it back to the model to summarize, preserving the load-bearing details (architectural decisions, unresolved bugs, key constraints) and dropping redundant tool output. Claude Code uses this pattern: it continues with the compressed summary plus the most recently accessed files. **Tune for recall first** (keep everything that matters), then improve precision (cut redundancy).
+
+### Just-in-Time Loading
+
+Instead of pre-loading every document, the agent holds references and fetches content only when a step needs it. This mirrors how a human works from a file tree: you open the file you need, not the whole repo. It keeps the window small and lets the agent discover structure through exploration. The trade-off is latency, so a hybrid (pre-load the obvious, fetch the rest) is often best.
+
+### Structured Note-Taking (Agentic Memory)
+
+The agent persists notes outside the context window and pulls them back in when relevant. This is what lets an agent stay coherent across a task that is far longer than its window. See [Agent Memory and State](../07-agentic-systems/05-agent-memory-and-state.md) and [Memory Architectures](../08-memory-and-state/01-memory-architectures.md) for the storage substrates (filesystem, vector, graph).
+
+### Sub-Agent Isolation
+
+A coordinator delegates a focused sub-task to a sub-agent that works in its own clean window and returns a condensed summary. The detailed search or analysis context never pollutes the coordinator's window. This is the context-management reason multi-agent systems work, separate from any parallelism benefit. See [Multi-Agent Orchestration](../07-agentic-systems/04-multi-agent-orchestration.md).
 
 ---
 
@@ -154,13 +191,19 @@ I choose Long Context when high-fidelity retrieval and cross-document reasoning 
 **Strong answer:**
 The primary solution is **Context Caching**. By caching the heavy document on the GPU cluster, the model doesn't have to "re-read" (prefill) the entire 1M tokens for every turn. The TTFT for a cached prompt is nearly the same as for a 1k token prompt. Additionally, for non-cached requests, I would use **Streaming Prefill**, where the model generates an initial summary or "Thought" while it is still processing the latter half of the massive context.
 
+### Q: An agent works fine for short tasks but degrades on long-running ones. How do you fix it?
+
+**Strong answer:**
+This is **context rot**: the window fills with stale tool output and the model loses the thread. I would apply agentic context engineering. First, **compaction**: summarize the history at a threshold and continue from the summary plus the most-recent artifacts. Second, **just-in-time loading**: hold file paths and IDs instead of full content, and fetch on demand. Third, **structured note-taking**: have the agent write progress to a scratch file it can re-read, so working memory stays small. For sub-tasks that generate a lot of intermediate detail (deep search, multi-file analysis), I would use **sub-agent isolation** so that detail returns as a short summary instead of flooding the main window. The goal is the smallest high-signal token set per turn, not the largest.
+
 ---
 
 ## References
 - Liu et al. "Lost in the Middle" (2023/2024 update)
-- Anthropic. "Extended Thinking: Technical Guide" (2025) — https://docs.anthropic.com/
+- [Anthropic. "Effective context engineering for AI agents" (2025)](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
+- [Anthropic. "Effective harnesses for long-running agents" (2026)](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+- Anthropic. "Extended Thinking: Technical Guide": https://docs.anthropic.com/
 - OpenAI. "o3 and o3-mini System Card" (2025)
-- Google. "Gemini 2.0 Flash: Technical Report" (2024)
 
 ---
 

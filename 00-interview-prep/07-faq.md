@@ -105,6 +105,14 @@ Agentic RAG replaces the linear retrieve-then-generate pipeline with a loop wher
 
 A computer-use agent takes screenshots of a desktop or browser, decides on a mouse and keyboard action, executes it, and takes another screenshot. The three production options are Claude Computer Use (OS-portable via screenshots), Google Gemini Computer Use (browser-optimized via DOM awareness), and OpenAI Operator (web-task focused). Claude Sonnet 4.6 reaches 72.5% on OSWorld-Verified, up from 14.9% at the October 2024 launch. See [Computer-Use Agents](../17-tool-use-and-computer-agents/04-computer-use-agents.md).
 
+### What is context engineering?
+
+Context engineering is curating the full set of tokens an agent sees on every inference turn (system prompt, tools, retrieved data, prior tool results, message history), as opposed to prompt engineering, which writes one good instruction once. It matters because long-running agents suffer **context rot**: accuracy drops as the window fills with stale tool output. The core techniques are compaction (summarize and restart the loop), just-in-time loading (hold references, fetch on demand), structured note-taking (write progress outside the window), and sub-agent isolation (delegate detail-heavy sub-tasks to a clean window that returns a short summary). The goal is the smallest high-signal token set per turn. See [Context Engineering](../05-prompting-and-context/05-context-engineering.md).
+
+### What are Agent Skills?
+
+Agent Skills are folders of instructions, scripts, and resources that an agent loads on demand to specialize at a task. Each skill is a `SKILL.md` file with YAML metadata plus optional bundled files. They use **progressive disclosure**: the name and description sit in the system prompt, the full `SKILL.md` loads only when the agent judges it relevant, and referenced files load only as needed, which keeps context small. Skills complement MCP: MCP connects an agent to tools and data, Skills teach it the workflow for using them. See [Building Tool-Use Agents](../17-tool-use-and-computer-agents/05-building-tool-agents.md).
+
 ---
 
 ## Models
