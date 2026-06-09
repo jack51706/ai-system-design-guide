@@ -34,6 +34,8 @@ Quick reference for key terms used throughout this guide.
 
 **Claude Code** — Anthropic's terminal-native autonomous coding agent. Uses bash, text_editor, and computer tools to read, edit, and run code across a full project. Controlled via CLAUDE.md manifest files.
 
+**Claude Fable 5** - Anthropic's most capable widely released model (June 9, 2026, `claude-fable-5`). A Mythos-class model made safe for general availability: $10/$50 per 1M, 1M context, adaptive thinking always on. Sensitive queries fall back to Claude Opus 4.8 in under 5% of sessions. The unrestricted variant, Claude Mythos 5, is limited to Project Glasswing partners.
+
 **Cline** — Open-source VS Code extension providing autonomous AI coding with tool use (file editing, terminal, browser). MCP-native.
 
 **Computer-Use** — A model capability (native to Claude 3.5+) to control a GUI by simulating mouse clicks, keyboard input, and screenshots. Enables browser and desktop automation.

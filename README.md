@@ -73,12 +73,12 @@ flowchart TD
 
 | This Guide | Printed Books |
 |------------|---------------|
-| May 2026 models (Claude Opus 4.7, GPT-5.5, Gemini 3.1 Pro, DeepSeek V4 Pro, Llama 4, Kimi K2.6, Qwen 3.6, Mistral Medium 3.5, Gemma 4) | Stuck on GPT-4 |
+| June 2026 models (Claude Fable 5, Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro, DeepSeek V4 Pro, Llama 4, Kimi K2.6, Qwen 3.6, Mistral Medium 3.5, Gemma 4) | Stuck on GPT-4 |
 | MCP 2.0, A2A v1.0, OpenClaw, Computer Use, Agentic RAG, ColBERT, latent reasoning, MoE serving | Does not exist |
 | Real pricing with May 2026 verification dates | Already wrong |
 | Staff-level interview Q&A (110 questions through May 2026) + Job Market Trends | Generic questions |
 
-**Quick model picker (May 2026):** Claude Opus 4.7 for tool-use and long-context reasoning, GPT-5.5 for general production, Gemini 3.1 Pro for multimodal, DeepSeek V4 Flash ($0.14/$0.28 per 1M) or V4 Pro ($0.435/$0.87 after permanent May 22 discount) for cheap frontier-class output, Llama 4 for self-hosted. Full breakdown in [Model Taxonomy](02-model-landscape/01-model-taxonomy.md).
+**Quick model picker (June 2026):** Claude Fable 5 for the capability ceiling ($10/$50 per 1M), Claude Opus 4.8 for tool-use and long-horizon agentic coding, GPT-5.5 for general production, Gemini 3.1 Pro for multimodal, DeepSeek V4 Flash ($0.14/$0.28 per 1M) or V4 Pro ($0.435/$0.87) for cheap frontier-class output, Llama 4 for self-hosted. Full breakdown in [Model Taxonomy](02-model-landscape/01-model-taxonomy.md).
 
 ---
 
@@ -104,7 +104,7 @@ flowchart TD
 ```
 ├── 00-interview-prep/           # Questions (110), frameworks, exercises, job-market trends (May 2026)
 ├── 01-foundations/              # Transformers, attention, embeddings
-├── 02-model-landscape/          # Claude Opus 4.7, GPT-5.5, Gemini 3.1, DeepSeek V4, Llama 4, Kimi K2.6, Qwen 3.6, Mistral Medium 3.5
+├── 02-model-landscape/          # Claude Fable 5, Claude Opus 4.8, GPT-5.5, Gemini 3.1, DeepSeek V4, Llama 4, Kimi K2.6, Qwen 3.6
 ├── 03-training-and-adaptation/  # Fine-tuning, LoRA, DPO, distillation
 ├── 04-inference-optimization/   # KV cache, PagedAttention, vLLM
 ├── 05-prompting-and-context/    # Prompt engineering, CoT, Extended Thinking, DSPy, prompt injection

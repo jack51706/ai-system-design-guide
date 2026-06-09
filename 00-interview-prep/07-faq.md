@@ -119,7 +119,7 @@ Agent Skills are folders of instructions, scripts, and resources that an agent l
 
 ### What is the best LLM right now?
 
-There is no single best model in May 2026. The leaderboard has fractured by task. **Claude Opus 4.7** leads SWE-bench Pro at 64.3% for complex coding. **GPT-5.5** leads Terminal-Bench 2.0 at 82.7% for agentic terminal work. **Gemini 3.1 Pro** leads GPQA Diamond at 94.3% for scientific reasoning. **Claude Sonnet 4.6** delivers around 90% of Opus 4.7's quality at 40% of the price. See [Model Taxonomy](../02-model-landscape/01-model-taxonomy.md).
+There is no single best model in June 2026, but the capability ceiling moved: **Claude Fable 5** (June 9) is Anthropic's most capable widely released model, a Mythos-class model with safeguards at $10/$50 per 1M. Below the ceiling, the leaderboard is fractured by task. **Claude Opus 4.8** leads SWE-Bench Pro at 69.2% for long-horizon coding at half Fable's price. **GPT-5.5** holds SWE-bench Verified (88.7%) and Terminal-Bench. **Gemini 3.1 Pro** leads GPQA Diamond at 94.3% for scientific reasoning. **Claude Sonnet 4.6** remains the price-to-quality workhorse at $3/$15. See [Model Taxonomy](../02-model-landscape/01-model-taxonomy.md).
 
 ### How much does Claude / GPT / Gemini / DeepSeek cost?
 
