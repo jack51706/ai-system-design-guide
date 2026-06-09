@@ -123,11 +123,11 @@ There is no single best model in June 2026, but the capability ceiling moved: **
 
 ### How much does Claude / GPT / Gemini / DeepSeek cost?
 
-Pricing changes monthly. As of May 2026, frontier-tier closed models run roughly $3-15 per million input tokens and $15-75 per million output tokens, with caching cutting that 75-90% on repeated prefixes. Mid-tier models (Claude Sonnet 4.6, GPT-5.5-mini, Gemini 3.1 Flash) run roughly $0.30-3 / $1-15 per million. **DeepSeek reset the floor**: V4 Pro is $0.435 / $0.87 per 1M (75% discount made permanent May 22, 2026), and V4 Flash is $0.14 / $0.28 per 1M with a 1M context window, roughly 10x cheaper than the closed frontier for many tasks. Always cross-check the provider pricing pages for current rates. See [Pricing and Costs](../02-model-landscape/03-pricing-and-costs.md).
+Pricing changes monthly. As of June 2026, frontier-tier closed models run roughly $3-15 per million input tokens and $15-75 per million output tokens, with caching cutting that 75-90% on repeated prefixes. Mid-tier models (Claude Sonnet 4.6, GPT-5.5-mini, Gemini 3.1 Flash) run roughly $0.30-3 / $1-15 per million. **DeepSeek reset the floor**: V4 Pro is $0.435 / $0.87 per 1M (75% discount made permanent May 22, 2026), and V4 Flash is $0.14 / $0.28 per 1M with a 1M context window, roughly 10x cheaper than the closed frontier for many tasks. Always cross-check the provider pricing pages for current rates. See [Pricing and Costs](../02-model-landscape/03-pricing-and-costs.md).
 
 ### What is the difference between Claude Opus and Claude Sonnet?
 
-Opus is Anthropic's frontier tier: smartest, slowest, most expensive. Sonnet is the production workhorse: roughly 90% of Opus quality at 40% of the price. Haiku is the fast tier: cheap, low-latency, good for routing and classification. The right pattern is to route easy queries to Haiku, mid queries to Sonnet, and only hard ones to Opus. See [Model Selection](../02-model-landscape/04-model-selection-guide.md).
+Opus is Anthropic's frontier tier (Opus 4.8: smartest of the 4.x line, $5/$25). Sonnet is the production workhorse: roughly 90% of Opus quality at 60% of the price. Haiku is the fast tier: cheap, low-latency, good for routing and classification. Above all three sits Claude Fable 5 ($10/$50), the capability ceiling for work that justifies 2x Opus pricing. The right pattern is to route easy queries to Haiku, mid queries to Sonnet, hard ones to Opus, and only ceiling-bound work to Fable. See [Model Selection](../02-model-landscape/04-model-selection-guide.md).
 
 ### Should I use an open-source model?
 
@@ -147,7 +147,7 @@ LLM evaluation is layered: **reference-free metrics** (faithfulness, relevance, 
 
 ### What is LLM-as-judge?
 
-LLM-as-judge uses one LLM to score the output of another against a rubric (correctness, helpfulness, safety). It scales where human evaluation cannot, but has known biases: position bias, verbosity bias, self-preference bias. The standard practice is to use a stronger model as judge (Claude Opus 4.7 or GPT-5.5 reasoning), randomize positions, and validate against a small human-labeled sample.
+LLM-as-judge uses one LLM to score the output of another against a rubric (correctness, helpfulness, safety). It scales where human evaluation cannot, but has known biases: position bias, verbosity bias, self-preference bias. The standard practice is to use a stronger model as judge (Claude Opus 4.8 or GPT-5.5 reasoning), randomize positions, and validate against a small human-labeled sample.
 
 ### What is the best LLM observability tool?
 
@@ -156,6 +156,10 @@ The leading platforms are **Langfuse** (best self-hosted open-source, acquired b
 ### What is RAGAS?
 
 RAGAS (Retrieval Augmented Generation Assessment) is a Python library for RAG evaluation. It provides reference-free metrics (faithfulness, answer relevance, context relevance) and reference-based metrics (context recall, context precision) computed with LLM-as-judge. It is the de facto starting point for any RAG eval pipeline. See [RAG Evaluation](../06-retrieval-systems/13-rag-evaluation-patterns.md).
+
+### How do you detect and handle model drift in production?
+
+Drift comes from two sides: the **provider** silently updates a model (or you migrate versions), and your **traffic** shifts away from what your prompts and evals were tuned on. Detection: pin model versions explicitly, run a canary eval suite daily against the pinned and latest versions, track output-distribution stats (length, refusal rate, format validity) and judge-scored quality on a sampled live slice, and alert on deltas. Response: a frozen golden set tells you whether the model changed or your traffic did; re-run prompt evals before adopting a new version, and keep the previous version warm for instant rollback. Treat an unexplained quality drop like an incident with an on-call path, not a curiosity.
 
 ---
 
@@ -180,6 +184,14 @@ Five high-leverage moves: **model cascading** (route easy queries to small model
 ### What is speculative decoding?
 
 Speculative decoding lets an LLM generate multiple tokens per forward pass by having a cheaper "draft" model (or extra heads on the main model, like Medusa) predict the next few tokens, then verifying them all in a single parallel pass on the target model. The win is 2-3x faster wall-clock generation with zero quality loss. Built into vLLM and TensorRT-LLM. See [Speculative Decoding](../04-inference-optimization/03-speculative-decoding.md).
+
+### What is a token budget and how do you enforce it?
+
+A token budget is a hard ceiling on token consumption at a chosen scope: per request (max input plus `max_tokens` output), per user or tenant per day, per agent task (step budgets so a runaway loop cannot burn the month's spend), and per team per month for expensive tiers. Enforcement lives in the gateway, not in prompts: count tokens before dispatch, reject or downgrade requests over the per-request cap, decrement tenant quotas atomically, and terminate agent runs that exceed their step budget with a clean escalation. The practical pairing is budget plus routing: when a tenant nears quota, the router degrades them to a cheaper tier instead of cutting them off.
+
+### How do you design fallbacks across multiple LLM providers?
+
+Treat providers as unreliable dependencies with policy differences, not just uptime differences. The pattern: a primary with one or two fallbacks per task type, circuit breakers per provider on error rate, p95 latency, and rate-limit headroom, with pre-emptive traffic shifting before hard limits. Three details separate production designs from whiteboard ones: **provider-paired prompts** (a prompt tuned for Claude underperforms on GPT-5.5, so prompt variants version with the provider), **cache economics** (failing over resets your prefix cache, so a warm primary can beat a nominally cheaper cold fallback), and **policy-aware fallback** (a provider can decline a content category your product needs, which is a failure class your health checks will not catch). Verify the whole chain monthly with a game-day drill.
 
 ---
 

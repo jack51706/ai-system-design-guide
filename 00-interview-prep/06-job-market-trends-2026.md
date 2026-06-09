@@ -1,6 +1,8 @@
-# AI Job Market Trends - May 2026
+# AI Job Market Trends - June 2026
 
-> **Last verified: May 17, 2026.** This chapter distills what's actually happening in AI hiring right now - titles companies post, skills they screen for, compensation ranges, and the interview formats you'll encounter. Sourced from 100+ public job listings, hiring reports, and recruiter signals across April–May 2026.
+> **Last verified: June 10, 2026.** This chapter distills what's actually happening in AI hiring right now - titles companies post, skills they screen for, compensation ranges, and the interview formats you'll encounter. Sourced from 100+ public job listings, hiring reports, and recruiter signals across April-June 2026.
+
+> **June 2026 update:** Two market-moving events since the May sweep. Anthropic released **Claude Fable 5** (June 9, $10/$50 per 1M), bringing Mythos-class capability to general availability with an Opus 4.8 fallback safeguard; expect a wave of capability-ceiling product work and the eval, safety, and routing roles that come with it. DeepSeek made its **75% V4 Pro discount permanent** (May 22), accelerating the cost-engineering hiring trend: candidates who can exploit a 70x price spread across model tiers are screening well. Compensation rows below are from the May 17 sweep; treat them as floors in the segments those events touch.
 
 This chapter is for engineers planning their next move, hiring managers building rubrics, and engineering leaders making organizational design decisions. It complements [TRANSITION_GUIDE.md](../TRANSITION_GUIDE.md) (how to transition into AI roles) and the [Question Bank](01-question-bank.md) (what to study).
 
@@ -207,6 +209,8 @@ Ranked by frequency:
 | **AI Engineering Manager** | - | $293.5K median (highest-paying single role) |
 | AI Product Manager | - | $141K – $250K (median $159K) |
 | **Agentic AI Architect** | - | $260K – $420K base |
+| AI Evaluation Engineer | - | Too few public postings for a stable range; companies level it against their senior SWE band. Use the US National Senior row as the anchor. |
+| MCP / Integrations Engineer | - | New title with thin public data; typically leveled as senior platform engineering. Anchor to the senior SWE band. |
 | London (Quant fund / FAANG) | Senior ML | £140-180K base; £200K+ TC |
 | London (Google DeepMind) | Senior | £110-155K base + RSU |
 | Berlin / Germany | Senior | €95-130K |

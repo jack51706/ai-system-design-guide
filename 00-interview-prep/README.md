@@ -1,8 +1,14 @@
 # AI System Design Interview Preparation
 
-Interview prep for senior and staff AI engineering roles: 110+ system design questions, answer frameworks, common pitfalls, whiteboard exercises, and 2026 hiring trends.
+Interview prep for senior and staff AI engineering roles: 116 system design questions, answer frameworks with a worked mock-interview transcript, common pitfalls, nine whiteboard exercises, behavioral prep, a quick-answer FAQ, and June 2026 hiring trends.
 
-The six files in this folder are designed to be read in order. Each builds on the last: questions teach the surface area, frameworks teach how to structure answers, pitfalls teach what kills offers, exercises rehearse the motion, behavioral covers the staff-level signal, and job-market trends cover the current hiring landscape.
+> **What's new (June 2026):** the question bank gained a Tooling and Lifecycle section plus six June-2026 questions (Fable 5 tier routing, agentic context engineering, computer-use reliability, Agent Skills, eval gaming, cost-aware multi-provider routing) and now runs continuously Q1-Q116. The whiteboard set gained two exercises (evaluation pipeline design, agent memory and state). Frameworks gained a worked 45-minute SPIDER transcript. Behavioral gained two harder STAR-L examples, a compensation question set, and an out-loud practice guide.
+
+## Before You Start
+
+This folder assumes you already write production code and know LLM basics (tokens, context windows, embeddings, what RAG is). If those are shaky, spend a week in [01-foundations](../01-foundations/) and the [Courses guide](../COURSES.md) first; interview prep on top of missing fundamentals produces fluent-sounding wrong answers, which is the worst possible outcome in a senior loop.
+
+The files in this folder are designed to be read in order. Each builds on the last: questions teach the surface area, frameworks teach how to structure answers, pitfalls teach what kills offers, exercises rehearse the motion, behavioral covers the staff-level signal, and job-market trends cover the current hiring landscape.
 
 ## Read in Order
 
@@ -27,12 +33,13 @@ flowchart TD
 mindmap
   root((Role Prep))
     AI Engineer IC
-      Question Bank Q1 to Q40
+      Question Bank Q1 to Q49
       Answer Frameworks
       Whiteboard exercises
     Staff or Principal
-      Advanced sets across recent drops
+      Advanced sets Q50 to Q116
       Behavioral STAR-L
+      Eval and memory exercises
     Applied Scientist
       Model Selection questions
       Evaluation questions
@@ -47,11 +54,11 @@ mindmap
 
 | File | Purpose |
 |------|---------|
-| [01-question-bank.md](01-question-bank.md) | 110+ real interview questions grouped by topic, with model answers and follow-ups (through May 2026). |
-| [02-answer-frameworks.md](02-answer-frameworks.md) | Five structured answer frameworks: SPIDER for design, ETA for concepts, tradeoff analysis, debugging, STAR-L for behavioral. |
+| [01-question-bank.md](01-question-bank.md) | 116 real interview questions (Q1-Q116, continuously numbered) grouped by topic, with model answers and follow-ups (through June 2026). |
+| [02-answer-frameworks.md](02-answer-frameworks.md) | Five structured answer frameworks (SPIDER, ETA, tradeoff, debugging, STAR-L) plus a worked 45-minute SPIDER mock-interview transcript. |
 | [03-common-pitfalls.md](03-common-pitfalls.md) | Patterns that kill staff-level offers: hand-waving on tradeoffs, missing observability, ignoring failure modes. |
-| [04-whiteboard-exercises.md](04-whiteboard-exercises.md) | System design exercises with full worked solutions. The closest simulation of a real loop. |
-| [05-behavioral-for-ai-roles.md](05-behavioral-for-ai-roles.md) | Behavioral interview prep for AI-specific scenarios: model deprecations, production hallucinations, eval culture. |
+| [04-whiteboard-exercises.md](04-whiteboard-exercises.md) | Nine system design exercises with worked solutions, including evaluation pipeline design and agent memory. The closest simulation of a real loop. |
+| [05-behavioral-for-ai-roles.md](05-behavioral-for-ai-roles.md) | Behavioral prep for AI-specific scenarios with six worked STAR-L examples, compensation and leveling questions, and an out-loud practice guide. |
 | [06-job-market-trends-2026.md](06-job-market-trends-2026.md) | Role taxonomy, comp ranges, interview process patterns, and emerging titles (FDE, AI Eval Engineer, AI Reliability Engineer, MCP Engineer). |
 | [07-faq.md](07-faq.md) | Short, direct answers to the most-asked questions about AI engineering, RAG, agents, models, eval, inference, memory, and security. Useful for quick reference and for newcomers to the field. |
 
@@ -64,8 +71,8 @@ mindmap
 
 ## Key Takeaways
 
-- The six files are designed to be read in order; jumping straight to questions without absorbing answer frameworks leaves answers unstructured.
+- The files are designed to be read in order; jumping straight to questions without absorbing answer frameworks leaves answers unstructured.
 - Whiteboard exercises (file 04) are the closest simulation to real interviews; do at least three before any loop.
 - Behavioral prep (file 05) is what separates staff candidates from senior candidates; do not skip it.
-- The May 2026 job market chapter (file 06) is a moat: candidates who know the hiring landscape can ask better questions and tailor stories.
+- The June 2026 job market chapter (file 06) is a moat: candidates who know the hiring landscape can ask better questions and tailor stories.
 - Recheck this folder monthly; new question batches are added as hiring trends shift.
