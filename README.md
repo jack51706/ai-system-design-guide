@@ -2,7 +2,7 @@
 ### The Complete Interview & Production Reference
 
 <p align="center">
-  <a href="https://www.aidaddy.tech"><img src="https://img.shields.io/badge/Read%20on%20aidaddy.tech-7C3AED?style=for-the-badge" alt="Read the guide on aidaddy.tech"></a>
+  <a href="https://www.aidaddy.tech"><img src="https://img.shields.io/badge/Guide-aidaddy.tech-7C3AED?style=for-the-badge&logo=bookstack&logoColor=white" alt="Read the guide on aidaddy.tech"></a>
 </p>
 <p align="center">
   <sub>🌐 The same guide with full-text search and cleaner navigation. This repo stays the source of truth, so ⭐ star it to support the work.</sub>
