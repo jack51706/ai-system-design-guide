@@ -91,4 +91,4 @@ The "Crossover Point" usually happens at **constant high throughput.** If your a
 
 ---
 
-*Next: [Prompt Engineering Fundamentals](../05-prompting-and-context/01-prompt-engineering-fundamentals.md)*
+*Next: [Diffusion Language Models](08-diffusion-llms.md)*
