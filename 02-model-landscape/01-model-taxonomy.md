@@ -1,10 +1,12 @@
 # Model Taxonomy
 
-This chapter provides a comprehensive guide to the model landscape as of **May 2026**, covering model families, capabilities, and selection criteria for production systems.
+This chapter provides a comprehensive guide to the model landscape as of **June 2026**, covering model families, capabilities, and selection criteria for production systems.
 
-> **Last verified: June 10, 2026.** The model landscape evolves rapidly. Always cross-check with provider pricing pages and release notes.
+> **Last verified: June 28, 2026.** The model landscape evolves rapidly. Always cross-check with provider pricing pages and release notes.
 >
 > **June 2026 headline:** Anthropic released **Claude Fable 5** (June 9, `claude-fable-5`, $10/$50 per 1M, 1M context), its most capable widely released model: a Mythos-class model made safe for general availability, with an Opus 4.8 fallback safeguard on sensitive topics. **Claude Mythos 5** ships the same day as the unrestricted variant for Project Glasswing partners, succeeding Mythos Preview at less than half its price.
+>
+> **June 10-26 update:** A dense second wave of June launches followed. **Google DeepMind DiffusionGemma** (June 10, Apache 2.0) is Google DeepMind's first open-weight text-diffusion model: a 26B Mixture-of-Experts (~4B active) that denoises blocks of tokens in parallel for roughly 4x faster generation on a single H100, trading some quality versus standard Gemma 4. **Gemini 3.5 Live Translate** (June 9, built on Gemini 3 Pro) added real-time speech-to-speech translation across 70+ languages in public preview via the Gemini Live API and AI Studio. **Cohere North Mini Code 1.0** (June 9, Apache 2.0) is Cohere's first open coding model, a 30B / 3B-active MoE that runs on one H100. **Moonshot Kimi K2.7 Code** (June 12, Modified MIT) tunes K2.6 for long-horizon software work (1T / 32B-active MoE, roughly 30% fewer thinking tokens). **Z.ai GLM-5.2** (coding-plan access June 13, open weights under MIT June 16-17) is a ~753B / 40B-active MoE with a 1M context that reports SWE-Bench Pro 62.1, ahead of GPT-5.5 on that benchmark, at roughly $1.40 / $4.40 per 1M. **xAI Grok Imagine Video 1.5** reached general availability June 16 (image-to-video with synchronized audio, $0.080 per second of video), and **Grok 4.3** arrived on Amazon Bedrock June 15 ($1.25 / $2.50 per 1M, xAI's first model there). Alibaba's official Qwen Cloud changelog lists a June snapshot adding vision to **Qwen 3.7-Max** (text-only at its May launch), though some independent coverage attributes that vision update to Qwen 3.7-Plus instead, so verify before relying on it. Separately, on June 12 Anthropic suspended access to Claude Fable 5 and Claude Mythos 5 following a US export-control directive, with Mythos 5 later cleared for a limited set of US institutions. Then on June 26, OpenAI previewed **GPT-5.6** (Sol, Terra, and Luna), its next-generation line, in a limited release to a small set of US-government-approved partners over dual-use cybersecurity concerns, echoing the Anthropic restriction; Sol claims a new Terminal-Bench 2.1 record and Terra targets GPT-5.5-level quality at about half the cost. Coding scores here are largely vendor-reported; confirm on independent leaderboards.
 >
 > **May 2026 recap:** Anthropic Claude Opus 4.8 (May 28, same $5/$25 price as Opus 4.7; Dynamic Workflows research preview with hundreds of parallel subagents; fast mode at $10/$50 is 3x cheaper than the Opus 4.7 fast mode); OpenAI GPT-5.5 (April 23) and GPT-5.5 Instant (May 5, default in ChatGPT); Claude Opus 4.7 (April 16, GA on Bedrock/Vertex/Foundry); Google Gemma 4 (April 2, Apache 2.0) and Gemini 3.2 Flash (quiet rollout May 5); DeepSeek V4 Pro and V4 Flash (April 24; 75% V4 Pro discount made **permanent** May 22, new list price $0.435/$0.87 per 1M from June 1); Moonshot Kimi K2.6 (April 20, 1T MoE / 32B active); Alibaba Qwen 3.6 Plus / 3.6-35B-A3B / 3.6 Max-Preview; Mistral Medium 3.5 (April 29, unified chat/reasoning/coding/vision); Meta Muse Spark (April 8, first closed-weight Meta model); Llama 4 Behemoth release paused through fall 2026 amid capability concerns. SWE-bench Verified published leaders before the Fable 5 launch: Claude Mythos Preview 93.9%, GPT-5.5 88.7%, Claude Opus 4.8 88.6%; ARC-AGI-2 leader: GPT-5.5 at 85.0%. Anthropic describes Fable 5 as state of the art on nearly all tested benchmarks; standard numeric scores were not in the launch post, so verify on the leaderboards.
 
@@ -212,6 +214,21 @@ This chapter provides a comprehensive guide to the model landscape as of **May 2
 **Best for:** Competition-level math, complex multi-step reasoning.
 **Considerations:** Very expensive; use standard GPT-5.4 or mini for volume.
 
+### GPT-5.6 Sol / Terra / Luna (OpenAI) - June 2026 NEW (limited preview)
+
+| Attribute | Value |
+|-----------|-------|
+| Variants | Sol (flagship), Terra (balanced), Luna (fast, low cost) |
+| Status | Limited preview via API and Codex to a small group of US-government-approved partners; broad general availability planned "in the coming weeks" |
+| Pricing | Not fully public during the preview; Terra is pitched at GPT-5.5-level quality for about half the cost |
+| Reasoning | Adds a new "max" reasoning effort and an "ultra" mode that uses subagents to accelerate complex work |
+| Benchmarks | Sol sets a new Terminal-Bench 2.1 record and is OpenAI's strongest model for cybersecurity, reported to match Anthropic's Mythos Preview on ExploitBench at roughly one third the output tokens (vendor-reported) |
+| Released | June 26, 2026 |
+
+**What it is:** OpenAI's next-generation flagship line. As with Anthropic's Fable 5 and Mythos 5 a few weeks earlier, the release is gated at the request of the US government over dual-use cybersecurity capability, which makes government-restricted frontier launches a notable June 2026 pattern. OpenAI has said it disagrees with the approval process as a long-term default.
+
+**Best for:** Frontier coding, cybersecurity research, and long-horizon agentic work once it is generally available. Until then treat it as preview and keep GPT-5.5 as the available production tier.
+
 ### GPT-5.5 (OpenAI) - May 2026 NEW
 
 | Attribute | Value |
@@ -399,6 +416,7 @@ While frontier models lead on benchmarks, many enterprise systems rely on **batt
 | Model | Parameters | Context | Notes |
 |-------|------------|---------|-------|
 | **Kimi K2.6** | 1T total / 32B active (MoE) | - | Released April 20, 2026. Modified MIT license. Native video input; Agent Swarm scaling to 300 sub-agents and 4,000 coordinated steps. Ties GPT-5.5 on SWE-Bench Pro (58.6%); SWE-bench Verified ~80.2%. |
+| **Kimi K2.7 Code** | 1T total / 32B active (MoE) | 256K | June 12, 2026 NEW. Coding-focused build on K2.6 (Modified MIT) with a MoonViT vision encoder. Reports about +21.8% over K2.6 on Moonshot's own Kimi Code Bench v2 with roughly 30% fewer thinking tokens (vendor benchmark). API about $0.95 / $4.00 per 1M. |
 | Kimi K2-Thinking-0905 | - | - | First model to hit 100% on AIME 2025 (reasoning variant). |
 
 **Best for:** Long-horizon agent workloads, video understanding, open-weight agent stack alternative to closed frontier.
@@ -433,6 +451,15 @@ While frontier models lead on benchmarks, many enterprise systems rely on **batt
 | **Gemma 4 (26B-A4B MoE)** | 26B / 4B active | 256K | Apache 2.0 | Sparse MoE variant. |
 | **Gemma 4 E4B** | 8B | 256K | Apache 2.0 | Edge-suitable. |
 | **Gemma 4 E2B** | 5.1B / 2.3B active | 256K | Apache 2.0 | Smallest variant; mobile/embedded. |
+| **DiffusionGemma (26B-A4B MoE)** | 26B / ~4B active | 256K | Apache 2.0 | June 10, 2026 NEW. Google DeepMind's first open-weight text-diffusion model; denoises blocks of tokens in parallel for roughly 4x faster generation (1000+ tokens/sec on one H100). Lower quality than standard Gemma 4; aimed at low-latency and in-line editing. |
+
+### Zhipu / Z.ai GLM Family - June 2026 NEW
+
+| Model | Parameters | Context | License | Notes |
+|-------|------------|---------|---------|-------|
+| **GLM-5.2** | ~753B total / ~40B active (MoE) | 1M | MIT | Coding-plan access June 13, 2026; open weights June 16-17. Built for long-horizon agentic coding and tool use. Reports SWE-Bench Pro 62.1 (ahead of GPT-5.5 at 58.6 on that benchmark) and a long-horizon coding score near the closed frontier; figures are vendor-reported. API roughly $1.40 / $4.40 per 1M; weights on Hugging Face. |
+
+**Best for:** Open-weight agentic coding and long-horizon tool use where a 1M context and a permissive license matter. Verify benchmark claims on independent leaderboards.
 
 ### Meta Muse Spark (Closed Weights) - May 2026 STRATEGIC SHIFT
 
@@ -460,6 +487,9 @@ While frontier models lead on benchmarks, many enterprise systems rely on **batt
 | **Llama 4 Maverick** | Open-source coding | Open weights; competitive on coding benchmarks |
 | **Qwen 3.6 Coder / Qwen2.5-Coder-32B** | Self-hosted coding | Best price-to-performance for self-hosted IDEs |
 | **DeepSeek V4 Pro / R1-Distill-70B** | Open reasoning + code | Best open reasoning at 70B; V4 Pro is open-weight 1.6T/49B-active MoE |
+| **Z.ai GLM-5.2** | Open agentic coding | June 2026; ~753B / 40B-active MoE, 1M context, MIT; reports SWE-Bench Pro 62.1 ahead of GPT-5.5 on that benchmark (vendor-reported); about $1.40 / $4.40 per 1M |
+| **Kimi K2.7 Code** | Open long-horizon coding | June 2026; 1T / 32B-active MoE, Modified MIT; tuned from K2.6 for software work with fewer thinking tokens |
+| **Cohere North Mini Code 1.0** | Open lightweight coding | June 2026; 30B / 3B-active MoE on a single H100, Apache 2.0; Cohere's first open coding model |
 
 ### Reasoning & Math
 
