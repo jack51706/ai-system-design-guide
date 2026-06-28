@@ -78,44 +78,52 @@ OpenClaw hit a nerve because it solved a real problem: LLMs are powerful but sta
 
 ### High-Level Overview
 
-```
-                         OPENCLAW ARCHITECTURE
- ============================================================
+```mermaid
+flowchart LR
+    subgraph Platforms["Messaging Platforms"]
+        WA["WhatsApp<br/>(Baileys)"]
+        TG["Telegram<br/>(grammY)"]
+        SL["Slack<br/>(Bolt)"]
+        DC["Discord<br/>(discord.js)"]
+        SG["Signal<br/>(signal-cli)"]
+        IM["iMessage<br/>(BlueBubbles)"]
+        MORE["Teams, IRC, Matrix<br/>20+ more..."]
+    end
 
-  Messaging Platforms              OpenClaw Gateway           LLM Providers
- ┌──────────────┐              ┌─────────────────────┐     ┌──────────────┐
- │  WhatsApp    │──┐           │                     │     │  Anthropic   │
- │  (Baileys)   │  │           │   GATEWAY            │     │  (Claude)    │
- ├──────────────┤  │  Channel  │   ┌──────────────┐  │     ├──────────────┤
- │  Telegram    │──┼──Adapters─┼──>│  Router      │  │     │  OpenAI      │
- │  (grammY)    │  │           │   │  (sessions,  │  │     │  (GPT-4)     │
- ├──────────────┤  │           │   │   bindings)  │  │     ├──────────────┤
- │  Slack       │──┤           │   └──────┬───────┘  │     │  Google      │
- │  (Bolt)      │  │           │          │          │     │  (Gemini)    │
- ├──────────────┤  │           │   ┌──────▼───────┐  │     ├──────────────┤
- │  Discord     │──┤           │   │ Agent Runtime│──┼────>│  DeepSeek    │
- │  (discord.js)│  │           │   │ (AI loop,    │  │     ├──────────────┤
- ├──────────────┤  │           │   │  tool calls, │  │     │  Local/      │
- │  Signal      │──┤           │   │  memory)     │  │     │  Ollama      │
- │  (signal-cli)│  │           │   └──────┬───────┘  │     └──────────────┘
- ├──────────────┤  │           │          │          │
- │  iMessage    │──┤           │   ┌──────▼───────┐  │     Tools & Skills
- │  (BlueBubbles│  │           │   │  Tool Layer  │  │     ┌──────────────┐
- ├──────────────┤  │           │   │  (skills,    │──┼────>│  Shell exec  │
- │  Teams       │──┘           │   │   browser,   │  │     │  Browser     │
- │  IRC, Matrix │              │   │   files,     │  │     │  File I/O    │
- │  20+ more... │              │   │   cron)      │  │     │  Calendar    │
- └──────────────┘              │   └──────────────┘  │     │  Email       │
-                               │                     │     │  100+ more   │
-                               │   ┌──────────────┐  │     └──────────────┘
-                               │   │  Memory &    │  │
-                               │   │  State       │  │     Storage
-                               │   │  (sessions,  │──┼────>┌──────────────┐
-                               │   │   workspace) │  │     │  ~/.openclaw/│
-                               │   └──────────────┘  │     │  (state,     │
-                               └─────────────────────┘     │   memory,    │
-                                                           │   config)    │
-                                localhost:18789             └──────────────┘
+    subgraph Gateway["OpenClaw Gateway (localhost:18789)"]
+        Router["Router<br/>(sessions, bindings)"]
+        Runtime["Agent Runtime<br/>(AI loop, tool calls, memory)"]
+        ToolLayer["Tool Layer<br/>(skills, browser, files, cron)"]
+        MemState["Memory & State<br/>(sessions, workspace)"]
+        Router --> Runtime
+        Runtime --> ToolLayer
+    end
+
+    subgraph Providers["LLM Providers"]
+        Anthropic["Anthropic<br/>(Claude)"]
+        OpenAI["OpenAI<br/>(GPT-4)"]
+        Google["Google<br/>(Gemini)"]
+        DeepSeek["DeepSeek"]
+        Local["Local / Ollama"]
+    end
+
+    subgraph Tools["Tools & Skills"]
+        Shell["Shell exec"]
+        BrowserT["Browser"]
+        FileIO["File I/O"]
+        Calendar["Calendar"]
+        Email["Email"]
+        Plus["100+ more"]
+    end
+
+    subgraph Store["Storage"]
+        Disk["~/.openclaw/<br/>(state, memory, config)"]
+    end
+
+    Platforms -->|"Channel Adapters"| Router
+    Runtime --> Providers
+    ToolLayer --> Tools
+    MemState --> Store
 ```
 
 ### Core Components
@@ -433,13 +441,14 @@ OpenClaw supports 20+ messaging platforms through its channel adapter architectu
 
 A critical architectural decision: the Gateway maintains **one unified memory system** across all channels. If you tell your agent something on WhatsApp, it remembers when you message from Slack. This means your AI agent has consistent context regardless of which app you use to reach it.
 
-```
-          WhatsApp ──┐
-          Telegram ──┤     ┌─────────────────────┐
-          Slack    ──┼────>│  Shared Memory Pool  │
-          Discord  ──┤     │  (per-agent, cross-  │
-          Signal   ──┘     │   channel sessions)  │
-                           └─────────────────────┘
+```mermaid
+flowchart LR
+    WA["WhatsApp"] --> Pool
+    TG["Telegram"] --> Pool
+    SL["Slack"] --> Pool
+    DC["Discord"] --> Pool
+    SG["Signal"] --> Pool
+    Pool["Shared Memory Pool<br/>(per-agent, cross-channel sessions)"]
 ```
 
 ---
@@ -456,27 +465,12 @@ OpenClaw's security model assumes a "personal assistant" threat model: one trust
 
 ### Permission Layers
 
-```
- Layer 1: Channel Authentication
- ─────────────────────────────────
- Who can message the bot?
- Configured per-channel with allowlists.
-
- Layer 2: Agent Tool Allow/Deny
- ─────────────────────────────────
- Which tools can this agent use?
- Configured per-agent in agents.list[].tools.
-
- Layer 3: Sandbox Tool Policy
- ─────────────────────────────────
- Separate from agent permissions.
- Even if agent allows a tool, sandbox may block it.
-
- Layer 4: Elevated Access
- ─────────────────────────────────
- Some tools require host-level access.
- Gated per-channel and per-user with allowFrom lists.
-```
+| Layer | Question | Configuration |
+|-------|----------|---------------|
+| Layer 1: Channel Authentication | Who can message the bot? | Configured per-channel with allowlists. |
+| Layer 2: Agent Tool Allow/Deny | Which tools can this agent use? | Configured per-agent in `agents.list[].tools`. |
+| Layer 3: Sandbox Tool Policy | Separate from agent permissions. | Even if agent allows a tool, sandbox may block it. |
+| Layer 4: Elevated Access | Some tools require host-level access. | Gated per-channel and per-user with `allowFrom` lists. |
 
 ### Sandbox Isolation
 
@@ -581,44 +575,24 @@ OpenClaw is lightweight -- any machine with 512MB RAM and 1 CPU core is sufficie
 
 ### Production Architecture
 
-```
-                    PRODUCTION DEPLOYMENT
- ====================================================
+```mermaid
+flowchart TD
+    Internet["Internet"]
+    CF["Cloudflare (CDN/WAF)<br/>SSL termination, DDoS protection"]
+    Nginx["Nginx (with auth)<br/>Reverse proxy, rate limiting, WebSocket upgrade"]
 
-  Internet
-     │
-     ▼
- ┌───────────────┐
- │  Cloudflare   │     SSL termination
- │  (CDN/WAF)    │     DDoS protection
- └───────┬───────┘
-         │
-         ▼
- ┌───────────────┐
- │  Nginx        │     Reverse proxy
- │  (with auth)  │     Rate limiting
- └───────┬───────┘     WebSocket upgrade
-         │
-         ▼
- ┌───────────────────────────────────────┐
- │  Docker                              │
- │  ┌─────────────────────────────────┐ │
- │  │  openclaw-gateway               │ │
- │  │  (main process)                 │ │
- │  └────────────┬────────────────────┘ │
- │               │                      │
- │  ┌────────────▼────────────────────┐ │
- │  │  openclaw-sandbox               │ │
- │  │  (isolated sub-agents)          │ │
- │  │  network: none                  │ │
- │  └─────────────────────────────────┘ │
- │                                      │
- │  Volume: ./state (700 permissions)   │
- └──────────────────────────────────────┘
-         │
-         ▼
-    LLM APIs
-    (Anthropic, OpenAI, etc.)
+    subgraph Docker["Docker (Volume: ./state, 700 permissions)"]
+        GW["openclaw-gateway<br/>(main process)"]
+        SB["openclaw-sandbox<br/>(isolated sub-agents)<br/>network: none"]
+        GW --> SB
+    end
+
+    LLM["LLM APIs<br/>(Anthropic, OpenAI, etc.)"]
+
+    Internet --> CF
+    CF --> Nginx
+    Nginx --> GW
+    Docker --> LLM
 ```
 
 ### Nginx Configuration for Remote Access
@@ -697,22 +671,22 @@ Each enabled skill adds context the agent must evaluate on every turn. If you ha
 
 A supervisor agent named "Patch" coordinates 5-20 parallel Claude Code instances via Telegram. The developer sends high-level instructions from their phone, and the supervisor spins up coding agents, assigns tasks, reviews output, runs tests, and merges code.
 
-```
-Developer (phone)
-     │
-     ▼ Telegram message: "Fix auth bug and add rate limiting"
-┌─────────────┐
-│  Patch      │ (OpenClaw supervisor agent)
-│  Agent      │
-└──────┬──────┘
-       │ Spawns parallel workers
-       ├──> Claude Code instance 1: Fix auth bug
-       ├──> Claude Code instance 2: Add rate limiting
-       └──> Claude Code instance 3: Update tests
-              │
-              ▼
-       Results merged, tests pass
-       PR created automatically
+```mermaid
+flowchart TD
+    Dev["Developer (phone)"]
+    Patch["Patch Agent<br/>(OpenClaw supervisor agent)"]
+    W1["Claude Code instance 1:<br/>Fix auth bug"]
+    W2["Claude Code instance 2:<br/>Add rate limiting"]
+    W3["Claude Code instance 3:<br/>Update tests"]
+    Result["Results merged, tests pass<br/>PR created automatically"]
+
+    Dev -->|"Telegram message: Fix auth bug and add rate limiting"| Patch
+    Patch -->|"Spawns parallel workers"| W1
+    Patch --> W2
+    Patch --> W3
+    W1 --> Result
+    W2 --> Result
+    W3 --> Result
 ```
 
 ### 2. Email Triage at Scale
@@ -833,12 +807,13 @@ The incident was not a security event. It was a product-policy event with securi
 
 ### Choosing the Right Tool
 
-```
-Need multi-channel messaging?          --> OpenClaw
-Need an agent that learns from usage?  --> Hermes Agent
-Need autonomous coding specifically?   --> Claude Code
-Need quick one-off local automation?   --> Open Interpreter
-Need enterprise-grade reliability?     --> Custom solution or commercial platform
+```mermaid
+flowchart LR
+    Q1{"Need multi-channel messaging?"} -->|"Yes"| OpenClaw["OpenClaw"]
+    Q2{"Need an agent that learns from usage?"} -->|"Yes"| Hermes["Hermes Agent"]
+    Q3{"Need autonomous coding specifically?"} -->|"Yes"| CC["Claude Code"]
+    Q4{"Need quick one-off local automation?"} -->|"Yes"| OI["Open Interpreter"]
+    Q5{"Need enterprise-grade reliability?"} -->|"Yes"| Custom["Custom solution or commercial platform"]
 ```
 
 ---
@@ -949,52 +924,34 @@ This is an excellent system design question because it covers messaging systems,
 
 ### High-Level Design
 
-```
-                     SYSTEM DESIGN
+```mermaid
+flowchart TD
+    subgraph APIGW["API Gateway"]
+        WA["WhatsApp<br/>Webhook"]
+        TG["Telegram<br/>Webhook"]
+        SL["Slack<br/>Events API"]
+        Router["Message Router<br/>(user lookup, agent binding)"]
+        WA --> Router
+        TG --> Router
+        SL --> Router
+    end
 
- ┌──────────────────────────────────────────────────────┐
- │                   API Gateway                         │
- │  ┌────────────┐  ┌────────────┐  ┌────────────┐     │
- │  │ WhatsApp   │  │ Telegram   │  │ Slack      │     │
- │  │ Webhook    │  │ Webhook    │  │ Events API │     │
- │  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘     │
- │        └───────────────┼───────────────┘             │
- │                        ▼                              │
- │              ┌─────────────────┐                     │
- │              │ Message Router  │                     │
- │              │ (user lookup,   │                     │
- │              │  agent binding) │                     │
- │              └────────┬────────┘                     │
- └───────────────────────┼──────────────────────────────┘
-                         │
-          ┌──────────────▼──────────────┐
-          │       Agent Orchestrator     │
-          │  ┌───────────────────────┐  │
-          │  │ Context Assembler     │  │
-          │  │ (memory + skills +    │  │
-          │  │  session history)     │  │
-          │  └───────────┬───────────┘  │
-          │              ▼              │
-          │  ┌───────────────────────┐  │
-          │  │ LLM Router           │  │
-          │  │ (model selection,    │  │
-          │  │  fallback, caching)  │  │
-          │  └───────────┬───────────┘  │
-          │              ▼              │
-          │  ┌───────────────────────┐  │
-          │  │ Tool Executor        │  │
-          │  │ (sandboxed, gated,   │  │
-          │  │  audited)            │  │
-          │  └───────────────────────┘  │
-          └─────────────────────────────┘
-                         │
-          ┌──────────────▼──────────────┐
-          │       Storage Layer          │
-          │  ┌──────┐ ┌──────┐ ┌─────┐ │
-          │  │Memory│ │State │ │Audit│ │
-          │  │Store │ │Store │ │ Log │ │
-          │  └──────┘ └──────┘ └─────┘ │
-          └─────────────────────────────┘
+    subgraph Orchestrator["Agent Orchestrator"]
+        Ctx["Context Assembler<br/>(memory + skills + session history)"]
+        LLMRouter["LLM Router<br/>(model selection, fallback, caching)"]
+        ToolExec["Tool Executor<br/>(sandboxed, gated, audited)"]
+        Ctx --> LLMRouter
+        LLMRouter --> ToolExec
+    end
+
+    subgraph Storage["Storage Layer"]
+        Memory["Memory Store"]
+        State["State Store"]
+        Audit["Audit Log"]
+    end
+
+    Router --> Ctx
+    Orchestrator --> Storage
 ```
 
 ### Key Design Decisions

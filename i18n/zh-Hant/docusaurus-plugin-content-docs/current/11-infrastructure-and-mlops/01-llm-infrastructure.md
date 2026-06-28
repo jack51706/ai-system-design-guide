@@ -72,31 +72,20 @@ def should_use_api(requirements: dict) -> bool:
 
 ### 單一模型服務
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Client    │────▶│   Gateway   │────▶│  LLM Server │
-└─────────────┘     └─────────────┘     └─────────────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │    Cache    │
-                    └─────────────┘
+```mermaid
+flowchart LR
+    Client["用戶端"] --> Gateway["Gateway"]
+    Gateway --> LLMServer["LLM Server"]
+    Gateway --> Cache["快取"]
 ```
 
 ### 多模型服務
 
-```
-                    ┌─────────────────────────────── │
-                    │         Load Balancer          │
-                    └───────────────┬────────────────┘
-                                    │
-            ┌───────────────────────┼───────────────────────┐
-            │                       │                       │
-            ▼                       ▼                       ▼
-    ┌───────────────┐       ┌───────────────┐       ┌───────────────┐
-    │  GPT-4 Pool   │       │  Claude Pool  │       │ Llama 70B Pool│
-    │  (API calls)  │       │  (API calls)  │       │ (self-hosted) │
-    └───────────────┘       └───────────────┘       └───────────────┘
+```mermaid
+flowchart TD
+    LB["負載平衡器"] --> GPT4["GPT-4 Pool<br/>(API 呼叫)"]
+    LB --> Claude["Claude Pool<br/>(API 呼叫)"]
+    LB --> Llama["Llama 70B Pool<br/>(自架)"]
 ```
 
 ### 模型路由模式
@@ -193,18 +182,11 @@ spec:
 
 適用於高吞吐量的非同步工作負載：
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Producers  │────▶│    Queue    │────▶│  Consumers  │
-└─────────────┘     │  (Redis/    │     │  (LLM       │
-                    │   SQS)      │     │   Workers)  │
-                    └─────────────┘     └─────────────┘
-                                               │
-                                               ▼
-                                        ┌─────────────┐
-                                        │  Results    │
-                                        │  Store      │
-                                        └─────────────┘
+```mermaid
+flowchart LR
+    Producers["生產者"] --> Queue["佇列<br/>(Redis / SQS)"]
+    Queue --> Consumers["消費者<br/>(LLM Workers)"]
+    Consumers --> Results["結果儲存"]
 ```
 
 ```python

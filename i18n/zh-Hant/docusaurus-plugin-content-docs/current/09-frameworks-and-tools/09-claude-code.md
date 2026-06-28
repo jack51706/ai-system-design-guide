@@ -47,32 +47,24 @@ claude -p "Add unit tests for all functions in src/utils.py" --output-format jso
 
 ## 核心架構
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   CLAUDE CODE ARCHITECTURE               │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  User Request                                           │
-│       ↓                                                 │
-│  ┌─────────────┐    ┌──────────────┐                   │
-│  │  Claude 3.7 │    │  CLAUDE.md   │                   │
-│  │   Sonnet    │ ←  │  (manifest)  │                   │
-│  │ (Extended   │    └──────────────┘                   │
-│  │  Thinking)  │                                       │
-│  └──────┬──────┘                                       │
-│         │ Tool calls                                    │
-│         ↓                                               │
-│  ┌──────────────────────────────────────┐              │
-│  │           TOOL LAYER                 │              │
-│  │  ┌─────────┐ ┌───────────┐ ┌──────┐ │              │
-│  │  │  bash   │ │text_editor│ │  MCP │ │              │
-│  │  └────┬────┘ └─────┬─────┘ └──┬───┘ │              │
-│  └───────┼────────────┼──────────┼─────┘              │
-│          │            │          │                      │
-│   Shell cmds     File edits    Custom tools             │
-│   (test, lint,   (read/write)  (DB, APIs,               │
-│    git, build)                  internal)               │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    User["使用者請求"]
+    Manifest["CLAUDE.md<br/>（宣告檔）"]
+    Model["Claude 3.7 Sonnet<br/>（Extended Thinking）"]
+    User --> Model
+    Manifest -->|"脈絡"| Model
+    Model -->|"工具呼叫"| Tools
+
+    subgraph Tools["工具層"]
+        Bash["bash"]
+        Editor["text_editor"]
+        MCP["MCP"]
+    end
+
+    Bash --> BashUse["Shell 指令<br/>（測試、lint、git、建置）"]
+    Editor --> EditorUse["檔案編輯<br/>（讀取／寫入）"]
+    MCP --> MCPUse["自訂工具<br/>（DB、API、內部系統）"]
 ```
 
 Claude Code 以 **Claude 3.7 Sonnet** 作為其骨幹模型，並預設啟用 Extended Thinking 以處理複雜的規劃任務。
@@ -168,14 +160,22 @@ text_editor(command="create", path="/project/tests/test_auth.py", file_text="...
 ```
 
 **巢狀的 CLAUDE.md 檔案：**
-```
-project/
-  CLAUDE.md          # global project rules
-  src/
-    auth/
-      CLAUDE.md      # auth-specific rules (stricter security)
-    payments/
-      CLAUDE.md      # payment-specific rules (PCI compliance notes)
+```mermaid
+flowchart TD
+    Project["project/"]
+    RootMd["CLAUDE.md<br/>（全域專案規則）"]
+    Src["src/"]
+    Auth["auth/"]
+    AuthMd["CLAUDE.md<br/>（auth 專屬規則，更嚴格的安全性）"]
+    Payments["payments/"]
+    PaymentsMd["CLAUDE.md<br/>（payment 專屬規則，PCI 合規注意事項）"]
+
+    Project --> RootMd
+    Project --> Src
+    Src --> Auth
+    Auth --> AuthMd
+    Src --> Payments
+    Payments --> PaymentsMd
 ```
 
 當在某個目錄下工作時，Claude 會自動讀取最接近的 CLAUDE.md。
@@ -242,14 +242,20 @@ result = asyncio.run(run_coding_task(
 
 Claude Code 支援針對大型程式碼庫的**子代理派工**：
 
-```
-Main Claude Code session
-    ↓
-"This codebase has 5 modules. I'll spawn sub-agents for each."
-    ├── Sub-agent 1: Fix auth module tests
-    ├── Sub-agent 2: Add type hints to utils/
-    ├── Sub-agent 3: Migrate payments to async
-    └── Sub-agent 4: Update API documentation
+```mermaid
+flowchart TD
+    Main["主 Claude Code 工作階段"]
+    Plan["此程式碼庫有 5 個模組。<br/>為每個模組派出子代理。"]
+    Sub1["子代理 1：修正 auth 模組測試"]
+    Sub2["子代理 2：為 utils/ 加上型別提示"]
+    Sub3["子代理 3：將 payments 遷移為 async"]
+    Sub4["子代理 4：更新 API 文件"]
+
+    Main --> Plan
+    Plan --> Sub1
+    Plan --> Sub2
+    Plan --> Sub3
+    Plan --> Sub4
 ```
 
 每個子代理會平行執行，接著由主代理審查並合併結果。
@@ -300,14 +306,12 @@ Claude Code 會從 `~/.claude/config.json` 或 `.claude/mcp.json` 讀取 MCP 伺
 
 Claude Code 採用**分層式權限模型**：
 
-```
-Permission Level    Who approves       What it covers
-────────────────────────────────────────────────────────
-Auto               Claude (no prompt)  Read files, run tests
-Ask per-turn       User confirms       Shell command execution
-Explicit allow     User pre-approves   Specific commands/dirs
-Blocked            Never runs          Network calls outside allowlist
-```
+| 權限層級 | 由誰核准 | 涵蓋範圍 |
+|----------|----------|----------|
+| Auto | Claude（不提示） | 讀取檔案、執行測試 |
+| Ask per-turn | 使用者確認 | Shell 指令執行 |
+| Explicit allow | 使用者預先核准 | 特定指令／目錄 |
+| Blocked | 永不執行 | allowlist 以外的網路呼叫 |
 
 ### 設定
 

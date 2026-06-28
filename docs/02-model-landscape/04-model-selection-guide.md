@@ -19,62 +19,19 @@ A practical framework for choosing the right LLM for your use case, considering 
 
 ### Decision Tree (June 2026)
 
-```
-Start Here
-    │
-    ├── Need the absolute capability ceiling?
-    │   └── Yes ─────────────────────────────────────────┐
-    │   └── No ──┐                                       │
-    │            │                                       ▼
-    │            │                              ┌─────────────────┐
-    │            │                              │ Claude Fable 5  │
-    │            │                              │ ($10/$50, 1M)   │
-    │            │                              └─────────────────┘
-    │            │
-    ├── Need autonomous agents / long-horizon planning?
-    │   └── Yes ─────────────────────────────────────────┐
-    │   └── No ──┐                                       │
-    │            │                                       ▼
-    │            │                              ┌─────────────────┐
-    │            │                              │ Claude Opus 4.8 │
-    │            │                              │ GPT-5.5 reason. │
-    │            │                              └─────────────────┘
-    │            │
-    ├── Need best software engineering / coding?
-    │   └── Yes ─────────────────────────────────────────┐
-    │   └── No ──┐                                       │
-    │            │                                       ▼
-    │            │                              ┌─────────────────┐
-    │            │                              │ Fable 5 ceiling /│
-    │            │                              │ GPT-5.5 88.7%   │
-    │            │                              │ Opus 4.8 88.6%  │
-    │            │                              │ Sonnet 4.6 cheap│
-    │            │                              └─────────────────┘
-    │            │
-    ├── Need to process massive context (>1M)?
-    │   └── Yes ─────────────────────────────────────────┐
-    │   └── No ──┐                                       │
-    │            │                                       ▼
-    │            │                              ┌─────────────────┐
-    │            │                              │ Gemini 3.0 Pro  │
-    │            │                              │ (2.5M context)  │
-    │            │                              └─────────────────┘
-    │            │
-    ├── Cost-sensitive high volume?
-    │   └── Yes ─────────────────────────────────────────┐
-    │   └── No ──┐                                       │
-    │            │                                       ▼
-    │            │                              ┌─────────────────┐
-    │            │                              │ Gemini 3 Flash /│
-    │            │                              │ o4-mini         │
-    │            │                              └─────────────────┘
-    │            │
-    └── Default: Production Choice
-                 ▼
-        ┌─────────────────┐
-        │ Claude Sonnet 4.6│
-        │ GPT-5.5-mini    │
-        └─────────────────┘
+```mermaid
+flowchart TD
+    Start(["Start Here"]) --> Q1{"Need the absolute<br/>capability ceiling?"}
+    Q1 -->|"Yes"| R1["Claude Fable 5<br/>($10/$50, 1M)"]
+    Q1 -->|"No"| Q2{"Need autonomous agents /<br/>long-horizon planning?"}
+    Q2 -->|"Yes"| R2["Claude Opus 4.8<br/>GPT-5.5 reasoning"]
+    Q2 -->|"No"| Q3{"Need best software<br/>engineering / coding?"}
+    Q3 -->|"Yes"| R3["Fable 5 ceiling /<br/>GPT-5.5 88.7% /<br/>Opus 4.8 88.6% /<br/>Sonnet 4.6 cheap"]
+    Q3 -->|"No"| Q4{"Need to process<br/>massive context (>1M)?"}
+    Q4 -->|"Yes"| R4["Gemini 3.0 Pro<br/>(2.5M context)"]
+    Q4 -->|"No"| Q5{"Cost-sensitive<br/>high volume?"}
+    Q5 -->|"Yes"| R5["Gemini 3 Flash /<br/>o4-mini"]
+    Q5 -->|"No"| R6["Default: Production Choice<br/>Claude Sonnet 4.6 /<br/>GPT-5.5-mini"]
 ```
 
 ### Key Selection Factors

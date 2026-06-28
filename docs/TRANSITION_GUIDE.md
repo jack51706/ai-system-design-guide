@@ -15,34 +15,38 @@ You currently work as a software engineer, QA, PM, EM, or data engineer, and you
 
 Before picking a path, understand what the target roles actually are:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    AI ROLE LANDSCAPE                            │
-│                                                                 │
-│  ┌──────────────────────┐    ┌──────────────────────────────┐  │
-│  │   APPLICATION LAYER  │    │     INFRASTRUCTURE LAYER     │  │
-│  │                      │    │                              │  │
-│  │  LLM App Engineer    │    │  MLOps / AI Infra Engineer   │  │
-│  │  AI Product Engineer │    │  AI Platform Engineer        │  │
-│  │  Agentic Systems Eng │    │  AI Reliability Engineer     │  │
-│  └──────────────────────┘    └──────────────────────────────┘  │
-│                                                                 │
-│  ┌──────────────────────┐    ┌──────────────────────────────┐  │
-│  │    QUALITY LAYER     │    │     LEADERSHIP LAYER         │  │
-│  │                      │    │                              │  │
-│  │  AI Eval Engineer    │    │  AI Product Manager          │  │
-│  │  AI Quality Engineer │    │  AI Engineering Manager      │  │
-│  │  Red Team Analyst    │    │  AI Program Manager          │  │
-│  └──────────────────────┘    └──────────────────────────────┘  │
-│                                                                 │
-│  ┌──────────────────────┐    ┌──────────────────────────────┐  │
-│  │    RESEARCH LAYER    │    │     SPECIALIST LAYER         │  │
-│  │                      │    │                              │  │
-│  │  Applied AI Scientist│    │  Agentic Coding Specialist   │  │
-│  │  Fine-tuning Engineer│    │  RAG Architect               │  │
-│  │  Alignment Researcher│    │  AI Safety Engineer          │  │
-│  └──────────────────────┘    └──────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph APP["APPLICATION LAYER"]
+        A1["LLM App Engineer"]
+        A2["AI Product Engineer"]
+        A3["Agentic Systems Eng"]
+    end
+    subgraph INFRA["INFRASTRUCTURE LAYER"]
+        B1["MLOps / AI Infra Engineer"]
+        B2["AI Platform Engineer"]
+        B3["AI Reliability Engineer"]
+    end
+    subgraph QUAL["QUALITY LAYER"]
+        C1["AI Eval Engineer"]
+        C2["AI Quality Engineer"]
+        C3["Red Team Analyst"]
+    end
+    subgraph LEAD["LEADERSHIP LAYER"]
+        D1["AI Product Manager"]
+        D2["AI Engineering Manager"]
+        D3["AI Program Manager"]
+    end
+    subgraph RES["RESEARCH LAYER"]
+        E1["Applied AI Scientist"]
+        E2["Fine-tuning Engineer"]
+        E3["Alignment Researcher"]
+    end
+    subgraph SPEC["SPECIALIST LAYER"]
+        F1["Agentic Coding Specialist"]
+        F2["RAG Architect"]
+        F3["AI Safety Engineer"]
+    end
 ```
 
 ---
@@ -57,13 +61,13 @@ Before picking a path, understand what the target roles actually are:
 
 #### Target Roles
 
-```
-Backend Engineer
-      │
-      ├──► LLM Application Engineer       (most common transition, 3–6 months)
-      ├──► Agentic Systems Engineer        (3–9 months)
-      ├──► AI Infrastructure / MLOps Eng  (6–12 months, needs GPU/serving knowledge)
-      └──► RAG Architect                  (4–8 months)
+```mermaid
+flowchart TD
+    R["Backend Engineer"]
+    R --> N1["LLM Application Engineer<br/>(most common transition, 3-6 months)"]
+    R --> N2["Agentic Systems Engineer<br/>(3-9 months)"]
+    R --> N3["AI Infrastructure / MLOps Eng<br/>(6-12 months, needs GPU/serving knowledge)"]
+    R --> N4["RAG Architect<br/>(4-8 months)"]
 ```
 
 #### Skill Gap Analysis
@@ -118,12 +122,12 @@ Backend Engineer
 
 #### Target Roles
 
-```
-Frontend Engineer
-      │
-      ├──► AI Product Engineer         (3–6 months — highest demand)
-      ├──► AI UX Engineer              (3–6 months, UX focus)
-      └──► Full-Stack LLM Engineer     (6–9 months, add backend LLM skills)
+```mermaid
+flowchart TD
+    R["Frontend Engineer"]
+    R --> N1["AI Product Engineer<br/>(3-6 months, highest demand)"]
+    R --> N2["AI UX Engineer<br/>(3-6 months, UX focus)"]
+    R --> N3["Full-Stack LLM Engineer<br/>(6-9 months, add backend LLM skills)"]
 ```
 
 #### Skill Gap Analysis
@@ -175,12 +179,12 @@ Frontend Engineer
 
 #### Target Roles
 
-```
-QA Engineer
-      │
-      ├──► AI Eval Engineer            (3–6 months — best fit, fast transition)
-      ├──► AI Quality Engineer         (3–6 months)
-      └──► Red Team Analyst            (6–9 months, security focus)
+```mermaid
+flowchart TD
+    R["QA Engineer"]
+    R --> N1["AI Eval Engineer<br/>(3-6 months, best fit, fast transition)"]
+    R --> N2["AI Quality Engineer<br/>(3-6 months)"]
+    R --> N3["Red Team Analyst<br/>(6-9 months, security focus)"]
 ```
 
 #### Skill Gap Analysis
@@ -234,12 +238,12 @@ QA Engineer
 
 #### Target Roles
 
-```
-Product Manager
-      │
-      ├──► AI Product Manager           (3–6 months — direct analog)
-      ├──► AI Program Manager           (3–6 months, coordination focus)
-      └──► Head of AI Product           (9–18 months, leadership path)
+```mermaid
+flowchart TD
+    R["Product Manager"]
+    R --> N1["AI Product Manager<br/>(3-6 months, direct analog)"]
+    R --> N2["AI Program Manager<br/>(3-6 months, coordination focus)"]
+    R --> N3["Head of AI Product<br/>(9-18 months, leadership path)"]
 ```
 
 #### Skill Gap Analysis
@@ -293,12 +297,12 @@ Product Manager
 
 #### Target Roles
 
-```
-Engineering Manager
-      │
-      ├──► AI Engineering Manager       (6–12 months)
-      ├──► Director of AI Engineering   (12–24 months)
-      └──► VP of AI / Head of AI        (18–36 months)
+```mermaid
+flowchart TD
+    R["Engineering Manager"]
+    R --> N1["AI Engineering Manager<br/>(6-12 months)"]
+    R --> N2["Director of AI Engineering<br/>(12-24 months)"]
+    R --> N3["VP of AI / Head of AI<br/>(18-36 months)"]
 ```
 
 #### What Changes as an AI EM
@@ -340,12 +344,12 @@ Engineering Manager
 
 #### Target Roles
 
-```
-DevOps / Platform Engineer
-      │
-      ├──► MLOps Engineer               (3–6 months)
-      ├──► AI Infrastructure Engineer   (6–9 months)
-      └──► AI Platform Engineer         (9–12 months)
+```mermaid
+flowchart TD
+    R["DevOps / Platform Engineer"]
+    R --> N1["MLOps Engineer<br/>(3-6 months)"]
+    R --> N2["AI Infrastructure Engineer<br/>(6-9 months)"]
+    R --> N3["AI Platform Engineer<br/>(9-12 months)"]
 ```
 
 #### Skill Gap Analysis
@@ -391,12 +395,12 @@ DevOps / Platform Engineer
 
 #### Target Roles
 
-```
-Data Engineer
-      │
-      ├──► AI Data Engineer             (2–4 months — fastest transition)
-      ├──► Embedding Pipeline Engineer  (3–6 months)
-      └──► Fine-tuning Data Specialist  (4–8 months)
+```mermaid
+flowchart TD
+    R["Data Engineer"]
+    R --> N1["AI Data Engineer<br/>(2-4 months, fastest transition)"]
+    R --> N2["Embedding Pipeline Engineer<br/>(3-6 months)"]
+    R --> N3["Fine-tuning Data Specialist<br/>(4-8 months)"]
 ```
 
 #### Skill Gap Analysis
@@ -438,18 +442,15 @@ Data Engineer
 
 ## 📊 Role Comparison Overview
 
-```
-Role            Months to   Avg Salary    Best Suited For
-                First Role   (US, 2026)
-────────────────────────────────────────────────────────
-Backend         3–6 mo       $170–220K    LLM App / Agentic Engineering
-Frontend        3–6 mo       $150–190K    AI Product / UX Engineering
-QA              3–6 mo       $140–180K    AI Eval / Quality Engineering
-PM              3–6 mo       $160–200K    AI Product Management
-DevOps          3–6 mo       $170–220K    MLOps / AI Platform
-Data Eng        2–4 mo       $165–210K    RAG Data, Fine-tuning Data
-EM              6–12 mo      $200–280K    AI Engineering Manager
-```
+| Role | Months to First Role | Avg Salary (US, 2026) | Best Suited For |
+|------|----------------------|-----------------------|-----------------|
+| Backend | 3-6 mo | $170-220K | LLM App / Agentic Engineering |
+| Frontend | 3-6 mo | $150-190K | AI Product / UX Engineering |
+| QA | 3-6 mo | $140-180K | AI Eval / Quality Engineering |
+| PM | 3-6 mo | $160-200K | AI Product Management |
+| DevOps | 3-6 mo | $170-220K | MLOps / AI Platform |
+| Data Eng | 2-4 mo | $165-210K | RAG Data, Fine-tuning Data |
+| EM | 6-12 mo | $200-280K | AI Engineering Manager |
 
 *Salaries are US market estimates based on Levels.fyi and LinkedIn data, May 2026. Ranges vary significantly by company, location, and experience level.*
 

@@ -48,24 +48,22 @@ Chunk 18: "The Enterprise plan includes SSO and audit
 
 核心概念很簡單：**在嵌入一個區塊之前，先在前面加上一段簡短的上下文字串，說明這個區塊在整份文件中是在講什麼**。
 
-```
-┌──────────────────────────────────────────────────┐
-│              TRADITIONAL CHUNKING                │
-│                                                  │
-│  Document ──► Split ──► Chunks ──► Embed ──► DB  │
-│                                                  │
-└──────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph trad["傳統分塊"]
+        direction LR
+        T1["文件"] --> T2["切分"] --> T3["區塊"] --> T4["嵌入"] --> T5["DB"]
+    end
 
-┌──────────────────────────────────────────────────────────────┐
-│              CONTEXTUAL RETRIEVAL                            │
-│                                                              │
-│  Document ──► Split ──► Chunks ──┐                           │
-│                                  ├──► Contextualize ──►      │
-│  Document (full) ───────────────┘    (LLM call per chunk)    │
-│                                                              │
-│  ──► Contextual Chunks ──► Embed ──► DB                      │
-│                            + BM25 Index                      │
-└──────────────────────────────────────────────────────────────┘
+    subgraph ctx["上下文檢索"]
+        direction TB
+        C1["文件"] --> C2["切分"] --> C3["區塊"]
+        C3 --> C5["加上上下文<br/>(每個區塊一次 LLM 呼叫)"]
+        C4["完整文件"] --> C5
+        C5 --> C6["上下文化區塊"]
+        C6 --> C7["嵌入"] --> C8["DB"]
+        C6 --> C9["+ BM25 Index"]
+    end
 ```
 
 **這個加上上下文的步驟**會把完整文件加上個別區塊一起送進 LLM，並使用以下提示：
@@ -164,35 +162,33 @@ After:  "This chunk is from the Acme Corp Q3 2025 Financial
 
 生產等級的上下文檢索管線分為四個階段：
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     INGESTION PIPELINE                          │
-│                                                                 │
-│  1. Chunk documents (recursive, 300-500 tokens)                 │
-│  2. For each chunk:                                             │
-│     a. Send (full_doc + chunk) to LLM                           │
-│     b. Get context string (50-100 tokens)                       │
-│     c. Prepend context to chunk                                 │
-│  3. Embed contextualized chunks ──► Vector DB                   │
-│  4. Index contextualized chunks ──► BM25 Index                  │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ingest["INGESTION PIPELINE（資料導入管線）"]
+        direction TB
+        I1["1. 分塊文件<br/>(遞迴, 300-500 tokens)"]
+        I2["2. 對每個區塊:<br/>a. 將 (full_doc + chunk) 送進 LLM<br/>b. 取得上下文字串 (50-100 tokens)<br/>c. 將上下文前置到區塊"]
+        I3["3. 嵌入上下文化區塊"]
+        I4["4. 索引上下文化區塊"]
+        I5["Vector DB"]
+        I6["BM25 Index"]
+        I1 --> I2
+        I2 --> I3 --> I5
+        I2 --> I4 --> I6
+    end
 
-┌─────────────────────────────────────────────────────────────────┐
-│                     QUERY PIPELINE                              │
-│                                                                 │
-│  User Query                                                     │
-│      │                                                          │
-│      ├──► Vector Search (Top 50) ──┐                            │
-│      │                             ├──► RRF Fusion (Top 25)     │
-│      └──► BM25 Search (Top 50)  ──┘         │                   │
-│                                             ▼                   │
-│                                      Reranker (Top 5)           │
-│                                             │                   │
-│                                             ▼                   │
-│                                     LLM Generation              │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+    subgraph query["QUERY PIPELINE（查詢管線）"]
+        direction TB
+        Q1["使用者查詢"]
+        Q2["Vector Search (Top 50)"]
+        Q3["BM25 Search (Top 50)"]
+        Q4["RRF Fusion (Top 25)"]
+        Q5["Reranker (Top 5)"]
+        Q6["LLM Generation"]
+        Q1 --> Q2 --> Q4
+        Q1 --> Q3 --> Q4
+        Q4 --> Q5 --> Q6
+    end
 ```
 
 ### 用倒數排名融合（RRF）合併結果
@@ -411,13 +407,18 @@ contextualized = add_chunk_headers(
 
 **後期分塊（Late Chunking）**（Jina，2024）是一種相關但不同的做法：
 
-```
-Contextual Retrieval:
-  Chunk ──► LLM adds context ──► Embed enriched chunk
+```mermaid
+flowchart TD
+    subgraph cr["上下文檢索（Contextual Retrieval）"]
+        direction LR
+        CR1["區塊"] --> CR2["LLM 加上上下文"] --> CR3["嵌入強化後的區塊"]
+    end
 
-Late Chunking:
-  Full doc ──► Long-context embed model ──► Token embeddings
-  ──► THEN chunk the token embeddings (preserving context)
+    subgraph lc["後期分塊（Late Chunking）"]
+        direction LR
+        LC1["完整文件"] --> LC2["長上下文嵌入模型"] --> LC3["Token 嵌入"]
+        LC3 --> LC4["接著再對 Token 嵌入分塊<br/>(保留上下文)"]
+    end
 ```
 
 後期分塊需要一個長上下文的嵌入模型（例如 Jina v3），並可完全避免 LLM 呼叫。它是透過嵌入模型的注意力機制來保留上下文，而不是明確地在文字前面加上前綴。其取捨在於，後期分塊對 BM25 搜尋沒有幫助，只對密集檢索有用。
@@ -428,46 +429,33 @@ Late Chunking:
 
 ### 參考架構：大規模的上下文 RAG
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     INGESTION SERVICE                               │
-│                                                                     │
-│  Document Store ──► Chunker ──► Contextualization Queue             │
-│                       │              │                              │
-│                       │         ┌────┴────┐                         │
-│                       │         │ Workers  │ (N parallel LLM calls) │
-│                       │         │ + Cache  │                        │
-│                       │         └────┬────┘                         │
-│                       │              │                              │
-│                       ▼              ▼                              │
-│                  Raw Chunks    Contextualized Chunks                 │
-│                       │              │                              │
-│                       │         ┌────┴────┐                         │
-│                       │         │ Embed + │                         │
-│                       │         │ BM25    │                         │
-│                       │         └────┬────┘                         │
-│                       │              │                              │
-│                       ▼              ▼                              │
-│                  Metadata DB    Vector DB + BM25 Index               │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ingest["INGESTION SERVICE（資料導入服務）"]
+        direction TB
+        IS1["Document Store"] --> IS2["Chunker"] --> IS3["Contextualization Queue"]
+        IS3 --> IS4["Workers + Cache<br/>(N 個並行 LLM 呼叫)"]
+        IS2 --> IS5["Raw Chunks"]
+        IS4 --> IS6["Contextualized Chunks"]
+        IS6 --> IS7["Embed + BM25"]
+        IS5 --> IS8["Metadata DB"]
+        IS7 --> IS9["Vector DB + BM25 Index"]
+    end
 
-┌─────────────────────────────────────────────────────────────────────┐
-│                     QUERY SERVICE                                   │
-│                                                                     │
-│  Query ──► [Vector Search] + [BM25 Search]                          │
-│                    │               │                                │
-│                    └───── RRF ─────┘                                │
-│                           │                                         │
-│                      Top 25 chunks                                  │
-│                           │                                         │
-│                      Reranker (Cohere, Cross-Encoder)               │
-│                           │                                         │
-│                      Top 5 chunks                                   │
-│                           │                                         │
-│                      LLM Generation                                 │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+    subgraph query["QUERY SERVICE（查詢服務）"]
+        direction TB
+        QS1["Query"]
+        QS2["Vector Search"]
+        QS3["BM25 Search"]
+        QS4["RRF"]
+        QS5["Top 25 chunks"]
+        QS6["Reranker (Cohere, Cross-Encoder)"]
+        QS7["Top 5 chunks"]
+        QS8["LLM Generation"]
+        QS1 --> QS2 --> QS4
+        QS1 --> QS3 --> QS4
+        QS4 --> QS5 --> QS6 --> QS7 --> QS8
+    end
 ```
 
 ### 擴展考量

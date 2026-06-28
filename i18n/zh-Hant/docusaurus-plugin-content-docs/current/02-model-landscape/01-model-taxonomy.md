@@ -551,28 +551,30 @@
 
 ### 決策樹
 
-```
-你的主要限制是什麼？
+```mermaid
+flowchart TD
+    Root{"你的主要限制是什麼？"}
 
-├── 成本 → 使用較小的模型，考慮開源
-│   ├── 對成本非常敏感 → DeepSeek V4 Flash、GPT-5.5-mini、Claude Haiku 4.5、Gemini 3.1 Flash
-│   └── 中等預算 → Claude Sonnet 4.6、GPT-5.5 Instant、DeepSeek V4 Pro
-│
-├── 品質 + 推理 → 使用前沿模型
-│   ├── 最高推理 → Claude Fable 5、Claude Opus 4.8（thinking）、GPT-5.5 reasoning、Gemini 3.1 Pro Deep Think
-│   └── 編碼 + 推理 → 搭配 Dynamic Workflows 的 Claude Opus 4.8、Claude Sonnet 4.6（Extended Thinking）、GPT-5.5
-│
-├── 延遲 → 使用快速模型
-│   ├── <100ms 回應 → Gemini 3.1 Flash、GPT-5.5-mini
-│   └── <500ms 回應 → Claude Haiku 4.5、Claude Opus 4.8 快速模式、Grok 4.1 Fast
-│
-├── 自架 → 使用開放模型
-│   ├── 最大能力 → Llama 4 Maverick、DeepSeek-V3
-│   ├── 良好平衡 → Llama 4 Scout、Llama 3.3 70B、Qwen2.5-72B
-│   └── 邊緣/行動 → Mistral 3 3B、Phi-4
-│
-└── 隱私 → 自架或使用地端
-    └── 選擇具備適當授權的開放模型
+    Root -->|"成本"| Cost["使用較小的模型，<br/>考慮開源"]
+    Root -->|"品質 + 推理"| Quality["使用前沿模型"]
+    Root -->|"延遲"| Latency["使用快速模型"]
+    Root -->|"自架"| SelfHost["使用開放模型"]
+    Root -->|"隱私"| Privacy["自架或使用地端"]
+
+    Cost --> CostA["對成本非常敏感：<br/>DeepSeek V4 Flash、GPT-5.5-mini、<br/>Claude Haiku 4.5、Gemini 3.1 Flash"]
+    Cost --> CostB["中等預算：<br/>Claude Sonnet 4.6、GPT-5.5 Instant、<br/>DeepSeek V4 Pro"]
+
+    Quality --> QualityA["最高推理：<br/>Claude Fable 5、Claude Opus 4.8 (thinking)、<br/>GPT-5.5 reasoning、Gemini 3.1 Pro Deep Think"]
+    Quality --> QualityB["編碼 + 推理：<br/>搭配 Dynamic Workflows 的 Claude Opus 4.8、<br/>Claude Sonnet 4.6 (Extended Thinking)、GPT-5.5"]
+
+    Latency --> LatencyA["<100ms 回應：<br/>Gemini 3.1 Flash、GPT-5.5-mini"]
+    Latency --> LatencyB["<500ms 回應：<br/>Claude Haiku 4.5、Claude Opus 4.8 快速模式、<br/>Grok 4.1 Fast"]
+
+    SelfHost --> SelfHostA["最大能力：<br/>Llama 4 Maverick、DeepSeek-V3"]
+    SelfHost --> SelfHostB["良好平衡：<br/>Llama 4 Scout、Llama 3.3 70B、Qwen2.5-72B"]
+    SelfHost --> SelfHostC["邊緣/行動：<br/>Mistral 3 3B、Phi-4"]
+
+    Privacy --> PrivacyA["選擇具備適當授權<br/>的開放模型"]
 ```
 
 ### 語意路由

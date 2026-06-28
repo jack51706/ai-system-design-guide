@@ -55,38 +55,22 @@ Design a RAG-based knowledge assistant for a large enterprise with the following
 
 #### High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          DATA PLANE                                      │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────────────┐│
-│  │   Connectors │───▶│   Processor  │───▶│       Vector Database        ││
-│  │ (SP,GD,Conf) │    │ (chunk,embed)│    │  (Pinecone/Qdrant/Weaviate)  ││
-│  └──────────────┘    └──────────────┘    └──────────────────────────────┘│
-│                                                      ▲                   │
-│                                                      │ sync              │
-│  ┌──────────────────────────────────────────────────┼───────────────────┐│
-│  │                    Permission Service            │                   ││
-│  └──────────────────────────────────────────────────┼───────────────────┘│
-└─────────────────────────────────────────────────────┼───────────────────┘
-                                                      │
-┌─────────────────────────────────────────────────────┼───────────────────┐
-│                          QUERY PLANE                │                   │
-│  ┌──────────────┐    ┌──────────────┐    ┌─────────┴──────┐             │
-│  │    User      │───▶│  Query API   │───▶│   Retriever    │             │
-│  │  Interface   │    │              │    │ (+ perm filter)│             │
-│  └──────────────┘    └──────────────┘    └────────┬───────┘             │
-│                             │                      │                     │
-│                             ▼                      ▼                     │
-│                      ┌──────────────┐    ┌──────────────┐               │
-│                      │   Reranker   │◀───│   Chunks     │               │
-│                      └──────┬───────┘    └──────────────┘               │
-│                             │                                            │
-│                             ▼                                            │
-│                      ┌──────────────┐    ┌──────────────┐               │
-│                      │  Generator   │───▶│   Response   │               │
-│                      │    (LLM)     │    │  + Citations │               │
-│                      └──────────────┘    └──────────────┘               │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph DATA["DATA PLANE"]
+        Connectors["Connectors<br/>(SP, GD, Conf)"] --> Processor["Processor<br/>(chunk, embed)"]
+        Processor --> VectorDB["Vector Database<br/>(Pinecone/Qdrant/Weaviate)"]
+        PermSvc["Permission Service"] -->|"sync"| VectorDB
+    end
+    subgraph QUERY["QUERY PLANE"]
+        UserUI["User Interface"] --> QueryAPI["Query API"]
+        QueryAPI --> Retriever["Retriever<br/>(+ perm filter)"]
+        Retriever --> Chunks["Chunks"]
+        Chunks --> Reranker["Reranker"]
+        Reranker --> Generator["Generator (LLM)"]
+        Generator --> Response["Response + Citations"]
+    end
+    PermSvc -.-> Retriever
 ```
 
 #### Data Pipeline Deep Dive
@@ -330,26 +314,17 @@ Design an AI-powered customer support system for an e-commerce company:
 **Key Architectural Decisions:**
 
 1. **Agent Architecture with Flow Control:**
-```
-┌─────────────────────────────────────────────────────────┐
-│                                                         │
-│   ┌─────────┐     ┌─────────────┐     ┌─────────────┐   │
-│   │ Intake  │────▶│  Classify   │────▶│   Router    │   │
-│   └─────────┘     └─────────────┘     └──────┬──────┘   │
-│                                              │           │
-│         ┌────────────────┬──────────────────┼───────┐   │
-│         ▼                ▼                  ▼       ▼   │
-│   ┌───────────┐   ┌───────────┐   ┌───────────┐ ┌─────┐ │
-│   │Order Flow │   │Product Q&A│   │ Returns   │ │Human│ │
-│   └─────┬─────┘   └─────┬─────┘   └─────┬─────┘ └─────┘ │
-│         │               │               │               │
-│         └───────────────┴───────────────┘               │
-│                         │                               │
-│                   ┌─────▼─────┐                         │
-│                   │  Response │                         │
-│                   │ Generator │                         │
-│                   └───────────┘                         │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Intake["Intake"] --> Classify["Classify"]
+    Classify --> Router["Router"]
+    Router --> OrderFlow["Order Flow"]
+    Router --> ProductQA["Product Q&A"]
+    Router --> Returns["Returns"]
+    Router --> Human["Human"]
+    OrderFlow --> RespGen["Response Generator"]
+    ProductQA --> RespGen
+    Returns --> RespGen
 ```
 
 2. **Tool Design:**
@@ -512,16 +487,14 @@ Design a document processing pipeline for financial services:
 
 **Pipeline Architecture:**
 
-```
-┌────────┐   ┌───────────┐   ┌────────────┐   ┌────────────┐
-│ Ingest │──▶│ Classify  │──▶│  Extract   │──▶│  Validate  │
-└────────┘   └───────────┘   └────────────┘   └────────────┘
-                                                     │
-                                     ┌───────────────┼───────────────┐
-                                     ▼               ▼               ▼
-                              ┌──────────┐   ┌──────────┐   ┌──────────┐
-                              │ Auto-pass│   │  Review  │   │  Reject  │
-                              └──────────┘   └──────────┘   └──────────┘
+```mermaid
+flowchart TD
+    Ingest["Ingest"] --> Classify["Classify"]
+    Classify --> Extract["Extract"]
+    Extract --> Validate["Validate"]
+    Validate --> AutoPass["Auto-pass"]
+    Validate --> Review["Review"]
+    Validate --> Reject["Reject"]
 ```
 
 **Key Components:**
@@ -608,28 +581,11 @@ Design a content moderation system for a social platform:
 
 **Architecture Pattern: Multi-Stage Cascade**
 
-```
-         ┌───────────────────────────────────────────┐
-         │              Fast Filters                 │
-         │   (regex, blocklist, hash matching)       │
-         └─────────────────┬─────────────────────────┘
-                           │ Pass 95%
-                           ▼
-         ┌───────────────────────────────────────────┐
-         │            ML Classifiers                 │
-         │   (text: BERT, image: CLIP, video: X3D)   │
-         └─────────────────┬─────────────────────────┘
-                           │ Uncertain 5%
-                           ▼
-         ┌───────────────────────────────────────────┐
-         │            LLM Analysis                   │
-         │   (context-aware, nuanced decisions)      │
-         └─────────────────┬─────────────────────────┘
-                           │ Still uncertain 0.5%
-                           ▼
-         ┌───────────────────────────────────────────┐
-         │            Human Review                   │
-         └───────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Fast["Fast Filters<br/>(regex, blocklist, hash matching)"] -->|"Pass 95%"| ML["ML Classifiers<br/>(text: BERT, image: CLIP, video: X3D)"]
+    ML -->|"Uncertain 5%"| LLM["LLM Analysis<br/>(context-aware, nuanced decisions)"]
+    LLM -->|"Still uncertain 0.5%"| HumanReview["Human Review"]
 ```
 
 **Key Design Decisions:**
@@ -706,34 +662,13 @@ Design a multi-tenant AI platform (AI-as-a-Service):
 
 **Tenant Isolation Architecture:**
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         API Gateway                              │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │   Auth → Tenant Context → Rate Limit → Route             │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Tenant-Aware Service Layer                    │
-│                                                                  │
-│  All operations scoped to tenant_id from context                │
-│  - Retrieval filters by tenant                                  │
-│  - Cache keys prefixed by tenant                                │
-│  - Audit logs include tenant                                    │
-└─────────────────────────────────────────────────────────────────┘
-                               │
-           ┌───────────────────┼───────────────────┐
-           ▼                   ▼                   ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│  Shared Vector  │ │  Shared LLM     │ │  Shared Object  │
-│  DB (filtered)  │ │  (no tenant     │ │  Storage        │
-│                 │ │   data in prompt│ │  (tenant paths) │
-│  tenant_id in   │ │   history)      │ │                 │
-│  all metadata   │ │                 │ │  s3://bucket/   │
-└─────────────────┘ └─────────────────┘ │  {tenant_id}/   │
-                                        └─────────────────┘
+```mermaid
+flowchart TD
+    Gateway["API Gateway<br/>Auth -> Tenant Context -> Rate Limit -> Route"]
+    Gateway --> ServiceLayer["Tenant-Aware Service Layer<br/>All operations scoped to tenant_id from context<br/>- Retrieval filters by tenant<br/>- Cache keys prefixed by tenant<br/>- Audit logs include tenant"]
+    ServiceLayer --> SharedVector["Shared Vector DB (filtered)<br/>tenant_id in all metadata"]
+    ServiceLayer --> SharedLLM["Shared LLM<br/>(no tenant data in prompt history)"]
+    ServiceLayer --> SharedObject["Shared Object Storage<br/>(tenant paths)<br/>s3://bucket/{tenant_id}/"]
 ```
 
 **Critical Isolation Points:**
@@ -820,27 +755,11 @@ At 100ms latency, need:
 
 **Architecture:**
 
-```
-┌────────────────────────────────────────────────────────────┐
-│                         CDN/Edge                            │
-│              (Cache popular queries: ~30% hit)              │
-└─────────────────────────────┬──────────────────────────────┘
-                              │
-┌─────────────────────────────▼──────────────────────────────┐
-│                      Query Service                          │
-│  1. Embed query (cached embeddings for common queries)      │
-│  2. Retrieve candidates (ANN search)                        │
-│  3. Apply filters (post-filter or hybrid)                   │
-│  4. Personalize ranking                                     │
-│  5. Return results                                          │
-└─────────────────────────────┬──────────────────────────────┘
-                              │
-┌─────────────────────────────▼──────────────────────────────┐
-│                    Vector Database Cluster                  │
-│  - Sharded by category (reduce search space)                │
-│  - HNSW index with ef_search tuned for speed                │
-│  - Metadata filtering with roaring bitmaps                  │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Edge["CDN/Edge<br/>(Cache popular queries: ~30% hit)"]
+    Edge --> QueryService["Query Service<br/>1. Embed query (cached embeddings for common queries)<br/>2. Retrieve candidates (ANN search)<br/>3. Apply filters (post-filter or hybrid)<br/>4. Personalize ranking<br/>5. Return results"]
+    QueryService --> VectorCluster["Vector Database Cluster<br/>- Sharded by category (reduce search space)<br/>- HNSW index with ef_search tuned for speed<br/>- Metadata filtering with roaring bitmaps"]
 ```
 
 **Latency Budget:**
@@ -921,24 +840,24 @@ Reindexing (description changes):
 
 **High-level architecture:**
 
-```
-                    ┌────────────────────────────────────────────┐
-                    │              EVAL PIPELINE                  │
-                    │                                             │
-  Prompt/model PR ──► CI runner ── dev set (visible, ~200 cases) │
-                    │     │                                       │
-                    │     ├── held-out set (CI-only, ~300 cases,  │
-                    │     │    rotated quarterly)                  │
-                    │     │                                       │
-                    │     └── gate: pass/fail vs baseline ──► merge│
-                    │                                             │
-  Production ──────► sampler (1-5% of traffic)                   │
-                    │     │                                       │
-                    │     ├── LLM-judge scoring (async, cheap)    │
-                    │     ├── human-graded slice (weekly, ~100)   │
-                    │     └── outcome metrics (thumbs, escalation)│
-                    │                                             │
-                    └──── dashboards + regression alerts ─────────┘
+```mermaid
+flowchart TD
+    PR["Prompt/model PR"] --> CIRunner["CI runner"]
+    subgraph EVAL["EVAL PIPELINE"]
+        CIRunner --> DevSet["dev set (visible, ~200 cases)"]
+        CIRunner --> HeldOut["held-out set (CI-only, ~300 cases, rotated quarterly)"]
+        CIRunner --> Gate["gate: pass/fail vs baseline"]
+        Gate --> Merge["merge"]
+        Sampler["sampler (1-5% of traffic)"] --> JudgeScore["LLM-judge scoring (async, cheap)"]
+        Sampler --> HumanSlice["human-graded slice (weekly, ~100)"]
+        Sampler --> Outcome["outcome metrics (thumbs, escalation)"]
+    end
+    Production["Production"] --> Sampler
+    DevSet --> Dashboards["dashboards + regression alerts"]
+    HeldOut --> Dashboards
+    JudgeScore --> Dashboards
+    HumanSlice --> Dashboards
+    Outcome --> Dashboards
 ```
 
 **1. Dataset strategy (the part most candidates skip):**
@@ -1022,24 +941,15 @@ dominant cost and it is what keeps the judge honest.
 
 **The memory hierarchy:**
 
-```
-┌──────────────────────────────────────────────────────────┐
-│ L1 Working memory: the context window                     │
-│   Current session, tool results, scratchpad               │
-│   Managed by compaction + just-in-time loading            │
-├──────────────────────────────────────────────────────────┤
-│ L2 Episodic memory: what happened                         │
-│   Past session summaries, trajectories, outcomes          │
-│   Store: vector DB, retrieved by similarity + recency     │
-├──────────────────────────────────────────────────────────┤
-│ L3 Semantic memory: what is true                          │
-│   Extracted facts and preferences with provenance         │
-│   Store: structured records or knowledge graph            │
-├──────────────────────────────────────────────────────────┤
-│ L4 Procedural memory: how to do things                    │
-│   Learned workflows, per-user playbooks (skills)          │
-│   Store: versioned files, loaded on demand                │
-└──────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    L1["L1 Working memory: the context window<br/>Current session, tool results, scratchpad<br/>Managed by compaction + just-in-time loading"]
+    L2["L2 Episodic memory: what happened<br/>Past session summaries, trajectories, outcomes<br/>Store: vector DB, retrieved by similarity + recency"]
+    L3["L3 Semantic memory: what is true<br/>Extracted facts and preferences with provenance<br/>Store: structured records or knowledge graph"]
+    L4["L4 Procedural memory: how to do things<br/>Learned workflows, per-user playbooks (skills)<br/>Store: versioned files, loaded on demand"]
+    L1 --- L2
+    L2 --- L3
+    L3 --- L4
 ```
 
 **1. In-session (L1): context engineering, not storage.**
@@ -1047,22 +957,16 @@ Compaction at a window threshold (summarize history, keep recent artifacts), jus
 
 **2. Write path (the hard part):**
 
-```
-Session ends (or hits checkpoint)
-    │
-    ├── Summarize episode → L2 (embedding + metadata:
-    │     timestamp, topics, outcome, sentiment)
-    │
-    └── Fact extraction pass → candidate facts
-          │
-          ├── Deduplicate against existing L3
-          ├── Conflict check: contradicts a stored fact?
-          │     ├── Newer + higher confidence → supersede (keep old
-          │     │     version with valid_to timestamp)
-          │     └── Ambiguous → store as candidate, confirm with
-          │           user at next natural opportunity
-          └── Importance filter: discard chit-chat, keep
-                preferences, commitments, corrections
+```mermaid
+flowchart TD
+    Start["Session ends (or hits checkpoint)"]
+    Start --> Summarize["Summarize episode -> L2<br/>(embedding + metadata: timestamp, topics, outcome, sentiment)"]
+    Start --> FactExtract["Fact extraction pass -> candidate facts"]
+    FactExtract --> Dedup["Deduplicate against existing L3"]
+    FactExtract --> Conflict{"Conflict check:<br/>contradicts a stored fact?"}
+    FactExtract --> Importance["Importance filter: discard chit-chat,<br/>keep preferences, commitments, corrections"]
+    Conflict -->|"Newer + higher confidence"| Supersede["Supersede<br/>(keep old version with valid_to timestamp)"]
+    Conflict -->|"Ambiguous"| Candidate["Store as candidate, confirm with<br/>user at next natural opportunity"]
 ```
 
 The conflict path matters most: "user moved from Madrid to Lisbon" must supersede, not coexist. Bitemporal records (valid_from, valid_to) make supersession auditable and reversible.

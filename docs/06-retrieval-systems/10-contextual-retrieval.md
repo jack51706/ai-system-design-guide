@@ -48,24 +48,22 @@ Chunk 18: "The Enterprise plan includes SSO and audit
 
 The core idea is simple: **before embedding a chunk, prepend a short context string that explains what the chunk is about within the full document**.
 
-```
-┌──────────────────────────────────────────────────┐
-│              TRADITIONAL CHUNKING                │
-│                                                  │
-│  Document ──► Split ──► Chunks ──► Embed ──► DB  │
-│                                                  │
-└──────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph trad["TRADITIONAL CHUNKING"]
+        direction LR
+        T1["Document"] --> T2["Split"] --> T3["Chunks"] --> T4["Embed"] --> T5["DB"]
+    end
 
-┌──────────────────────────────────────────────────────────────┐
-│              CONTEXTUAL RETRIEVAL                            │
-│                                                              │
-│  Document ──► Split ──► Chunks ──┐                           │
-│                                  ├──► Contextualize ──►      │
-│  Document (full) ───────────────┘    (LLM call per chunk)    │
-│                                                              │
-│  ──► Contextual Chunks ──► Embed ──► DB                      │
-│                            + BM25 Index                      │
-└──────────────────────────────────────────────────────────────┘
+    subgraph ctx["CONTEXTUAL RETRIEVAL"]
+        direction TB
+        C1["Document"] --> C2["Split"] --> C3["Chunks"]
+        C3 --> C5["Contextualize<br/>(LLM call per chunk)"]
+        C4["Document (full)"] --> C5
+        C5 --> C6["Contextual Chunks"]
+        C6 --> C7["Embed"] --> C8["DB"]
+        C6 --> C9["+ BM25 Index"]
+    end
 ```
 
 **The contextualization step** sends the full document + individual chunk to an LLM with this prompt:
@@ -164,35 +162,33 @@ Dense embeddings excel at semantic similarity but fail on:
 
 The production-grade Contextual Retrieval pipeline has four stages:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     INGESTION PIPELINE                          │
-│                                                                 │
-│  1. Chunk documents (recursive, 300-500 tokens)                 │
-│  2. For each chunk:                                             │
-│     a. Send (full_doc + chunk) to LLM                           │
-│     b. Get context string (50-100 tokens)                       │
-│     c. Prepend context to chunk                                 │
-│  3. Embed contextualized chunks ──► Vector DB                   │
-│  4. Index contextualized chunks ──► BM25 Index                  │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ingest["INGESTION PIPELINE"]
+        direction TB
+        I1["1. Chunk documents<br/>(recursive, 300-500 tokens)"]
+        I2["2. For each chunk:<br/>a. Send (full_doc + chunk) to LLM<br/>b. Get context string (50-100 tokens)<br/>c. Prepend context to chunk"]
+        I3["3. Embed contextualized chunks"]
+        I4["4. Index contextualized chunks"]
+        I5["Vector DB"]
+        I6["BM25 Index"]
+        I1 --> I2
+        I2 --> I3 --> I5
+        I2 --> I4 --> I6
+    end
 
-┌─────────────────────────────────────────────────────────────────┐
-│                     QUERY PIPELINE                              │
-│                                                                 │
-│  User Query                                                     │
-│      │                                                          │
-│      ├──► Vector Search (Top 50) ──┐                            │
-│      │                             ├──► RRF Fusion (Top 25)     │
-│      └──► BM25 Search (Top 50)  ──┘         │                   │
-│                                             ▼                   │
-│                                      Reranker (Top 5)           │
-│                                             │                   │
-│                                             ▼                   │
-│                                     LLM Generation              │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+    subgraph query["QUERY PIPELINE"]
+        direction TB
+        Q1["User Query"]
+        Q2["Vector Search (Top 50)"]
+        Q3["BM25 Search (Top 50)"]
+        Q4["RRF Fusion (Top 25)"]
+        Q5["Reranker (Top 5)"]
+        Q6["LLM Generation"]
+        Q1 --> Q2 --> Q4
+        Q1 --> Q3 --> Q4
+        Q4 --> Q5 --> Q6
+    end
 ```
 
 ### Reciprocal Rank Fusion (RRF) for Combining Results
@@ -411,13 +407,18 @@ For a knowledge base of 10,000 chunks (avg 400 tokens each):
 
 **Late Chunking** (Jina, 2024) is a related but distinct approach:
 
-```
-Contextual Retrieval:
-  Chunk ──► LLM adds context ──► Embed enriched chunk
+```mermaid
+flowchart TD
+    subgraph cr["Contextual Retrieval"]
+        direction LR
+        CR1["Chunk"] --> CR2["LLM adds context"] --> CR3["Embed enriched chunk"]
+    end
 
-Late Chunking:
-  Full doc ──► Long-context embed model ──► Token embeddings
-  ──► THEN chunk the token embeddings (preserving context)
+    subgraph lc["Late Chunking"]
+        direction LR
+        LC1["Full doc"] --> LC2["Long-context embed model"] --> LC3["Token embeddings"]
+        LC3 --> LC4["THEN chunk the token embeddings<br/>(preserving context)"]
+    end
 ```
 
 Late Chunking requires a long-context embedding model (e.g., Jina v3) and avoids LLM calls entirely. It preserves context through the embedding model's attention mechanism rather than explicit text prepending. The tradeoff is that Late Chunking does not help BM25 search, only dense retrieval.
@@ -428,46 +429,33 @@ Late Chunking requires a long-context embedding model (e.g., Jina v3) and avoids
 
 ### Reference Architecture: Contextual RAG at Scale
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     INGESTION SERVICE                               │
-│                                                                     │
-│  Document Store ──► Chunker ──► Contextualization Queue             │
-│                       │              │                              │
-│                       │         ┌────┴────┐                         │
-│                       │         │ Workers  │ (N parallel LLM calls) │
-│                       │         │ + Cache  │                        │
-│                       │         └────┬────┘                         │
-│                       │              │                              │
-│                       ▼              ▼                              │
-│                  Raw Chunks    Contextualized Chunks                 │
-│                       │              │                              │
-│                       │         ┌────┴────┐                         │
-│                       │         │ Embed + │                         │
-│                       │         │ BM25    │                         │
-│                       │         └────┬────┘                         │
-│                       │              │                              │
-│                       ▼              ▼                              │
-│                  Metadata DB    Vector DB + BM25 Index               │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ingest["INGESTION SERVICE"]
+        direction TB
+        IS1["Document Store"] --> IS2["Chunker"] --> IS3["Contextualization Queue"]
+        IS3 --> IS4["Workers + Cache<br/>(N parallel LLM calls)"]
+        IS2 --> IS5["Raw Chunks"]
+        IS4 --> IS6["Contextualized Chunks"]
+        IS6 --> IS7["Embed + BM25"]
+        IS5 --> IS8["Metadata DB"]
+        IS7 --> IS9["Vector DB + BM25 Index"]
+    end
 
-┌─────────────────────────────────────────────────────────────────────┐
-│                     QUERY SERVICE                                   │
-│                                                                     │
-│  Query ──► [Vector Search] + [BM25 Search]                          │
-│                    │               │                                │
-│                    └───── RRF ─────┘                                │
-│                           │                                         │
-│                      Top 25 chunks                                  │
-│                           │                                         │
-│                      Reranker (Cohere, Cross-Encoder)               │
-│                           │                                         │
-│                      Top 5 chunks                                   │
-│                           │                                         │
-│                      LLM Generation                                 │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+    subgraph query["QUERY SERVICE"]
+        direction TB
+        QS1["Query"]
+        QS2["Vector Search"]
+        QS3["BM25 Search"]
+        QS4["RRF"]
+        QS5["Top 25 chunks"]
+        QS6["Reranker (Cohere, Cross-Encoder)"]
+        QS7["Top 5 chunks"]
+        QS8["LLM Generation"]
+        QS1 --> QS2 --> QS4
+        QS1 --> QS3 --> QS4
+        QS4 --> QS5 --> QS6 --> QS7 --> QS8
+    end
 ```
 
 ### Scaling Considerations

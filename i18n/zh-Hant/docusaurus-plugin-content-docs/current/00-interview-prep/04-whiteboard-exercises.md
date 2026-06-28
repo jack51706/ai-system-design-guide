@@ -55,38 +55,22 @@
 
 #### 高階架構
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          DATA PLANE                                      │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────────────┐│
-│  │   Connectors │───▶│   Processor  │───▶│       Vector Database        ││
-│  │ (SP,GD,Conf) │    │ (chunk,embed)│    │  (Pinecone/Qdrant/Weaviate)  ││
-│  └──────────────┘    └──────────────┘    └──────────────────────────────┘│
-│                                                      ▲                   │
-│                                                      │ sync              │
-│  ┌──────────────────────────────────────────────────┼───────────────────┐│
-│  │                    Permission Service            │                   ││
-│  └──────────────────────────────────────────────────┼───────────────────┘│
-└─────────────────────────────────────────────────────┼───────────────────┘
-                                                      │
-┌─────────────────────────────────────────────────────┼───────────────────┐
-│                          QUERY PLANE                │                   │
-│  ┌──────────────┐    ┌──────────────┐    ┌─────────┴──────┐             │
-│  │    User      │───▶│  Query API   │───▶│   Retriever    │             │
-│  │  Interface   │    │              │    │ (+ perm filter)│             │
-│  └──────────────┘    └──────────────┘    └────────┬───────┘             │
-│                             │                      │                     │
-│                             ▼                      ▼                     │
-│                      ┌──────────────┐    ┌──────────────┐               │
-│                      │   Reranker   │◀───│   Chunks     │               │
-│                      └──────┬───────┘    └──────────────┘               │
-│                             │                                            │
-│                             ▼                                            │
-│                      ┌──────────────┐    ┌──────────────┐               │
-│                      │  Generator   │───▶│   Response   │               │
-│                      │    (LLM)     │    │  + Citations │               │
-│                      └──────────────┘    └──────────────┘               │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph DATA["資料平面 (DATA PLANE)"]
+        Connectors["連接器<br/>(SP, GD, Conf)"] --> Processor["處理器<br/>(分塊、嵌入)"]
+        Processor --> VectorDB["向量資料庫<br/>(Pinecone/Qdrant/Weaviate)"]
+        PermSvc["權限服務"] -->|"同步"| VectorDB
+    end
+    subgraph QUERY["查詢平面 (QUERY PLANE)"]
+        UserUI["使用者介面"] --> QueryAPI["查詢 API"]
+        QueryAPI --> Retriever["檢索器<br/>(+ 權限過濾)"]
+        Retriever --> Chunks["文件塊"]
+        Chunks --> Reranker["重排序器"]
+        Reranker --> Generator["生成器 (LLM)"]
+        Generator --> Response["回應 + 引用來源"]
+    end
+    PermSvc -.-> Retriever
 ```
 
 #### 資料管線深入剖析
@@ -330,26 +314,17 @@ Total:                 2000ms (buffer for P95)
 **關鍵架構決策：**
 
 1. **帶流程控制的代理架構：**
-```
-┌─────────────────────────────────────────────────────────┐
-│                                                         │
-│   ┌─────────┐     ┌─────────────┐     ┌─────────────┐   │
-│   │ Intake  │────▶│  Classify   │────▶│   Router    │   │
-│   └─────────┘     └─────────────┘     └──────┬──────┘   │
-│                                              │           │
-│         ┌────────────────┬──────────────────┼───────┐   │
-│         ▼                ▼                  ▼       ▼   │
-│   ┌───────────┐   ┌───────────┐   ┌───────────┐ ┌─────┐ │
-│   │Order Flow │   │Product Q&A│   │ Returns   │ │Human│ │
-│   └─────┬─────┘   └─────┬─────┘   └─────┬─────┘ └─────┘ │
-│         │               │               │               │
-│         └───────────────┴───────────────┘               │
-│                         │                               │
-│                   ┌─────▼─────┐                         │
-│                   │  Response │                         │
-│                   │ Generator │                         │
-│                   └───────────┘                         │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Intake["接收 (Intake)"] --> Classify["分類 (Classify)"]
+    Classify --> Router["路由 (Router)"]
+    Router --> OrderFlow["訂單流程"]
+    Router --> ProductQA["產品問答"]
+    Router --> Returns["退貨"]
+    Router --> Human["人工"]
+    OrderFlow --> RespGen["回應生成器"]
+    ProductQA --> RespGen
+    Returns --> RespGen
 ```
 
 2. **工具設計：**
@@ -512,16 +487,14 @@ Strategy:
 
 **管線架構：**
 
-```
-┌────────┐   ┌───────────┐   ┌────────────┐   ┌────────────┐
-│ Ingest │──▶│ Classify  │──▶│  Extract   │──▶│  Validate  │
-└────────┘   └───────────┘   └────────────┘   └────────────┘
-                                                     │
-                                     ┌───────────────┼───────────────┐
-                                     ▼               ▼               ▼
-                              ┌──────────┐   ┌──────────┐   ┌──────────┐
-                              │ Auto-pass│   │  Review  │   │  Reject  │
-                              └──────────┘   └──────────┘   └──────────┘
+```mermaid
+flowchart TD
+    Ingest["攝取 (Ingest)"] --> Classify["分類 (Classify)"]
+    Classify --> Extract["擷取 (Extract)"]
+    Extract --> Validate["驗證 (Validate)"]
+    Validate --> AutoPass["自動通過"]
+    Validate --> Review["人工審查"]
+    Validate --> Reject["拒絕"]
 ```
 
 **關鍵元件：**
@@ -608,28 +581,11 @@ HIPAA/SOC2 requirements:
 
 **架構模式：多階段串接（Multi-Stage Cascade）**
 
-```
-         ┌───────────────────────────────────────────┐
-         │              Fast Filters                 │
-         │   (regex, blocklist, hash matching)       │
-         └─────────────────┬─────────────────────────┘
-                           │ Pass 95%
-                           ▼
-         ┌───────────────────────────────────────────┐
-         │            ML Classifiers                 │
-         │   (text: BERT, image: CLIP, video: X3D)   │
-         └─────────────────┬─────────────────────────┘
-                           │ Uncertain 5%
-                           ▼
-         ┌───────────────────────────────────────────┐
-         │            LLM Analysis                   │
-         │   (context-aware, nuanced decisions)      │
-         └─────────────────┬─────────────────────────┘
-                           │ Still uncertain 0.5%
-                           ▼
-         ┌───────────────────────────────────────────┐
-         │            Human Review                   │
-         └───────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Fast["快速過濾器<br/>(regex、封鎖清單、雜湊比對)"] -->|"通過 95%"| ML["ML 分類器<br/>(文字: BERT、圖片: CLIP、影片: X3D)"]
+    ML -->|"不確定 5%"| LLM["LLM 分析<br/>(具上下文感知、細緻的決策)"]
+    LLM -->|"仍不確定 0.5%"| HumanReview["人工審查"]
 ```
 
 **關鍵設計決策：**
@@ -706,34 +662,13 @@ thresholds = {
 
 **租戶隔離架構：**
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         API Gateway                              │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │   Auth → Tenant Context → Rate Limit → Route             │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Tenant-Aware Service Layer                    │
-│                                                                  │
-│  All operations scoped to tenant_id from context                │
-│  - Retrieval filters by tenant                                  │
-│  - Cache keys prefixed by tenant                                │
-│  - Audit logs include tenant                                    │
-└─────────────────────────────────────────────────────────────────┘
-                               │
-           ┌───────────────────┼───────────────────┐
-           ▼                   ▼                   ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│  Shared Vector  │ │  Shared LLM     │ │  Shared Object  │
-│  DB (filtered)  │ │  (no tenant     │ │  Storage        │
-│                 │ │   data in prompt│ │  (tenant paths) │
-│  tenant_id in   │ │   history)      │ │                 │
-│  all metadata   │ │                 │ │  s3://bucket/   │
-└─────────────────┘ └─────────────────┘ │  {tenant_id}/   │
-                                        └─────────────────┘
+```mermaid
+flowchart TD
+    Gateway["API Gateway<br/>Auth -> Tenant Context -> Rate Limit -> Route"]
+    Gateway --> ServiceLayer["租戶感知服務層<br/>所有操作都依上下文中的 tenant_id 限定範圍<br/>- 檢索依租戶過濾<br/>- 快取鍵以租戶為前綴<br/>- 稽核日誌包含租戶"]
+    ServiceLayer --> SharedVector["共享向量資料庫 (已過濾)<br/>所有 metadata 都含 tenant_id"]
+    ServiceLayer --> SharedLLM["共享 LLM<br/>(提示歷史中不含租戶資料)"]
+    ServiceLayer --> SharedObject["共享物件儲存<br/>(租戶路徑)<br/>s3://bucket/{tenant_id}/"]
 ```
 
 **關鍵隔離點：**
@@ -820,27 +755,11 @@ At 100ms latency, need:
 
 **架構：**
 
-```
-┌────────────────────────────────────────────────────────────┐
-│                         CDN/Edge                            │
-│              (Cache popular queries: ~30% hit)              │
-└─────────────────────────────┬──────────────────────────────┘
-                              │
-┌─────────────────────────────▼──────────────────────────────┐
-│                      Query Service                          │
-│  1. Embed query (cached embeddings for common queries)      │
-│  2. Retrieve candidates (ANN search)                        │
-│  3. Apply filters (post-filter or hybrid)                   │
-│  4. Personalize ranking                                     │
-│  5. Return results                                          │
-└─────────────────────────────┬──────────────────────────────┘
-                              │
-┌─────────────────────────────▼──────────────────────────────┐
-│                    Vector Database Cluster                  │
-│  - Sharded by category (reduce search space)                │
-│  - HNSW index with ef_search tuned for speed                │
-│  - Metadata filtering with roaring bitmaps                  │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Edge["CDN/Edge<br/>(快取熱門查詢: ~30% 命中)"]
+    Edge --> QueryService["查詢服務<br/>1. 嵌入查詢 (常見查詢使用快取的 embedding)<br/>2. 檢索候選 (ANN 搜尋)<br/>3. 套用篩選 (後過濾或混合)<br/>4. 個人化排序<br/>5. 回傳結果"]
+    QueryService --> VectorCluster["向量資料庫叢集<br/>- 依類別分片 (縮小搜尋空間)<br/>- HNSW 索引, ef_search 調校為追求速度<br/>- 以 roaring bitmaps 進行 metadata 過濾"]
 ```
 
 **延遲預算：**
@@ -921,24 +840,24 @@ Reindexing (description changes):
 
 **高階架構：**
 
-```
-                    ┌────────────────────────────────────────────┐
-                    │              EVAL PIPELINE                  │
-                    │                                             │
-  Prompt/model PR ──► CI runner ── dev set (visible, ~200 cases) │
-                    │     │                                       │
-                    │     ├── held-out set (CI-only, ~300 cases,  │
-                    │     │    rotated quarterly)                  │
-                    │     │                                       │
-                    │     └── gate: pass/fail vs baseline ──► merge│
-                    │                                             │
-  Production ──────► sampler (1-5% of traffic)                   │
-                    │     │                                       │
-                    │     ├── LLM-judge scoring (async, cheap)    │
-                    │     ├── human-graded slice (weekly, ~100)   │
-                    │     └── outcome metrics (thumbs, escalation)│
-                    │                                             │
-                    └──── dashboards + regression alerts ─────────┘
+```mermaid
+flowchart TD
+    PR["Prompt/model PR"] --> CIRunner["CI runner"]
+    subgraph EVAL["評估管線 (EVAL PIPELINE)"]
+        CIRunner --> DevSet["dev set (可見, ~200 案例)"]
+        CIRunner --> HeldOut["held-out set (僅 CI, ~300 案例, 每季輪換)"]
+        CIRunner --> Gate["把關: 對照基準 pass/fail"]
+        Gate --> Merge["合併 (merge)"]
+        Sampler["抽樣器 (1-5% 流量)"] --> JudgeScore["LLM-judge 評分 (非同步, 便宜)"]
+        Sampler --> HumanSlice["人工評分子集 (每週, ~100)"]
+        Sampler --> Outcome["結果指標 (好評/差評, 升級)"]
+    end
+    Production["生產環境"] --> Sampler
+    DevSet --> Dashboards["儀表板 + 衰退警報"]
+    HeldOut --> Dashboards
+    JudgeScore --> Dashboards
+    HumanSlice --> Dashboards
+    Outcome --> Dashboards
 ```
 
 **1. 資料集策略（多數候選人會跳過的部分）：**
@@ -1022,24 +941,15 @@ dominant cost and it is what keeps the judge honest.
 
 **記憶階層：**
 
-```
-┌──────────────────────────────────────────────────────────┐
-│ L1 Working memory: the context window                     │
-│   Current session, tool results, scratchpad               │
-│   Managed by compaction + just-in-time loading            │
-├──────────────────────────────────────────────────────────┤
-│ L2 Episodic memory: what happened                         │
-│   Past session summaries, trajectories, outcomes          │
-│   Store: vector DB, retrieved by similarity + recency     │
-├──────────────────────────────────────────────────────────┤
-│ L3 Semantic memory: what is true                          │
-│   Extracted facts and preferences with provenance         │
-│   Store: structured records or knowledge graph            │
-├──────────────────────────────────────────────────────────┤
-│ L4 Procedural memory: how to do things                    │
-│   Learned workflows, per-user playbooks (skills)          │
-│   Store: versioned files, loaded on demand                │
-└──────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    L1["L1 工作記憶: 上下文視窗<br/>當前會話、工具結果、暫存區<br/>由壓縮 + 即時載入管理"]
+    L2["L2 情節記憶: 發生過什麼<br/>過去的會話摘要、軌跡、結果<br/>儲存: 向量資料庫, 依相似度 + 近期性檢索"]
+    L3["L3 語意記憶: 什麼是真的<br/>擷取出的事實與偏好, 附帶來源<br/>儲存: 結構化記錄或知識圖譜"]
+    L4["L4 程序記憶: 如何做事<br/>學到的工作流程、各使用者的操作手冊 (skills)<br/>儲存: 版本化檔案, 按需載入"]
+    L1 --- L2
+    L2 --- L3
+    L3 --- L4
 ```
 
 **1. 會話內（L1）：這是上下文工程，不是儲存。**
@@ -1047,22 +957,16 @@ dominant cost and it is what keeps the judge honest.
 
 **2. 寫入路徑（困難的部分）：**
 
-```
-Session ends (or hits checkpoint)
-    │
-    ├── Summarize episode → L2 (embedding + metadata:
-    │     timestamp, topics, outcome, sentiment)
-    │
-    └── Fact extraction pass → candidate facts
-          │
-          ├── Deduplicate against existing L3
-          ├── Conflict check: contradicts a stored fact?
-          │     ├── Newer + higher confidence → supersede (keep old
-          │     │     version with valid_to timestamp)
-          │     └── Ambiguous → store as candidate, confirm with
-          │           user at next natural opportunity
-          └── Importance filter: discard chit-chat, keep
-                preferences, commitments, corrections
+```mermaid
+flowchart TD
+    Start["會話結束 (或抵達檢查點)"]
+    Start --> Summarize["摘要情節 -> L2<br/>(embedding + metadata: 時間戳、主題、結果、情緒)"]
+    Start --> FactExtract["事實擷取 -> 候選事實"]
+    FactExtract --> Dedup["對照既有 L3 去重"]
+    FactExtract --> Conflict{"衝突檢查:<br/>是否與已儲存的事實矛盾?"}
+    FactExtract --> Importance["重要性過濾: 丟棄閒聊,<br/>保留偏好、承諾、更正"]
+    Conflict -->|"較新 + 信心較高"| Supersede["取代<br/>(以 valid_to 時間戳保留舊版本)"]
+    Conflict -->|"含糊不清"| Candidate["存為候選, 在下次自然時機<br/>向使用者確認"]
 ```
 
 衝突路徑最為重要：「使用者從 Madrid 搬到 Lisbon」必須取代舊資料，而非與其並存。雙時間（bitemporal）記錄（valid_from、valid_to）讓取代過程可稽核且可還原。

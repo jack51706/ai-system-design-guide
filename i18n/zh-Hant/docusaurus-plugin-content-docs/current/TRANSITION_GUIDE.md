@@ -15,34 +15,38 @@
 
 在挑選路徑之前，先了解目標角色實際上是什麼：
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    AI ROLE LANDSCAPE                            │
-│                                                                 │
-│  ┌──────────────────────┐    ┌──────────────────────────────┐  │
-│  │   APPLICATION LAYER  │    │     INFRASTRUCTURE LAYER     │  │
-│  │                      │    │                              │  │
-│  │  LLM App Engineer    │    │  MLOps / AI Infra Engineer   │  │
-│  │  AI Product Engineer │    │  AI Platform Engineer        │  │
-│  │  Agentic Systems Eng │    │  AI Reliability Engineer     │  │
-│  └──────────────────────┘    └──────────────────────────────┘  │
-│                                                                 │
-│  ┌──────────────────────┐    ┌──────────────────────────────┐  │
-│  │    QUALITY LAYER     │    │     LEADERSHIP LAYER         │  │
-│  │                      │    │                              │  │
-│  │  AI Eval Engineer    │    │  AI Product Manager          │  │
-│  │  AI Quality Engineer │    │  AI Engineering Manager      │  │
-│  │  Red Team Analyst    │    │  AI Program Manager          │  │
-│  └──────────────────────┘    └──────────────────────────────┘  │
-│                                                                 │
-│  ┌──────────────────────┐    ┌──────────────────────────────┐  │
-│  │    RESEARCH LAYER    │    │     SPECIALIST LAYER         │  │
-│  │                      │    │                              │  │
-│  │  Applied AI Scientist│    │  Agentic Coding Specialist   │  │
-│  │  Fine-tuning Engineer│    │  RAG Architect               │  │
-│  │  Alignment Researcher│    │  AI Safety Engineer          │  │
-│  └──────────────────────┘    └──────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph APP["應用層"]
+        A1["LLM App Engineer"]
+        A2["AI Product Engineer"]
+        A3["Agentic Systems Eng"]
+    end
+    subgraph INFRA["基礎設施層"]
+        B1["MLOps / AI Infra Engineer"]
+        B2["AI Platform Engineer"]
+        B3["AI Reliability Engineer"]
+    end
+    subgraph QUAL["品質層"]
+        C1["AI Eval Engineer"]
+        C2["AI Quality Engineer"]
+        C3["Red Team Analyst"]
+    end
+    subgraph LEAD["領導層"]
+        D1["AI Product Manager"]
+        D2["AI Engineering Manager"]
+        D3["AI Program Manager"]
+    end
+    subgraph RES["研究層"]
+        E1["Applied AI Scientist"]
+        E2["Fine-tuning Engineer"]
+        E3["Alignment Researcher"]
+    end
+    subgraph SPEC["專家層"]
+        F1["Agentic Coding Specialist"]
+        F2["RAG Architect"]
+        F3["AI Safety Engineer"]
+    end
 ```
 
 ---
@@ -57,13 +61,13 @@
 
 #### 目標角色
 
-```
-Backend Engineer
-      │
-      ├──► LLM Application Engineer       (most common transition, 3–6 months)
-      ├──► Agentic Systems Engineer        (3–9 months)
-      ├──► AI Infrastructure / MLOps Eng  (6–12 months, needs GPU/serving knowledge)
-      └──► RAG Architect                  (4–8 months)
+```mermaid
+flowchart TD
+    R["Backend Engineer"]
+    R --> N1["LLM Application Engineer<br/>(最常見的轉換，3-6 個月)"]
+    R --> N2["Agentic Systems Engineer<br/>(3-9 個月)"]
+    R --> N3["AI Infrastructure / MLOps Eng<br/>(6-12 個月，需要 GPU/服務知識)"]
+    R --> N4["RAG Architect<br/>(4-8 個月)"]
 ```
 
 #### 技能落差分析
@@ -118,12 +122,12 @@ Backend Engineer
 
 #### 目標角色
 
-```
-Frontend Engineer
-      │
-      ├──► AI Product Engineer         (3–6 months — highest demand)
-      ├──► AI UX Engineer              (3–6 months, UX focus)
-      └──► Full-Stack LLM Engineer     (6–9 months, add backend LLM skills)
+```mermaid
+flowchart TD
+    R["Frontend Engineer"]
+    R --> N1["AI Product Engineer<br/>(3-6 個月，需求最高)"]
+    R --> N2["AI UX Engineer<br/>(3-6 個月，UX 導向)"]
+    R --> N3["Full-Stack LLM Engineer<br/>(6-9 個月，補上後端 LLM 技能)"]
 ```
 
 #### 技能落差分析
@@ -175,12 +179,12 @@ Frontend Engineer
 
 #### 目標角色
 
-```
-QA Engineer
-      │
-      ├──► AI Eval Engineer            (3–6 months — best fit, fast transition)
-      ├──► AI Quality Engineer         (3–6 months)
-      └──► Red Team Analyst            (6–9 months, security focus)
+```mermaid
+flowchart TD
+    R["QA Engineer"]
+    R --> N1["AI Eval Engineer<br/>(3-6 個月，最契合、轉換快)"]
+    R --> N2["AI Quality Engineer<br/>(3-6 個月)"]
+    R --> N3["Red Team Analyst<br/>(6-9 個月，安全導向)"]
 ```
 
 #### 技能落差分析
@@ -234,12 +238,12 @@ QA Engineer
 
 #### 目標角色
 
-```
-Product Manager
-      │
-      ├──► AI Product Manager           (3–6 months — direct analog)
-      ├──► AI Program Manager           (3–6 months, coordination focus)
-      └──► Head of AI Product           (9–18 months, leadership path)
+```mermaid
+flowchart TD
+    R["Product Manager"]
+    R --> N1["AI Product Manager<br/>(3-6 個月，直接對應)"]
+    R --> N2["AI Program Manager<br/>(3-6 個月，協調導向)"]
+    R --> N3["Head of AI Product<br/>(9-18 個月，領導路徑)"]
 ```
 
 #### 技能落差分析
@@ -293,12 +297,12 @@ Product Manager
 
 #### 目標角色
 
-```
-Engineering Manager
-      │
-      ├──► AI Engineering Manager       (6–12 months)
-      ├──► Director of AI Engineering   (12–24 months)
-      └──► VP of AI / Head of AI        (18–36 months)
+```mermaid
+flowchart TD
+    R["Engineering Manager"]
+    R --> N1["AI Engineering Manager<br/>(6-12 個月)"]
+    R --> N2["Director of AI Engineering<br/>(12-24 個月)"]
+    R --> N3["VP of AI / Head of AI<br/>(18-36 個月)"]
 ```
 
 #### 身為 AI EM 會有什麼改變
@@ -340,12 +344,12 @@ Engineering Manager
 
 #### 目標角色
 
-```
-DevOps / Platform Engineer
-      │
-      ├──► MLOps Engineer               (3–6 months)
-      ├──► AI Infrastructure Engineer   (6–9 months)
-      └──► AI Platform Engineer         (9–12 months)
+```mermaid
+flowchart TD
+    R["DevOps / Platform Engineer"]
+    R --> N1["MLOps Engineer<br/>(3-6 個月)"]
+    R --> N2["AI Infrastructure Engineer<br/>(6-9 個月)"]
+    R --> N3["AI Platform Engineer<br/>(9-12 個月)"]
 ```
 
 #### 技能落差分析
@@ -391,12 +395,12 @@ DevOps / Platform Engineer
 
 #### 目標角色
 
-```
-Data Engineer
-      │
-      ├──► AI Data Engineer             (2–4 months — fastest transition)
-      ├──► Embedding Pipeline Engineer  (3–6 months)
-      └──► Fine-tuning Data Specialist  (4–8 months)
+```mermaid
+flowchart TD
+    R["Data Engineer"]
+    R --> N1["AI Data Engineer<br/>(2-4 個月，最快的轉換)"]
+    R --> N2["Embedding Pipeline Engineer<br/>(3-6 個月)"]
+    R --> N3["Fine-tuning Data Specialist<br/>(4-8 個月)"]
 ```
 
 #### 技能落差分析
@@ -438,18 +442,15 @@ Data Engineer
 
 ## 📊 角色比較總覽
 
-```
-Role            Months to   Avg Salary    Best Suited For
-                First Role   (US, 2026)
-────────────────────────────────────────────────────────
-Backend         3–6 mo       $170–220K    LLM App / Agentic Engineering
-Frontend        3–6 mo       $150–190K    AI Product / UX Engineering
-QA              3–6 mo       $140–180K    AI Eval / Quality Engineering
-PM              3–6 mo       $160–200K    AI Product Management
-DevOps          3–6 mo       $170–220K    MLOps / AI Platform
-Data Eng        2–4 mo       $165–210K    RAG Data, Fine-tuning Data
-EM              6–12 mo      $200–280K    AI Engineering Manager
-```
+| 角色 | 至首份職位的月數 | 平均薪資（US, 2026） | 最適合的方向 |
+|------|------------------|----------------------|--------------|
+| 後端 | 3-6 個月 | $170-220K | LLM App / Agentic Engineering |
+| 前端 | 3-6 個月 | $150-190K | AI Product / UX Engineering |
+| QA | 3-6 個月 | $140-180K | AI Eval / Quality Engineering |
+| PM | 3-6 個月 | $160-200K | AI Product Management |
+| DevOps | 3-6 個月 | $170-220K | MLOps / AI Platform |
+| 資料工程 | 2-4 個月 | $165-210K | RAG Data, Fine-tuning Data |
+| EM | 6-12 個月 | $200-280K | AI Engineering Manager |
 
 *薪資為美國市場估計值，依據 Levels.fyi 與 LinkedIn 資料，2026 年 5 月。範圍會因公司、地點與經驗水準而有顯著差異。*
 

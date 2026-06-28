@@ -21,29 +21,24 @@ The AI coding agent landscape has exploded. This guide covers open-weight coding
 
 The coding AI landscape has three distinct layers:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    AI CODING STACK (2026)                    │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  LAYER 3: CODING AGENTS (Autonomous, multi-turn)           │
-│  ┌──────────────┐ ┌────────────┐ ┌────────────────────┐   │
-│  │  Claude Code │ │  OpenHands │ │  Cline / Aider     │   │
-│  │  (Anthropic) │ │  (Open)    │ │  (Open)            │   │
-│  └──────────────┘ └────────────┘ └────────────────────┘   │
-│                                                             │
-│  LAYER 2: AI IDEs (Completion + editing, developer-in-loop)│
-│  ┌──────────────┐ ┌────────────┐ ┌────────────────────┐   │
-│  │    Cursor    │ │  Windsurf  │ │  GitHub Copilot    │   │
-│  └──────────────┘ └────────────┘ └────────────────────┘   │
-│                                                             │
-│  LAYER 1: CODING MODELS (The brains behind everything)     │
-│  ┌──────────────┐ ┌────────────┐ ┌────────────────────┐   │
-│  │  Opus 4.7    │ │  GPT-5.5   │ │ DeepSeek V4 Pro    │   │
-│  │  Sonnet 4.6  │ │ Gemini 3.1 │ │ Qwen 3.6 Coder     │   │
-│  └──────────────┘ └────────────┘ └────────────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph L3["LAYER 3: Coding Agents (Autonomous, multi-turn)"]
+        A1["Claude Code<br/>(Anthropic)"]
+        A2["OpenHands<br/>(Open)"]
+        A3["Cline / Aider<br/>(Open)"]
+    end
+    subgraph L2["LAYER 2: AI IDEs (Completion + editing, developer-in-loop)"]
+        B1["Cursor"]
+        B2["Windsurf"]
+        B3["GitHub Copilot"]
+    end
+    subgraph L1["LAYER 1: Coding Models (The brains behind everything)"]
+        C1["Opus 4.7<br/>Sonnet 4.6"]
+        C2["GPT-5.5<br/>Gemini 3.1"]
+        C3["DeepSeek V4 Pro<br/>Qwen 3.6 Coder"]
+    end
+    L3 --> L2 --> L1
 ```
 
 ---
@@ -115,21 +110,19 @@ response = model.generate("def fibonacci(n: int) -> list[int]:")
 
 ### Open Model Selection Guide
 
-```
-Simple completions (< 100ms latency needed)?
-  → StarCoder2-3B or Qwen2.5-Coder-1.5B (local, fast)
-
-Best quality self-hosted?
-  → Qwen2.5-Coder-32B-Instruct (2× A100)
-
-Budget < 1× A100 GPU?
-  → Qwen2.5-Coder-7B-Instruct (1× RTX 4090 sufficient)
-
-Need reasoning + coding?
-  → DeepSeek-R1-Distill-Qwen-32B
-
-Competitive programming / algorithmic?
-  → DeepSeek-Coder-V2 or DeepSeek-R1
+```mermaid
+flowchart TD
+    Root["Open Model Selection"]
+    Root --> Q1["Simple completions<br/>(< 100ms latency needed)?"]
+    Q1 --> A1["StarCoder2-3B or<br/>Qwen2.5-Coder-1.5B (local, fast)"]
+    Root --> Q2["Best quality self-hosted?"]
+    Q2 --> A2["Qwen2.5-Coder-32B-Instruct (2x A100)"]
+    Root --> Q3["Budget < 1x A100 GPU?"]
+    Q3 --> A3["Qwen2.5-Coder-7B-Instruct<br/>(1x RTX 4090 sufficient)"]
+    Root --> Q4["Need reasoning + coding?"]
+    Q4 --> A4["DeepSeek-R1-Distill-Qwen-32B"]
+    Root --> Q5["Competitive programming / algorithmic?"]
+    Q5 --> A5["DeepSeek-Coder-V2 or DeepSeek-R1"]
 ```
 
 ---
@@ -221,14 +214,13 @@ docker run -it --rm \
 ```
 
 **Architecture:**
-```
-User request
-    ↓
-OpenHands Controller
-    ├── CodeActAgent (main strategy)
-    ├── Docker Sandbox (isolated execution)
-    ├── File editor (str_replace_editor)
-    └── Browser (playwright for web tasks)
+```mermaid
+flowchart TD
+    U["User request"] --> C["OpenHands Controller"]
+    C --> A1["CodeActAgent (main strategy)"]
+    C --> A2["Docker Sandbox (isolated execution)"]
+    C --> A3["File editor (str_replace_editor)"]
+    C --> A4["Browser (playwright for web tasks)"]
 ```
 
 **Key features:**
@@ -276,14 +268,14 @@ aider --model claude-3-7-sonnet-20250219
 
 Open-source VS Code extension for autonomous coding:
 
-```
-VS Code
-  └── Cline Extension
-        ├── Any model (Claude, GPT, Gemini, Ollama)
-        ├── File system access (read/write any file)
-        ├── Terminal (bash commands)
-        ├── Browser (playwright)
-        └── MCP servers (any MCP tool)
+```mermaid
+flowchart TD
+    V["VS Code"] --> E["Cline Extension"]
+    E --> A1["Any model (Claude, GPT, Gemini, Ollama)"]
+    E --> A2["File system access (read/write any file)"]
+    E --> A3["Terminal (bash commands)"]
+    E --> A4["Browser (playwright)"]
+    E --> A5["MCP servers (any MCP tool)"]
 ```
 
 **Key differentiators:**
@@ -362,30 +354,31 @@ LiveCodeBench uses fresh competitive programming problems (not in training data)
 
 ### Quick Decision Tree
 
-```
-What is your primary need?
+```mermaid
+flowchart TD
+    Root{"What is your primary need?"}
 
-├─ IDE coding assistance (completions + chat)?
-│  ├─ Microsoft ecosystem / enterprise? → GitHub Copilot
-│  ├─ Want best quality? → Cursor (Pro)
-│  └─ Want free + model choice? → Windsurf or Cline
-│
-├─ Autonomous agent for standalone coding tasks?
-│  ├─ Best quality, don't mind proprietary? → Claude Code
-│  ├─ Need open-source? → OpenHands
-│  ├─ CLI-first, git-native? → Aider
-│  └─ VS Code embedded, MCP-native? → Cline
-│
-├─ Self-hosted model for custom deployment?
-│  ├─ Best quality? → Qwen2.5-Coder-32B
-│  ├─ Need reasoning? → DeepSeek-R1-Distill-32B
-│  ├─ Fast completions? → Qwen2.5-Coder-7B or StarCoder2-7B
-│  └─ Edge/on-device? → Qwen2.5-Coder-1.5B or StarCoder2-3B
-│
-└─ CI/CD pipeline integration?
-   ├─ Best results? → Claude Code SDK (headless)
-   ├─ Open-source? → OpenHands REST API
-   └─ Git-native? → Aider CLI in GitHub Actions
+    Root --> C1{"IDE coding assistance<br/>(completions + chat)?"}
+    C1 -->|"Microsoft ecosystem / enterprise"| C1a["GitHub Copilot"]
+    C1 -->|"Want best quality"| C1b["Cursor (Pro)"]
+    C1 -->|"Want free + model choice"| C1c["Windsurf or Cline"]
+
+    Root --> C2{"Autonomous agent for<br/>standalone coding tasks?"}
+    C2 -->|"Best quality, don't mind proprietary"| C2a["Claude Code"]
+    C2 -->|"Need open-source"| C2b["OpenHands"]
+    C2 -->|"CLI-first, git-native"| C2c["Aider"]
+    C2 -->|"VS Code embedded, MCP-native"| C2d["Cline"]
+
+    Root --> C3{"Self-hosted model for<br/>custom deployment?"}
+    C3 -->|"Best quality"| C3a["Qwen2.5-Coder-32B"]
+    C3 -->|"Need reasoning"| C3b["DeepSeek-R1-Distill-32B"]
+    C3 -->|"Fast completions"| C3c["Qwen2.5-Coder-7B or StarCoder2-7B"]
+    C3 -->|"Edge/on-device"| C3d["Qwen2.5-Coder-1.5B or StarCoder2-3B"]
+
+    Root --> C4{"CI/CD pipeline integration?"}
+    C4 -->|"Best results"| C4a["Claude Code SDK (headless)"]
+    C4 -->|"Open-source"| C4b["OpenHands REST API"]
+    C4 -->|"Git-native"| C4c["Aider CLI in GitHub Actions"]
 ```
 
 ### Comparison Matrix
@@ -409,39 +402,29 @@ What is your primary need?
 
 Here's how to build an internal AI coding platform:
 
-```
-┌────────────────────────────────────────────────────────────┐
-│             ENTERPRISE CODING AGENT PLATFORM                │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│  Developer                                                 │
-│     ↓ (Jira ticket / PR description)                      │
-│  ┌──────────────────────────────────┐                      │
-│  │        TASK INTAKE LAYER         │                      │
-│  │  • Parse task from Jira/GitHub   │                      │
-│  │  • Classify: simple/complex      │                      │
-│  │  • Route to appropriate agent    │                      │
-│  └──────────────┬───────────────────┘                      │
-│                 │                                          │
-│    Simple fix   │   Complex feature                        │
-│        ↓        │        ↓                                 │
-│  ┌──────────┐   │  ┌──────────────────┐                    │
-│  │  Aider   │   │  │   Claude Code    │                    │
-│  │ (cheap)  │   └→ │  SDK (headless)  │                    │
-│  └────┬─────┘      └────────┬─────────┘                    │
-│       │                     │                              │
-│       └─────────────────────┘                              │
-│                 ↓                                          │
-│  ┌──────────────────────────────────┐                      │
-│  │         REVIEW LAYER             │                      │
-│  │  • Git diff → PR creation        │                      │
-│  │  • Auto-run CI tests             │                      │
-│  │  • Human review (required)       │                      │
-│  └──────────────────────────────────┘                      │
-│                 ↓                                          │
-│         Merge to main (human approved)                     │
-│                                                            │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Dev["Developer"] -->|"Jira ticket / PR description"| Intake
+
+    subgraph Intake["TASK INTAKE LAYER"]
+        I1["Parse task from Jira/GitHub"]
+        I2["Classify: simple/complex"]
+        I3["Route to appropriate agent"]
+    end
+
+    Intake -->|"Simple fix"| Aider["Aider (cheap)"]
+    Intake -->|"Complex feature"| CC["Claude Code SDK (headless)"]
+
+    Aider --> Review
+    CC --> Review
+
+    subgraph Review["REVIEW LAYER"]
+        R1["Git diff -> PR creation"]
+        R2["Auto-run CI tests"]
+        R3["Human review (required)"]
+    end
+
+    Review --> Merge["Merge to main (human approved)"]
 ```
 
 ### Key Production Decisions
@@ -490,14 +473,16 @@ The quality gap between Qwen2.5-Coder-32B and Claude 3.7 Sonnet is real but shri
 I'd use a three-tier evaluation:
 
 **1. Functional tests** (automated, every run):
-```
-Agent output → Run pytest → Pass rate metric
+```mermaid
+flowchart LR
+    A["Agent output"] --> B["Run pytest"] --> C["Pass rate metric"]
 ```
 
 **2. Ground truth comparison** (weekly):
-```
-Known bug → Agent fix → Compare to expert fix
-Metric: Semantic similarity of diff (not byte-exact)
+```mermaid
+flowchart LR
+    A["Known bug"] --> B["Agent fix"] --> C["Compare to expert fix"]
+    C -.-> M["Metric: Semantic similarity of diff (not byte-exact)"]
 ```
 
 **3. Human evaluation** (sample 5% of agent PRs):

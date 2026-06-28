@@ -323,27 +323,22 @@ Provide your final answer.
 
 分層架構，由多個模型饋入聚合器：
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    MIXTURE OF AGENTS (MoA)                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Layer 1 (Proposers):                                           │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐            │
-│  │ Claude  │  │  GPT-4  │  │ Gemini  │  │ Llama   │            │
-│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘            │
-│       │            │            │            │                   │
-│       └────────────┴─────┬──────┴────────────┘                  │
-│                          │                                       │
-│  Layer 2 (Aggregator):   ▼                                      │
-│  ┌──────────────────────────────────────────────────┐           │
-│  │  "Given these perspectives: [R1, R2, R3, R4]    │           │
-│  │   Synthesize the best answer..."                │           │
-│  └────────────────────────┬─────────────────────────┘           │
-│                           │                                      │
-│                           ▼                                      │
-│                    [Final Output]                                │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph L1["第 1 層（提案者 Proposers）"]
+        P1["Claude"]
+        P2["GPT-4"]
+        P3["Gemini"]
+        P4["Llama"]
+    end
+    subgraph L2["第 2 層（聚合器 Aggregator）"]
+        AGG["給定這些觀點：<br/>[R1, R2, R3, R4]<br/>綜合出最佳答案..."]
+    end
+    P1 --> AGG
+    P2 --> AGG
+    P3 --> AGG
+    P4 --> AGG
+    AGG --> OUT["最終輸出"]
 ```
 
 ```python
@@ -393,16 +388,14 @@ Synthesize the best answer, combining the strongest elements from each response.
 
 ### 決策框架
 
-```
-Is there a single "correct" answer format?
-├── Yes (classification, math)
-│   └── Use Ensemble (voting/averaging)
-│
-└── No (creative writing, open QA)
-    └── Use Arbitration (best-of-N)
-        └── Do you have reliable scoring?
-            ├── Yes → Reward model selection
-            └── No → LLM-as-judge or human
+```mermaid
+flowchart TD
+    Q1{"是否存在單一的<br/>正確答案格式？"}
+    Q1 -->|"是（分類、數學）"| E["使用集成<br/>（投票/平均）"]
+    Q1 -->|"否（創意寫作、開放式問答）"| A["使用仲裁<br/>（best-of-N）"]
+    A --> Q2{"你是否有<br/>可靠的評分？"}
+    Q2 -->|"是"| RM["獎勵模型選擇"]
+    Q2 -->|"否"| LLM["LLM-as-judge 或人工"]
 ```
 
 ---

@@ -15,10 +15,15 @@
 | **HyDE** | 預期沒有直接匹配 | 有創造力，但可能產生幻覺 |
 | **Parent-Child Chunking** | 需要周邊上下文 | 記憶體開銷 |
 
-```
-Query → Embed → Vector Search → Rerank → Top-K → Generate
-              ↓
-         BM25 Search ─────────┘ (hybrid)
+```mermaid
+flowchart LR
+    Q["查詢"] --> E["Embed"]
+    E --> VS["Vector Search"]
+    VS --> R["Rerank"]
+    R --> TK["Top-K"]
+    TK --> G["生成"]
+    Q --> BM["BM25 Search<br/>(hybrid)"]
+    BM --> R
 ```
 
 ---
@@ -45,16 +50,15 @@ Query → Embed → Vector Search → Rerank → Top-K → Generate
 | **Human-in-the-Loop** | 高風險動作 | 中 |
 | **Swarm / Handoff** | 專門化的子代理 | 高 |
 
-```
-┌─────────────────────────────────────────┐
-│              REACT LOOP                  │
-│                                         │
-│  Observe → Think → Act → Observe → ...  │
-│              ↓                          │
-│         [Tool Call]                     │
-│              ↓                          │
-│         [Result]                        │
-└─────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph REACT["REACT LOOP"]
+        O["觀察"] --> T["思考"]
+        T --> A["行動"]
+        A --> TC["工具呼叫"]
+        TC --> RES["結果"]
+        RES --> O
+    end
 ```
 
 ---
@@ -70,26 +74,26 @@ Query → Embed → Vector Search → Rerank → Top-K → Generate
 | **CLAUDE.md Manifest** | 注入專案上下文 | Claude Code CLAUDE.md 檔案 |
 | **Sub-Agent Parallelism** | 大型程式碼庫變更 | 每個模組多個代理 |
 
-```
-┌────────────────────────────────────────────────────────┐
-│              AGENTIC CODING LOOP                        │
-│                                                        │
-│  Understand → Plan → Implement → Run Tests → Fix       │
-│      ↑             (bash + text_editor tools)    │     │
-│      └──────────── Iterate until tests pass ────┘     │
-│                                                        │
-│  [CLAUDE.md injects: coding style, test commands,     │
-│   forbidden patterns, architecture decisions]          │
-└────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph LOOP["AGENTIC CODING LOOP"]
+        U["理解"] --> P["規劃"]
+        P --> I["實作<br/>(bash + text_editor tools)"]
+        I --> RT["執行測試"]
+        RT --> F["修正"]
+        F -->|"反覆直到測試通過"| U
+    end
+    M["CLAUDE.md 注入：編碼風格、測試指令、<br/>禁用模式、架構決策"] --> LOOP
 ```
 
 **何時該用哪個工具：**
-```
-Need full autonomy + CLI → Claude Code
-Need open-source + any LLM → OpenHands / Cline
-Need tight IDE integration → Cursor / Windsurf
-Need reproducible pipelines → OpenHands in Docker CI
-```
+
+| 需求 | 工具 |
+|------|------|
+| 完整自主 + CLI | Claude Code |
+| 開源 + 任意 LLM | OpenHands / Cline |
+| 緊密 IDE 整合 | Cursor / Windsurf |
+| 可重現的管線 | OpenHands in Docker CI |
 
 ---
 
@@ -135,8 +139,14 @@ async def generate(prompt):
 | **Tenant Isolation** | 跨租戶存取 | 在查詢時過濾 |
 | **Rate Limiting** | 濫用 | 每使用者/租戶限制 |
 
-```
-Input → Validate → Sanitize → LLM → Filter → Validate → Output
+```mermaid
+flowchart LR
+    I["輸入"] --> V1["驗證"]
+    V1 --> S["清理"]
+    S --> L["LLM"]
+    L --> F["過濾"]
+    F --> V2["驗證"]
+    V2 --> O["輸出"]
 ```
 
 ---
@@ -161,10 +171,12 @@ Input → Validate → Sanitize → LLM → Filter → Validate → Output
 | **Prompt Compression** | 10-30% | 品質風險 |
 | **Batch Processing** | 30-50% | 延遲 |
 
-```
-Query → Classify → Route → [Small Model] or [Large Model]
-                      ↓
-              [Cheap: 80%]  [Expensive: 20%]
+```mermaid
+flowchart LR
+    Q["查詢"] --> C["分類"]
+    C --> R{"路由"}
+    R --> SM["Small Model<br/>(便宜：80%)"]
+    R --> LM["Large Model<br/>(昂貴：20%)"]
 ```
 
 ---

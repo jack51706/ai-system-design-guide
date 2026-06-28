@@ -15,10 +15,15 @@ Quick lookup for common patterns. See individual chapters for detailed implement
 | **HyDE** | No direct matches expected | Creative, but can hallucinate |
 | **Parent-Child Chunking** | Need surrounding context | Memory overhead |
 
-```
-Query → Embed → Vector Search → Rerank → Top-K → Generate
-              ↓
-         BM25 Search ─────────┘ (hybrid)
+```mermaid
+flowchart LR
+    Q["Query"] --> E["Embed"]
+    E --> VS["Vector Search"]
+    VS --> R["Rerank"]
+    R --> TK["Top-K"]
+    TK --> G["Generate"]
+    Q --> BM["BM25 Search<br/>(hybrid)"]
+    BM --> R
 ```
 
 ---
@@ -45,16 +50,15 @@ Query → Embed → Vector Search → Rerank → Top-K → Generate
 | **Human-in-the-Loop** | High-stakes actions | Medium |
 | **Swarm / Handoff** | Specialised sub-agents | High |
 
-```
-┌─────────────────────────────────────────┐
-│              REACT LOOP                  │
-│                                         │
-│  Observe → Think → Act → Observe → ...  │
-│              ↓                          │
-│         [Tool Call]                     │
-│              ↓                          │
-│         [Result]                        │
-└─────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph REACT["REACT LOOP"]
+        O["Observe"] --> T["Think"]
+        T --> A["Act"]
+        A --> TC["Tool Call"]
+        TC --> RES["Result"]
+        RES --> O
+    end
 ```
 
 ---
@@ -70,26 +74,26 @@ Query → Embed → Vector Search → Rerank → Top-K → Generate
 | **CLAUDE.md Manifest** | Project context injection | Claude Code CLAUDE.md file |
 | **Sub-Agent Parallelism** | Large codebase changes | Multiple agents per module |
 
-```
-┌────────────────────────────────────────────────────────┐
-│              AGENTIC CODING LOOP                        │
-│                                                        │
-│  Understand → Plan → Implement → Run Tests → Fix       │
-│      ↑             (bash + text_editor tools)    │     │
-│      └──────────── Iterate until tests pass ────┘     │
-│                                                        │
-│  [CLAUDE.md injects: coding style, test commands,     │
-│   forbidden patterns, architecture decisions]          │
-└────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph LOOP["AGENTIC CODING LOOP"]
+        U["Understand"] --> P["Plan"]
+        P --> I["Implement<br/>(bash + text_editor tools)"]
+        I --> RT["Run Tests"]
+        RT --> F["Fix"]
+        F -->|"Iterate until tests pass"| U
+    end
+    M["CLAUDE.md injects: coding style, test commands,<br/>forbidden patterns, architecture decisions"] --> LOOP
 ```
 
 **When to use which tool:**
-```
-Need full autonomy + CLI → Claude Code
-Need open-source + any LLM → OpenHands / Cline
-Need tight IDE integration → Cursor / Windsurf
-Need reproducible pipelines → OpenHands in Docker CI
-```
+
+| Need | Tool |
+|------|------|
+| Full autonomy + CLI | Claude Code |
+| Open-source + any LLM | OpenHands / Cline |
+| Tight IDE integration | Cursor / Windsurf |
+| Reproducible pipelines | OpenHands in Docker CI |
 
 ---
 
@@ -135,8 +139,14 @@ async def generate(prompt):
 | **Tenant Isolation** | Cross-tenant access | Filter at query time |
 | **Rate Limiting** | Abuse | Per-user/tenant limits |
 
-```
-Input → Validate → Sanitize → LLM → Filter → Validate → Output
+```mermaid
+flowchart LR
+    I["Input"] --> V1["Validate"]
+    V1 --> S["Sanitize"]
+    S --> L["LLM"]
+    L --> F["Filter"]
+    F --> V2["Validate"]
+    V2 --> O["Output"]
 ```
 
 ---
@@ -161,10 +171,12 @@ Input → Validate → Sanitize → LLM → Filter → Validate → Output
 | **Prompt Compression** | 10-30% | Quality risk |
 | **Batch Processing** | 30-50% | Latency |
 
-```
-Query → Classify → Route → [Small Model] or [Large Model]
-                      ↓
-              [Cheap: 80%]  [Expensive: 20%]
+```mermaid
+flowchart LR
+    Q["Query"] --> C["Classify"]
+    C --> R{"Route"}
+    R --> SM["Small Model<br/>(Cheap: 80%)"]
+    R --> LM["Large Model<br/>(Expensive: 20%)"]
 ```
 
 ---

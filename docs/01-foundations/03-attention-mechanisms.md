@@ -285,9 +285,14 @@ This memory requirement limits batch sizes and context lengths.
 
 Flash Attention uses tiling and recomputation to avoid storing the full attention matrix:
 
-```
-Standard: Q, K -> Attention Matrix (n x n) -> Output
-Flash:    Q, K -> Tiles (block_size x block_size) -> Incremental Output
+```mermaid
+flowchart LR
+    subgraph Standard["Standard"]
+        SQK["Q, K"] --> SAM["Attention Matrix<br/>(n x n)"] --> SOUT["Output"]
+    end
+    subgraph Flash["Flash"]
+        FQK["Q, K"] --> FT["Tiles<br/>(block_size x block_size)"] --> FOUT["Incremental Output"]
+    end
 ```
 
 **Key ideas:**
@@ -314,12 +319,12 @@ Introduced by DeepSeek (V2/V3), **MLA is the modern alternative to GQA** for ext
 
 Instead of just grouping heads, MLA compresses the Key and Value vectors into a **low-dimensional latent space** before storing them in the cache.
 
-```
-Query (Up-projected) ────────┐
-                             ▼
-Key, Value (Down-projected) ─▶ [Low-dim Latent Cache] ─▶ [Output]
-                             ▲
-                             └─ Projection Matrices
+```mermaid
+flowchart LR
+    Q["Query<br/>(Up-projected)"] --> Cache["Low-dim Latent Cache"]
+    KV["Key, Value<br/>(Down-projected)"] --> Cache
+    PM["Projection Matrices"] --> Cache
+    Cache --> Out["Output"]
 ```
 
 | Metric | MHA | GQA | MLA (Dec 2025) |

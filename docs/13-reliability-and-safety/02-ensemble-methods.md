@@ -323,27 +323,22 @@ Provide your final answer.
 
 Layered architecture where multiple models feed into aggregators:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    MIXTURE OF AGENTS (MoA)                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Layer 1 (Proposers):                                           │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐            │
-│  │ Claude  │  │  GPT-4  │  │ Gemini  │  │ Llama   │            │
-│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘            │
-│       │            │            │            │                   │
-│       └────────────┴─────┬──────┴────────────┘                  │
-│                          │                                       │
-│  Layer 2 (Aggregator):   ▼                                      │
-│  ┌──────────────────────────────────────────────────┐           │
-│  │  "Given these perspectives: [R1, R2, R3, R4]    │           │
-│  │   Synthesize the best answer..."                │           │
-│  └────────────────────────┬─────────────────────────┘           │
-│                           │                                      │
-│                           ▼                                      │
-│                    [Final Output]                                │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph L1["Layer 1 (Proposers)"]
+        P1["Claude"]
+        P2["GPT-4"]
+        P3["Gemini"]
+        P4["Llama"]
+    end
+    subgraph L2["Layer 2 (Aggregator)"]
+        AGG["Given these perspectives:<br/>[R1, R2, R3, R4]<br/>Synthesize the best answer..."]
+    end
+    P1 --> AGG
+    P2 --> AGG
+    P3 --> AGG
+    P4 --> AGG
+    AGG --> OUT["Final Output"]
 ```
 
 ```python
@@ -393,16 +388,14 @@ Synthesize the best answer, combining the strongest elements from each response.
 
 ### Decision Framework
 
-```
-Is there a single "correct" answer format?
-├── Yes (classification, math)
-│   └── Use Ensemble (voting/averaging)
-│
-└── No (creative writing, open QA)
-    └── Use Arbitration (best-of-N)
-        └── Do you have reliable scoring?
-            ├── Yes → Reward model selection
-            └── No → LLM-as-judge or human
+```mermaid
+flowchart TD
+    Q1{"Is there a single correct<br/>answer format?"}
+    Q1 -->|"Yes (classification, math)"| E["Use Ensemble<br/>(voting/averaging)"]
+    Q1 -->|"No (creative writing, open QA)"| A["Use Arbitration<br/>(best-of-N)"]
+    A --> Q2{"Do you have<br/>reliable scoring?"}
+    Q2 -->|"Yes"| RM["Reward model selection"]
+    Q2 -->|"No"| LLM["LLM-as-judge or human"]
 ```
 
 ---

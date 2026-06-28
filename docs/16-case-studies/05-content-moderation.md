@@ -63,53 +63,29 @@ This case study covers designing an AI-powered content moderation system for a s
 
 ### High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                  CONTENT MODERATION PIPELINE                     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌─────────────┐                                                │
-│  │   Content   │                                                │
-│  │   Ingestion │                                                │
-│  └──────┬──────┘                                                │
-│         │                                                        │
-│         ▼                                                        │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                   TIER 1: FAST FILTERS                   │    │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐              │    │
-│  │  │  Hash    │  │ Keyword  │  │  Known   │              │    │
-│  │  │ Matching │  │ Blocklist│  │ Patterns │              │    │
-│  │  └──────────┘  └──────────┘  └──────────┘              │    │
-│  └──────────────────────────┬──────────────────────────────┘    │
-│                             │                                    │
-│         ┌───────────────────┼───────────────────┐               │
-│         │ Blocked           │ Pass              │ Elevated      │
-│         ▼                   ▼                   ▼               │
-│  ┌─────────────┐    ┌─────────────────────────────────────┐    │
-│  │   Block +   │    │          TIER 2: ML MODELS          │    │
-│  │   Report    │    │  ┌────────┐  ┌────────┐  ┌────────┐│    │
-│  └─────────────┘    │  │ Vision │  │  Text  │  │ Multi- ││    │
-│                     │  │ Model  │  │ Model  │  │ modal  ││    │
-│                     │  └────────┘  └────────┘  └────────┘│    │
-│                     └──────────────────┬──────────────────┘    │
-│                                        │                        │
-│         ┌──────────────────────────────┼──────────────────┐    │
-│         │ High Confidence              │ Low Confidence   │    │
-│         ▼                              ▼                   │    │
-│  ┌─────────────┐              ┌─────────────────────────┐ │    │
-│  │ Auto Action │              │    TIER 3: LLM REVIEW   │ │    │
-│  └─────────────┘              │  (nuanced cases)        │ │    │
-│                               └────────────┬────────────┘ │    │
-│                                            │               │    │
-│                        ┌───────────────────┼──────────────┐│    │
-│                        │ Confident         │ Uncertain    ││    │
-│                        ▼                   ▼              ││    │
-│                 ┌─────────────┐    ┌─────────────┐       ││    │
-│                 │ Auto Action │    │   Human     │       ││    │
-│                 └─────────────┘    │   Review    │       ││    │
-│                                    └─────────────┘       ││    │
-│                                                          ││    │
-└──────────────────────────────────────────────────────────┘│    │
+```mermaid
+flowchart TD
+    CI["Content Ingestion"] --> T1
+    subgraph T1["TIER 1: Fast Filters"]
+        H["Hash Matching"]
+        K["Keyword Blocklist"]
+        P["Known Patterns"]
+    end
+    T1 -->|"Blocked"| BR["Block + Report"]
+    T1 -->|"Pass"| T2
+    T1 -->|"Elevated"| T2
+    subgraph T2["TIER 2: ML Models"]
+        VM["Vision Model"]
+        TM["Text Model"]
+        MM["Multimodal"]
+    end
+    T2 -->|"High Confidence"| AA1["Auto Action"]
+    T2 -->|"Low Confidence"| T3
+    subgraph T3["TIER 3: LLM Review (nuanced cases)"]
+        LR["Nuanced reasoning"]
+    end
+    T3 -->|"Confident"| AA2["Auto Action"]
+    T3 -->|"Uncertain"| HR["Human Review"]
 ```
 
 The tiered pipeline as a decision tree. Each tier escalates only what it cannot decide cheaply. The cost-per-decision ratio between Tier 1 and Tier 4 is roughly 1:5000, so getting routing right is the main lever for unit economics:

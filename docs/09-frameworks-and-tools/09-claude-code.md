@@ -47,32 +47,24 @@ claude -p "Add unit tests for all functions in src/utils.py" --output-format jso
 
 ## Core Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   CLAUDE CODE ARCHITECTURE               │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  User Request                                           │
-│       ↓                                                 │
-│  ┌─────────────┐    ┌──────────────┐                   │
-│  │  Claude 3.7 │    │  CLAUDE.md   │                   │
-│  │   Sonnet    │ ←  │  (manifest)  │                   │
-│  │ (Extended   │    └──────────────┘                   │
-│  │  Thinking)  │                                       │
-│  └──────┬──────┘                                       │
-│         │ Tool calls                                    │
-│         ↓                                               │
-│  ┌──────────────────────────────────────┐              │
-│  │           TOOL LAYER                 │              │
-│  │  ┌─────────┐ ┌───────────┐ ┌──────┐ │              │
-│  │  │  bash   │ │text_editor│ │  MCP │ │              │
-│  │  └────┬────┘ └─────┬─────┘ └──┬───┘ │              │
-│  └───────┼────────────┼──────────┼─────┘              │
-│          │            │          │                      │
-│   Shell cmds     File edits    Custom tools             │
-│   (test, lint,   (read/write)  (DB, APIs,               │
-│    git, build)                  internal)               │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    User["User Request"]
+    Manifest["CLAUDE.md<br/>(manifest)"]
+    Model["Claude 3.7 Sonnet<br/>(Extended Thinking)"]
+    User --> Model
+    Manifest -->|"context"| Model
+    Model -->|"Tool calls"| Tools
+
+    subgraph Tools["Tool Layer"]
+        Bash["bash"]
+        Editor["text_editor"]
+        MCP["MCP"]
+    end
+
+    Bash --> BashUse["Shell cmds<br/>(test, lint, git, build)"]
+    Editor --> EditorUse["File edits<br/>(read/write)"]
+    MCP --> MCPUse["Custom tools<br/>(DB, APIs, internal)"]
 ```
 
 Claude Code uses **Claude 3.7 Sonnet** as its backbone model, with Extended Thinking enabled by default for complex planning tasks.
@@ -168,14 +160,22 @@ The `CLAUDE.md` file is the **single most important pattern** for using Claude C
 ```
 
 **Nesting CLAUDE.md files:**
-```
-project/
-  CLAUDE.md          # global project rules
-  src/
-    auth/
-      CLAUDE.md      # auth-specific rules (stricter security)
-    payments/
-      CLAUDE.md      # payment-specific rules (PCI compliance notes)
+```mermaid
+flowchart TD
+    Project["project/"]
+    RootMd["CLAUDE.md<br/>(global project rules)"]
+    Src["src/"]
+    Auth["auth/"]
+    AuthMd["CLAUDE.md<br/>(auth-specific rules, stricter security)"]
+    Payments["payments/"]
+    PaymentsMd["CLAUDE.md<br/>(payment-specific rules, PCI compliance notes)"]
+
+    Project --> RootMd
+    Project --> Src
+    Src --> Auth
+    Auth --> AuthMd
+    Src --> Payments
+    Payments --> PaymentsMd
 ```
 
 Claude automatically reads the closest CLAUDE.md when working in a directory.
@@ -242,14 +242,20 @@ result = asyncio.run(run_coding_task(
 
 Claude Code supports **sub-agent dispatch** for large codebases:
 
-```
-Main Claude Code session
-    ↓
-"This codebase has 5 modules. I'll spawn sub-agents for each."
-    ├── Sub-agent 1: Fix auth module tests
-    ├── Sub-agent 2: Add type hints to utils/
-    ├── Sub-agent 3: Migrate payments to async
-    └── Sub-agent 4: Update API documentation
+```mermaid
+flowchart TD
+    Main["Main Claude Code session"]
+    Plan["This codebase has 5 modules.<br/>Spawn sub-agents for each."]
+    Sub1["Sub-agent 1: Fix auth module tests"]
+    Sub2["Sub-agent 2: Add type hints to utils/"]
+    Sub3["Sub-agent 3: Migrate payments to async"]
+    Sub4["Sub-agent 4: Update API documentation"]
+
+    Main --> Plan
+    Plan --> Sub1
+    Plan --> Sub2
+    Plan --> Sub3
+    Plan --> Sub4
 ```
 
 Each sub-agent runs in parallel, then the main agent reviews and merges the results.
@@ -300,14 +306,12 @@ With this config, Claude Code can:
 
 Claude Code has a **layered permission model**:
 
-```
-Permission Level    Who approves       What it covers
-────────────────────────────────────────────────────────
-Auto               Claude (no prompt)  Read files, run tests
-Ask per-turn       User confirms       Shell command execution
-Explicit allow     User pre-approves   Specific commands/dirs
-Blocked            Never runs          Network calls outside allowlist
-```
+| Permission Level | Who approves | What it covers |
+|------------------|--------------|----------------|
+| Auto | Claude (no prompt) | Read files, run tests |
+| Ask per-turn | User confirms | Shell command execution |
+| Explicit allow | User pre-approves | Specific commands/dirs |
+| Blocked | Never runs | Network calls outside allowlist |
 
 ### Configuration
 

@@ -70,51 +70,30 @@
 
 ### 高階架構
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           User Interface                                │
-│  (Web App, Slack Bot, API)                                             │
-└─────────────────────────────┬───────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          API Gateway                                    │
-│  • Authentication    • Rate Limiting    • Request Routing              │
-└─────────────────────────────┬───────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Query Service                                    │
-│  • Query understanding   • Permission check   • Orchestration          │
-└─────────────────────────────┬───────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-        ▼                     ▼                     ▼
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│   Retrieval   │   │   Reranking   │   │  Generation   │
-│   Service     │   │   Service     │   │   Service     │
-│               │   │               │   │               │
-│ • Hybrid      │   │ • Cross-      │   │ • LLM         │
-│   search      │   │   encoder     │   │ • Prompt      │
-│ • Filtering   │   │ • Scoring     │   │   building    │
-└───────┬───────┘   └───────────────┘   └───────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Data Layer                                       │
-│                                                                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
-│  │  Vector DB  │  │ Search Index│  │  Doc Store  │  │  Metadata   │   │
-│  │  (Qdrant)   │  │ (Elastic)   │  │   (S3)      │  │  (Postgres) │   │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    UI["使用者介面<br/>(Web App, Slack Bot, API)"]
+    GW["API Gateway<br/>驗證 / 速率限制 / 請求路由"]
+    QS["查詢服務<br/>查詢理解 / 權限檢查 / 編排"]
 
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      Ingestion Pipeline                                 │
-│  Document Upload → Parse → Chunk → Embed → Index → Store Metadata      │
-└─────────────────────────────────────────────────────────────────────────┘
+    UI --> GW --> QS
+
+    QS --> RS["檢索服務<br/>混合搜尋 / 過濾"]
+    QS --> RR["重排序服務<br/>Cross-encoder / 評分"]
+    QS --> GS["生成服務<br/>LLM / 提示組裝"]
+
+    subgraph DATA["資料層"]
+        VDB["Vector DB<br/>(Qdrant)"]
+        ES["搜尋索引<br/>(Elastic)"]
+        DOC["文件儲存<br/>(S3)"]
+        META["中繼資料<br/>(Postgres)"]
+    end
+
+    RS --> DATA
+
+    subgraph INGEST["匯入管線"]
+        ING["文件上傳 --> 解析 --> 分塊 --> 嵌入 --> 索引 --> 儲存中繼資料"]
+    end
 ```
 
 以流程圖呈現（分層的系統先在查詢管線中扇出，再經由資料層匯聚）：
@@ -479,17 +458,35 @@ qdrant_config = {
 
 ### 處理 500 名同時上線使用者
 
-```
-Load Balancer
-     │
-     ├──► Query Service (replica 1)
-     ├──► Query Service (replica 2)
-     ├──► Query Service (replica 3)
-     └──► Query Service (replica 4)
-            │
-            ├──► Vector DB (3-node cluster)
-            ├──► LLM API (with retry/fallback)
-            └──► Elasticsearch (3-node cluster)
+```mermaid
+flowchart TD
+    LB["負載平衡器"]
+    R1["查詢服務（replica 1）"]
+    R2["查詢服務（replica 2）"]
+    R3["查詢服務（replica 3）"]
+    R4["查詢服務（replica 4）"]
+
+    LB --> R1
+    LB --> R2
+    LB --> R3
+    LB --> R4
+
+    VDB["Vector DB（3 節點叢集）"]
+    LLM["LLM API（含重試/備援）"]
+    ES["Elasticsearch（3 節點叢集）"]
+
+    R1 --> VDB
+    R2 --> VDB
+    R3 --> VDB
+    R4 --> VDB
+    R1 --> LLM
+    R2 --> LLM
+    R3 --> LLM
+    R4 --> LLM
+    R1 --> ES
+    R2 --> ES
+    R3 --> ES
+    R4 --> ES
 ```
 
 ### 快取策略

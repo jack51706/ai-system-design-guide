@@ -20,8 +20,13 @@
 
 最簡單的 RAG 實作：
 
-```
-Query → Embed → Search → Top K → Stuff into prompt → Generate
+```mermaid
+flowchart LR
+    A["查詢"] --> B["嵌入"]
+    B --> C["搜尋"]
+    C --> D["Top K"]
+    D --> E["塞入提示"]
+    E --> F["生成"]
 ```
 
 **適用時機：**
@@ -40,8 +45,14 @@ Query → Embed → Search → Top K → Stuff into prompt → Generate
 
 具有多個階段的增強管線：
 
-```
-Query → Rewrite → Embed → Hybrid Search → Rerank → Filter → Generate
+```mermaid
+flowchart LR
+    A["查詢"] --> B["改寫"]
+    B --> C["嵌入"]
+    C --> D["混合搜尋"]
+    D --> E["重排序"]
+    E --> F["過濾"]
+    F --> G["生成"]
 ```
 
 ```python
@@ -76,12 +87,12 @@ class AdvancedRAG:
 
 檢索小區塊，回傳較大的父區塊：
 
-```
-Document
-    └── Parent chunk (2000 tokens)
-            ├── Child chunk (200 tokens) ← Retrieve on this
-            ├── Child chunk (200 tokens)
-            └── Child chunk (200 tokens)
+```mermaid
+flowchart TD
+    A["文件"] --> B["父區塊 (2000 tokens)"]
+    B --> C["子區塊 (200 tokens)<br/>(在此檢索)"]
+    B --> D["子區塊 (200 tokens)"]
+    B --> E["子區塊 (200 tokens)"]
 ```
 
 ```python
@@ -197,8 +208,14 @@ class CorrectiveRAG:
 
 交錯進行推理與行動：
 
-```
-Thought → Action → Observation → Thought → Action → Observation → Answer
+```mermaid
+flowchart LR
+    A["思考"] --> B["行動"]
+    B --> C["觀察"]
+    C --> D["思考"]
+    D --> E["行動"]
+    E --> F["觀察"]
+    F --> G["回答"]
 ```
 
 實作請參閱 [Agent 架構](../07-agentic-systems/01-agent-fundamentals.md)。

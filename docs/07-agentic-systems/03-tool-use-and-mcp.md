@@ -93,9 +93,9 @@ The MCP 2.0 specification (ratified March 2026) introduced two major changes:
 ### 1. Streamable HTTP Transport
 Previous MCP used `stdio` or basic HTTP with SSE. MCP 2.0 adds **Streamable HTTP** - a single long-lived HTTP connection that handles bidirectional streaming:
 
-```
-[MCP Client] ←── Streamable HTTP POST /mcp ──→ [MCP Server]
-                  (with SSE response stream)
+```mermaid
+flowchart LR
+    Client["MCP Client"] <-->|"Streamable HTTP POST /mcp<br/>(with SSE response stream)"| Server["MCP Server"]
 ```
 
 - Enables MCP servers deployed as cloud microservices (not just local processes)
@@ -152,12 +152,13 @@ MCP defines how an agent connects to **tools and data**. A2A defines how an **or
 
 ### A2A Task Lifecycle
 
-```
-[Client Agent] ── POST /tasks ──→ [Remote Agent]
-                                     │
-                  ← SSE stream ──────┘  (status updates, artifacts)
-                                     │
-                  ← Task Complete ───┘  (final result)
+```mermaid
+sequenceDiagram
+    participant Client as Client Agent
+    participant Remote as Remote Agent
+    Client->>Remote: POST /tasks
+    Remote-->>Client: SSE stream (status updates, artifacts)
+    Remote-->>Client: Task Complete (final result)
 ```
 
 A2A tasks support long-running operations with streaming status updates, making it suitable for enterprise workflows spanning minutes or hours.
@@ -185,20 +186,13 @@ In production enterprise systems, multiple protocols operate at different layers
 
 ### How They Complement Each Other
 
-```
-┌──────────────────────────────────────────┐
-│            Enterprise System             │
-│                                          │
-│  ┌─────────┐  A2A   ┌─────────┐         │
-│  │ Agent A  │◄──────►│ Agent B │         │
-│  │(Vendor X)│        │(Vendor Y)│        │
-│  └────┬─────┘        └────┬─────┘        │
-│       │ MCP                │ MCP          │
-│  ┌────▼─────┐        ┌────▼─────┐        │
-│  │ DB Tool  │        │ API Tool │        │
-│  │ Server   │        │ Server   │        │
-│  └──────────┘        └──────────┘        │
-└──────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Enterprise["Enterprise System"]
+        AgentA["Agent A<br/>(Vendor X)"] <-->|"A2A"| AgentB["Agent B<br/>(Vendor Y)"]
+        AgentA -->|"MCP"| DBTool["DB Tool Server"]
+        AgentB -->|"MCP"| APITool["API Tool Server"]
+    end
 ```
 
 **Key insight**: MCP and A2A are complementary, not competing. MCP handles agent-to-tool connections; A2A handles agent-to-agent coordination. Production systems use both.

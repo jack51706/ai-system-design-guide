@@ -21,48 +21,41 @@ Late Interaction is a retrieval paradigm that sits between fast-but-imprecise **
 
 There are three fundamental architectures for neural retrieval. Understanding where late interaction fits is the key to the entire chapter.
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│   SPEED ◄──────────────────────────────────────────────► ACCURACY   │
-│                                                                     │
-│   Bi-Encoder          Late Interaction          Cross-Encoder       │
-│   (Single Vector)     (Multi-Vector)            (Full Attention)    │
-│                                                                     │
-│   ● Fast (< 10ms)     ● Balanced (10-50ms)      ● Slow (100ms+)   │
-│   ● Low accuracy       ● High accuracy           ● Highest accuracy│
-│   ● Scales to 1B+     ● Scales to 100M+         ● Scales to 10K   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
+The spectrum runs from SPEED (left) to ACCURACY (right):
+
+| Architecture | Bi-Encoder | Late Interaction | Cross-Encoder |
+|---|---|---|---|
+| Representation | Single Vector | Multi-Vector | Full Attention |
+| Latency | Fast (< 10ms) | Balanced (10-50ms) | Slow (100ms+) |
+| Accuracy | Low accuracy | High accuracy | Highest accuracy |
+| Scale | Scales to 1B+ | Scales to 100M+ | Scales to 10K |
 
 ### How Each Architecture Processes a Query-Document Pair
 
-```
-BI-ENCODER (e.g., E5, BGE):
-  Query  ──► Encoder ──► [1 vector]  ─┐
-                                      ├──► dot product ──► score
-  Doc    ──► Encoder ──► [1 vector]  ─┘
+```mermaid
+flowchart LR
+    subgraph BI["BI-ENCODER (e.g., E5, BGE)<br/>Total interaction: 1 comparison"]
+        direction LR
+        BQ["Query"] --> BQE["Encoder"] --> BQV["[1 vector]"]
+        BD["Doc"] --> BDE["Encoder"] --> BDV["[1 vector]"]
+        BQV --> BDOT["dot product"]
+        BDV --> BDOT
+        BDOT --> BS["score"]
+    end
 
-  Total interaction: 1 comparison
+    subgraph LI["LATE INTERACTION (ColBERT)<br/>Total interaction: N x M comparisons (but decomposable)"]
+        direction LR
+        LQ["Query"] --> LQE["Encoder<br/>(one per token)"] --> LQV["[N vectors]"]
+        LD["Doc"] --> LDE["Encoder<br/>(one per token)"] --> LDV["[M vectors]"]
+        LQV --> LMAX["MaxSim"]
+        LDV --> LMAX
+        LMAX --> LS["score"]
+    end
 
-─────────────────────────────────────────────
-
-LATE INTERACTION (ColBERT):
-  Query  ──► Encoder ──► [N vectors] ─┐
-                (one per token)       ├──► MaxSim ──► score
-  Doc    ──► Encoder ──► [M vectors] ─┘
-                (one per token)
-
-  Total interaction: N x M comparisons (but decomposable)
-
-─────────────────────────────────────────────
-
-CROSS-ENCODER (e.g., ms-marco-MiniLM):
-  [Query + Doc] ──► Encoder ──► score
-
-  Total interaction: Full self-attention across
-                     all query AND document tokens
+    subgraph CE["CROSS-ENCODER (e.g., ms-marco-MiniLM)<br/>Total interaction: Full self-attention across all query AND document tokens"]
+        direction LR
+        CQD["[Query + Doc]"] --> CEN["Encoder"] --> CS["score"]
+    end
 ```
 
 **Insight**: The critical difference is *when* the query and document interact. Bi-encoders never interact (independent encoding). Cross-encoders interact fully (joint encoding). Late interaction is the middle ground: encode independently, then interact cheaply at the token level.
@@ -128,21 +121,16 @@ Score(Q, D) = SUM over all qi of MAX over all dj of (qi . dj)
 
 ### Worked Example
 
-```
-            d1        d2       d3       d4       d5
-          Widget-X   costs    $200     per     month
-  q4       0.41      0.89*    0.73     0.01     0.05
-  price
-  q6       0.95*     0.38     0.27     0.01     0.03
-  Widget-X
+Dot-product scores between each query token (rows) and document token (columns). `*` marks the maximum for that query token:
 
-  * = maximum for that query token
+| Query token | d1: Widget-X | d2: costs | d3: $200 | d4: per | d5: month |
+|---|---|---|---|---|---|
+| q4: price | 0.41 | 0.89* | 0.73 | 0.01 | 0.05 |
+| q6: Widget-X | 0.95* | 0.38 | 0.27 | 0.01 | 0.03 |
 
-  MaxSim contribution from q4 ("price"): 0.89 (matched "costs")
-  MaxSim contribution from q6 ("Widget-X"): 0.95 (matched "Widget-X")
-
-  Total Score = sum of all max values across all query tokens
-```
+- MaxSim contribution from q4 ("price"): 0.89 (matched "costs")
+- MaxSim contribution from q6 ("Widget-X"): 0.95 (matched "Widget-X")
+- Total Score = sum of all max values across all query tokens
 
 ### Why MaxSim Outperforms Single-Vector Similarity
 
@@ -196,34 +184,13 @@ ColBERTv2 Residual Compression:
 
 PLAID (Performance-optimized Late Interaction Driver) is the indexing and retrieval engine that makes ColBERT practical at scale.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    PLAID RETRIEVAL PIPELINE                     │
-│                                                                 │
-│  Stage 1: CENTROID PRUNING                                      │
-│  ─────────────────────────                                      │
-│  For each query token, find nearest centroids                   │
-│  Collect candidate passages that contain those centroids        │
-│  Result: ~10,000 candidates from millions                       │
-│                                                                 │
-│  Stage 2: CENTROID INTERACTION                                  │
-│  ─────────────────────────────                                  │
-│  Approximate MaxSim using centroid-level scores only            │
-│  Filter candidates to top ~1,000                                │
-│                                                                 │
-│  Stage 3: CENTROID PRUNING (Fine)                               │
-│  ──────────────────────────────                                 │
-│  Decompress residuals for remaining candidates                  │
-│  Compute approximate MaxSim with residual vectors               │
-│  Filter to top ~100                                             │
-│                                                                 │
-│  Stage 4: FULL DECOMPRESSION                                    │
-│  ────────────────────────────                                   │
-│  Fully decompress token vectors for top candidates              │
-│  Compute exact MaxSim                                           │
-│  Return final ranked results                                    │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    S1["Stage 1: CENTROID PRUNING<br/>For each query token, find nearest centroids<br/>Collect candidate passages that contain those centroids<br/>Result: ~10,000 candidates from millions"]
+    S2["Stage 2: CENTROID INTERACTION<br/>Approximate MaxSim using centroid-level scores only<br/>Filter candidates to top ~1,000"]
+    S3["Stage 3: CENTROID PRUNING (Fine)<br/>Decompress residuals for remaining candidates<br/>Compute approximate MaxSim with residual vectors<br/>Filter to top ~100"]
+    S4["Stage 4: FULL DECOMPRESSION<br/>Fully decompress token vectors for top candidates<br/>Compute exact MaxSim<br/>Return final ranked results"]
+    S1 --> S2 --> S3 --> S4
 ```
 
 **The key insight**: PLAID avoids decompressing all vectors for all documents. Each stage cheaply filters the candidate set so that expensive exact scoring only happens on a tiny fraction of the corpus.
@@ -353,47 +320,43 @@ response = chain.invoke("What features does the Enterprise plan include?")
 
 ### Pattern 1: ColBERT as Primary Retriever
 
-```
-Query ──► ColBERT (PLAID) ──► Top 20 ──► LLM
+```mermaid
+flowchart LR
+    Q["Query"] --> CB["ColBERT (PLAID)"] --> T20["Top 20"] --> LLM["LLM"]
 ```
 
 Best for: medium-scale corpora (1M-50M docs) where accuracy is paramount and you can afford the storage overhead.
 
 ### Pattern 2: ColBERT as Reranker (Most Common)
 
-```
-Query ──► BM25 or Bi-Encoder ──► Top 1000 ──► ColBERT Rerank ──► Top 20 ──► LLM
+```mermaid
+flowchart LR
+    Q["Query"] --> FS["BM25 or Bi-Encoder"] --> T1K["Top 1000"] --> CR["ColBERT Rerank"] --> T20["Top 20"] --> LLM["LLM"]
 ```
 
 Best for: large-scale systems where first-stage retrieval must be cheap, but you need high-quality reranking without the cost of a cross-encoder.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              COLBERT-AS-RERANKER ARCHITECTURE                   │
-│                                                                 │
-│  User Query                                                     │
-│      │                                                          │
-│      ▼                                                          │
-│  First Stage: BM25 / Bi-Encoder                                 │
-│  (cheap, high recall, Top 1000)                                 │
-│      │                                                          │
-│      ▼                                                          │
-│  Second Stage: ColBERT MaxSim Reranking                         │
-│  (pre-computed doc tokens, score Top 1000)                      │
-│  Cost: only query encoding + MaxSim arithmetic                  │
-│      │                                                          │
-│      ▼                                                          │
-│  Top 20 Passages ──► LLM Generation                             │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    UQ["User Query"]
+    FS["First Stage: BM25 / Bi-Encoder<br/>(cheap, high recall, Top 1000)"]
+    SS["Second Stage: ColBERT MaxSim Reranking<br/>(pre-computed doc tokens, score Top 1000)<br/>Cost: only query encoding + MaxSim arithmetic"]
+    OUT["Top 20 Passages"]
+    LLM["LLM Generation"]
+    UQ --> FS --> SS --> OUT --> LLM
 ```
 
 ### Pattern 3: Hybrid (ColBERT + BM25 + Dense)
 
-```
-Query ──┬──► BM25 (Top 50) ────────┐
-        ├──► Dense Bi-Encoder (50) ─┼──► RRF ──► ColBERT Rerank ──► Top 10
-        └──► ColBERT (Top 50) ─────┘
+```mermaid
+flowchart LR
+    Q["Query"] --> BM25["BM25 (Top 50)"]
+    Q --> DENSE["Dense Bi-Encoder (50)"]
+    Q --> COL["ColBERT (Top 50)"]
+    BM25 --> RRF["RRF"]
+    DENSE --> RRF
+    COL --> RRF
+    RRF --> CR["ColBERT Rerank"] --> T10["Top 10"]
 ```
 
 Best for: maximum accuracy at medium scale. Expensive but covers all retrieval modalities.
@@ -415,18 +378,15 @@ Best for: maximum accuracy at medium scale. Expensive but covers all retrieval m
 
 ### Decision Framework
 
-```
-Is your corpus < 100M documents?
-├── No  ──► Use Bi-Encoder for retrieval + ColBERT for reranking
-└── Yes
-    │
-    Is accuracy more important than infrastructure simplicity?
-    ├── No  ──► Use Bi-Encoder (simpler, cheaper)
-    └── Yes
-        │
-        Can you afford 2-4x storage vs. bi-encoder?
-        ├── No  ──► Use Bi-Encoder + Cross-Encoder reranker
-        └── Yes ──► Use ColBERT (PLAID) as primary retriever
+```mermaid
+flowchart TD
+    Q1{"Is your corpus < 100M documents?"}
+    Q1 -->|"No"| A1["Use Bi-Encoder for retrieval + ColBERT for reranking"]
+    Q1 -->|"Yes"| Q2{"Is accuracy more important than infrastructure simplicity?"}
+    Q2 -->|"No"| A2["Use Bi-Encoder (simpler, cheaper)"]
+    Q2 -->|"Yes"| Q3{"Can you afford 2-4x storage vs. bi-encoder?"}
+    Q3 -->|"No"| A3["Use Bi-Encoder + Cross-Encoder reranker"]
+    Q3 -->|"Yes"| A4["Use ColBERT (PLAID) as primary retriever"]
 ```
 
 ### ColBERT vs. Dense Retrieval vs. Hybrid Search

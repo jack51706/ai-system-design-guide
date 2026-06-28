@@ -84,15 +84,12 @@ Cost optimization will be a second-order concern once we have the basic system w
 **Purpose:** Draw the high-level system before diving into details.
 
 **Standard components for AI systems:**
-```
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│  Client  │────▶│  API GW  │────▶│ AI Layer │────▶│  LLM(s)  │
-└──────────┘     └──────────┘     └──────────┘     └──────────┘
-                                        │
-                                        ▼
-                                  ┌──────────┐
-                                  │ Data/RAG │
-                                  └──────────┘
+```mermaid
+flowchart LR
+    A["Client"] --> B["API GW"]
+    B --> C["AI Layer"]
+    C --> D["LLM(s)"]
+    C --> E["Data/RAG"]
 ```
 
 **Explain each component briefly:**

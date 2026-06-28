@@ -551,28 +551,30 @@ While frontier models lead on benchmarks, many enterprise systems rely on **batt
 
 ### Decision Tree
 
-```
-What is your primary constraint?
+```mermaid
+flowchart TD
+    Root{"What is your primary constraint?"}
 
-├── Cost → Use smaller model, consider open source
-│   ├── Very cost sensitive → DeepSeek V4 Flash, GPT-5.5-mini, Claude Haiku 4.5, Gemini 3.1 Flash
-│   └── Moderate budget → Claude Sonnet 4.6, GPT-5.5 Instant, DeepSeek V4 Pro
-│
-├── Quality + Reasoning → Use frontier models
-│   ├── Highest reasoning → Claude Fable 5, Claude Opus 4.8 (thinking), GPT-5.5 reasoning, Gemini 3.1 Pro Deep Think
-│   └── Coding + reasoning → Claude Opus 4.8 with Dynamic Workflows, Claude Sonnet 4.6 (Extended Thinking), GPT-5.5
-│
-├── Latency → Use fast models
-│   ├── <100ms response → Gemini 3.1 Flash, GPT-5.5-mini
-│   └── <500ms response → Claude Haiku 4.5, Claude Opus 4.8 fast mode, Grok 4.1 Fast
-│
-├── Self-hosting → Use open models
-│   ├── Maximum capability → Llama 4 Maverick, DeepSeek-V3
-│   ├── Good balance → Llama 4 Scout, Llama 3.3 70B, Qwen2.5-72B
-│   └── Edge/mobile → Mistral 3 3B, Phi-4
-│
-└── Privacy → Self-host or use on-prem
-    └── Choose open models with appropriate license
+    Root -->|"Cost"| Cost["Use smaller model,<br/>consider open source"]
+    Root -->|"Quality + Reasoning"| Quality["Use frontier models"]
+    Root -->|"Latency"| Latency["Use fast models"]
+    Root -->|"Self-hosting"| SelfHost["Use open models"]
+    Root -->|"Privacy"| Privacy["Self-host or use on-prem"]
+
+    Cost --> CostA["Very cost sensitive:<br/>DeepSeek V4 Flash, GPT-5.5-mini,<br/>Claude Haiku 4.5, Gemini 3.1 Flash"]
+    Cost --> CostB["Moderate budget:<br/>Claude Sonnet 4.6, GPT-5.5 Instant,<br/>DeepSeek V4 Pro"]
+
+    Quality --> QualityA["Highest reasoning:<br/>Claude Fable 5, Claude Opus 4.8 (thinking),<br/>GPT-5.5 reasoning, Gemini 3.1 Pro Deep Think"]
+    Quality --> QualityB["Coding + reasoning:<br/>Claude Opus 4.8 with Dynamic Workflows,<br/>Claude Sonnet 4.6 (Extended Thinking), GPT-5.5"]
+
+    Latency --> LatencyA["<100ms response:<br/>Gemini 3.1 Flash, GPT-5.5-mini"]
+    Latency --> LatencyB["<500ms response:<br/>Claude Haiku 4.5, Claude Opus 4.8 fast mode,<br/>Grok 4.1 Fast"]
+
+    SelfHost --> SelfHostA["Maximum capability:<br/>Llama 4 Maverick, DeepSeek-V3"]
+    SelfHost --> SelfHostB["Good balance:<br/>Llama 4 Scout, Llama 3.3 70B, Qwen2.5-72B"]
+    SelfHost --> SelfHostC["Edge/mobile:<br/>Mistral 3 3B, Phi-4"]
+
+    Privacy --> PrivacyA["Choose open models<br/>with appropriate license"]
 ```
 
 ### Semantic Routing

@@ -59,27 +59,25 @@
 
 ### 高層級管線
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│               FINANCIAL ANALYSIS PIPELINE                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Stage 1: Data Extraction (Self-Consistency k=5)                │
-│  └── Extract key metrics from filings with majority vote        │
-│                                                                  │
-│  Stage 2: Analysis Generation (Mixture of Agents)               │
-│  ├── Model A: Quantitative analysis focus                       │
-│  ├── Model B: Qualitative/narrative focus                       │
-│  ├── Model C: Risk factor analysis                              │
-│  └── Aggregator: Synthesize into coherent report                │
-│                                                                  │
-│  Stage 3: Fact Verification (Multi-Agent Debate)                │
-│  └── 3 models debate each factual claim, flag disagreements     │
-│                                                                  │
-│  Stage 4: Final Review (Panel of Judges)                        │
-│  └── Quality score determines auto-publish vs human review      │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    S1["階段一：資料萃取 (Self-Consistency k=5)<br/>以多數決從申報文件萃取關鍵指標"]
+    S2["階段二：分析生成 (Mixture of Agents)"]
+    subgraph MOA["MoA 元件"]
+        MA["Model A：聚焦量化分析"]
+        MB["Model B：聚焦質化/敘事"]
+        MC["Model C：風險因子分析"]
+        AGG["Aggregator：彙整為連貫的報告"]
+        MA --> AGG
+        MB --> AGG
+        MC --> AGG
+    end
+    S3["階段三：事實驗證 (Multi-Agent Debate)<br/>3 個模型辯論每項事實主張並標記分歧"]
+    S4["階段四：最終審查 (Panel of Judges)<br/>品質分數決定自動發布或人工審查"]
+    S1 --> S2
+    S2 --> MOA
+    MOA --> S3
+    S3 --> S4
 ```
 
 這條管線以流程方式呈現。每個階段刻意採用不同類別的模型：萃取需要多模態能力（圖表與表格），生成需要敘事品質，稽核需要推理深度，評審團則需要便宜但數量多以追求多樣性：
@@ -96,56 +94,18 @@ flowchart LR
 
 ### 數據流
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   10-K/Q    │     │  Earnings   │     │  Analyst    │
-│   Filings   │     │  Calls      │     │  Reports    │
-└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
-       │                   │                   │
-       └───────────────────┴───────────────────┘
-                           │
-                           ▼
-                   ┌───────────────┐
-                   │     Data      │
-                   │   Ingestion   │
-                   └───────┬───────┘
-                           │
-                           ▼
-                   ┌───────────────┐
-                   │   Extraction  │
-                   │  (k=5 SC)     │
-                   └───────┬───────┘
-                           │
-                           ▼
-              ┌────────────┴────────────┐
-              │    Structured Data      │
-              │    (verified metrics)   │
-              └────────────┬────────────┘
-                           │
-                           ▼
-                   ┌───────────────┐
-                   │    MoA        │
-                   │  Generation   │
-                   └───────┬───────┘
-                           │
-                           ▼
-                   ┌───────────────┐
-                   │    Debate     │
-                   │  Verification │
-                   └───────┬───────┘
-                           │
-                           ▼
-                   ┌───────────────┐
-                   │    Panel      │
-                   │    Review     │
-                   └───────┬───────┘
-                           │
-               ┌───────────┴───────────┐
-               ▼                       ▼
-        ┌─────────────┐         ┌─────────────┐
-        │ Auto-Publish│         │Human Review │
-        │ (high conf) │         │ (low conf)  │
-        └─────────────┘         └─────────────┘
+```mermaid
+flowchart TD
+    F1["10-K/Q 申報文件"] --> ING
+    F2["法說會"] --> ING
+    F3["分析師報告"] --> ING
+    ING["資料匯入"] --> EX["萃取 (k=5 SC)"]
+    EX --> SD["結構化資料（已驗證指標）"]
+    SD --> MOA["MoA 生成"]
+    MOA --> DEB["辯論驗證"]
+    DEB --> PAN["評審團審查"]
+    PAN --> AP["自動發布（高信心）"]
+    PAN --> HR["人工審查（低信心）"]
 ```
 
 以下用 Mermaid 呈現數據脈絡，顯示三個輸入來源如何匯聚成一份經過驗證的輸出：

@@ -20,8 +20,13 @@ This chapter catalogs common patterns for building AI systems, similar to design
 
 The simplest RAG implementation:
 
-```
-Query → Embed → Search → Top K → Stuff into prompt → Generate
+```mermaid
+flowchart LR
+    A["Query"] --> B["Embed"]
+    B --> C["Search"]
+    C --> D["Top K"]
+    D --> E["Stuff into prompt"]
+    E --> F["Generate"]
 ```
 
 **When to use:**
@@ -40,8 +45,14 @@ Query → Embed → Search → Top K → Stuff into prompt → Generate
 
 Enhanced pipeline with multiple stages:
 
-```
-Query → Rewrite → Embed → Hybrid Search → Rerank → Filter → Generate
+```mermaid
+flowchart LR
+    A["Query"] --> B["Rewrite"]
+    B --> C["Embed"]
+    C --> D["Hybrid Search"]
+    D --> E["Rerank"]
+    E --> F["Filter"]
+    F --> G["Generate"]
 ```
 
 ```python
@@ -76,12 +87,12 @@ class AdvancedRAG:
 
 Retrieve small chunks, return larger parent chunks:
 
-```
-Document
-    └── Parent chunk (2000 tokens)
-            ├── Child chunk (200 tokens) ← Retrieve on this
-            ├── Child chunk (200 tokens)
-            └── Child chunk (200 tokens)
+```mermaid
+flowchart TD
+    A["Document"] --> B["Parent chunk (2000 tokens)"]
+    B --> C["Child chunk (200 tokens)<br/>(Retrieve on this)"]
+    B --> D["Child chunk (200 tokens)"]
+    B --> E["Child chunk (200 tokens)"]
 ```
 
 ```python
@@ -197,8 +208,14 @@ class CorrectiveRAG:
 
 Interleaved reasoning and acting:
 
-```
-Thought → Action → Observation → Thought → Action → Observation → Answer
+```mermaid
+flowchart LR
+    A["Thought"] --> B["Action"]
+    B --> C["Observation"]
+    C --> D["Thought"]
+    D --> E["Action"]
+    E --> F["Observation"]
+    F --> G["Answer"]
 ```
 
 See [Agent Architectures](../07-agentic-systems/01-agent-fundamentals.md) for implementation.

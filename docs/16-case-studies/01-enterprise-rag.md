@@ -70,51 +70,30 @@ A financial services company wants to build an AI-powered search system for thei
 
 ### High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           User Interface                                │
-│  (Web App, Slack Bot, API)                                             │
-└─────────────────────────────┬───────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          API Gateway                                    │
-│  • Authentication    • Rate Limiting    • Request Routing              │
-└─────────────────────────────┬───────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Query Service                                    │
-│  • Query understanding   • Permission check   • Orchestration          │
-└─────────────────────────────┬───────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-        ▼                     ▼                     ▼
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│   Retrieval   │   │   Reranking   │   │  Generation   │
-│   Service     │   │   Service     │   │   Service     │
-│               │   │               │   │               │
-│ • Hybrid      │   │ • Cross-      │   │ • LLM         │
-│   search      │   │   encoder     │   │ • Prompt      │
-│ • Filtering   │   │ • Scoring     │   │   building    │
-└───────┬───────┘   └───────────────┘   └───────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Data Layer                                       │
-│                                                                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
-│  │  Vector DB  │  │ Search Index│  │  Doc Store  │  │  Metadata   │   │
-│  │  (Qdrant)   │  │ (Elastic)   │  │   (S3)      │  │  (Postgres) │   │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    UI["User Interface<br/>(Web App, Slack Bot, API)"]
+    GW["API Gateway<br/>Authentication / Rate Limiting / Request Routing"]
+    QS["Query Service<br/>Query understanding / Permission check / Orchestration"]
 
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      Ingestion Pipeline                                 │
-│  Document Upload → Parse → Chunk → Embed → Index → Store Metadata      │
-└─────────────────────────────────────────────────────────────────────────┘
+    UI --> GW --> QS
+
+    QS --> RS["Retrieval Service<br/>Hybrid search / Filtering"]
+    QS --> RR["Reranking Service<br/>Cross-encoder / Scoring"]
+    QS --> GS["Generation Service<br/>LLM / Prompt building"]
+
+    subgraph DATA["Data Layer"]
+        VDB["Vector DB<br/>(Qdrant)"]
+        ES["Search Index<br/>(Elastic)"]
+        DOC["Doc Store<br/>(S3)"]
+        META["Metadata<br/>(Postgres)"]
+    end
+
+    RS --> DATA
+
+    subgraph INGEST["Ingestion Pipeline"]
+        ING["Document Upload --> Parse --> Chunk --> Embed --> Index --> Store Metadata"]
+    end
 ```
 
 Rendered as a flow diagram (the layered system fans out through the query pipeline and converges through the data layer):
@@ -479,17 +458,35 @@ qdrant_config = {
 
 ### Handling 500 Concurrent Users
 
-```
-Load Balancer
-     │
-     ├──► Query Service (replica 1)
-     ├──► Query Service (replica 2)
-     ├──► Query Service (replica 3)
-     └──► Query Service (replica 4)
-            │
-            ├──► Vector DB (3-node cluster)
-            ├──► LLM API (with retry/fallback)
-            └──► Elasticsearch (3-node cluster)
+```mermaid
+flowchart TD
+    LB["Load Balancer"]
+    R1["Query Service (replica 1)"]
+    R2["Query Service (replica 2)"]
+    R3["Query Service (replica 3)"]
+    R4["Query Service (replica 4)"]
+
+    LB --> R1
+    LB --> R2
+    LB --> R3
+    LB --> R4
+
+    VDB["Vector DB (3-node cluster)"]
+    LLM["LLM API (with retry/fallback)"]
+    ES["Elasticsearch (3-node cluster)"]
+
+    R1 --> VDB
+    R2 --> VDB
+    R3 --> VDB
+    R4 --> VDB
+    R1 --> LLM
+    R2 --> LLM
+    R3 --> LLM
+    R4 --> LLM
+    R1 --> ES
+    R2 --> ES
+    R3 --> ES
+    R4 --> ES
 ```
 
 ### Caching Strategy
