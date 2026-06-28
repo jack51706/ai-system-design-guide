@@ -93,7 +93,7 @@ flowchart TD
 
 | This Guide | Printed Books |
 |------------|---------------|
-| June 2026 models (Claude Fable 5, Claude Opus 4.8, GPT-5.6, GPT-5.5, Gemini 3.1 Pro, DeepSeek V4 Pro, Llama 4, Kimi K2.7, Qwen 3.7, GLM-5.2, Mistral Medium 3.5, Gemma 4, DiffusionGemma) | Stuck on GPT-4 |
+| June 2026 models (Claude Fable 5, Claude Opus 4.8, GPT-5.6, GPT-5.5, Gemini 3.1 Pro, DeepSeek V4 Pro, Llama 4, Kimi K2.6, Qwen 3.6, GLM-5.2, Mistral Medium 3.5, Gemma 4, DiffusionGemma) | Stuck on GPT-4 |
 | MCP 2.0, A2A v1.0, OpenClaw, Computer Use, Agentic RAG, ColBERT, latent reasoning, MoE serving | Does not exist |
 | Real pricing with June 2026 verification dates | Already wrong |
 | Staff-level interview Q&A (116 questions through June 2026) + Job Market Trends | Generic questions |

@@ -1,0 +1,43 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* Violet brand palette, echoing the original guide's accent color. */
+:root {
+  --ifm-color-primary: #7c3aed;
+  --ifm-color-primary-dark: #6d28d9;
+  --ifm-color-primary-darker: #6022c4;
+  --ifm-color-primary-darkest: #4f1ba1;
+  --ifm-color-primary-light: #8b5cf6;
+  --ifm-color-primary-lighter: #9772f7;
+  --ifm-color-primary-lightest: #b394fa;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* Lighter violet for dark mode readability. */
+[data-theme='dark'] {
+  --ifm-color-primary: #a78bfa;
+  --ifm-color-primary-dark: #9061f9;
+  --ifm-color-primary-darker: #8654f8;
+  --ifm-color-primary-darkest: #6d28d9;
+  --ifm-color-primary-light: #bea5fb;
+  --ifm-color-primary-lighter: #cbb8fc;
+  --ifm-color-primary-lightest: #e3d8fe;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Client-rendered Mermaid diagrams (see src/mermaid.ts). */
+.mermaid-figure {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.mermaid-figure svg {
+  max-width: 100%;
+  height: auto;
+}

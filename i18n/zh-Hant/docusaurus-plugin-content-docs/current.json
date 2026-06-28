@@ -1,0 +1,166 @@
+{
+  "version.label": {
+    "message": "最新",
+    "description": "The label for version current"
+  },
+  "sidebar.guideSidebar.category.Interview Prep": {
+    "message": "面試準備",
+    "description": "The label for category 'Interview Prep' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Interview Prep.link.generated-index.description": {
+    "message": "面試準備：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Interview Prep' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Foundations": {
+    "message": "基礎",
+    "description": "The label for category 'Foundations' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Foundations.link.generated-index.description": {
+    "message": "基礎：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Foundations' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Model Landscape": {
+    "message": "模型版圖",
+    "description": "The label for category 'Model Landscape' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Model Landscape.link.generated-index.description": {
+    "message": "模型版圖：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Model Landscape' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Training & Adaptation": {
+    "message": "訓練與調適",
+    "description": "The label for category 'Training & Adaptation' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Training & Adaptation.link.generated-index.description": {
+    "message": "訓練與調適：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Training & Adaptation' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Inference Optimization": {
+    "message": "推論最佳化",
+    "description": "The label for category 'Inference Optimization' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Inference Optimization.link.generated-index.description": {
+    "message": "推論最佳化：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Inference Optimization' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Prompting & Context": {
+    "message": "提示與情境",
+    "description": "The label for category 'Prompting & Context' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Prompting & Context.link.generated-index.description": {
+    "message": "提示與情境：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Prompting & Context' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Retrieval Systems": {
+    "message": "檢索系統",
+    "description": "The label for category 'Retrieval Systems' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Retrieval Systems.link.generated-index.description": {
+    "message": "檢索系統：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Retrieval Systems' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Agentic Systems": {
+    "message": "代理系統",
+    "description": "The label for category 'Agentic Systems' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Agentic Systems.link.generated-index.description": {
+    "message": "代理系統：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Agentic Systems' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Memory & State": {
+    "message": "記憶與狀態",
+    "description": "The label for category 'Memory & State' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Memory & State.link.generated-index.description": {
+    "message": "記憶與狀態：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Memory & State' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Frameworks & Tools": {
+    "message": "框架與工具",
+    "description": "The label for category 'Frameworks & Tools' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Frameworks & Tools.link.generated-index.description": {
+    "message": "框架與工具：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Frameworks & Tools' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Document Processing": {
+    "message": "文件處理",
+    "description": "The label for category 'Document Processing' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Document Processing.link.generated-index.description": {
+    "message": "文件處理：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Document Processing' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Infrastructure & MLOps": {
+    "message": "基礎設施與 MLOps",
+    "description": "The label for category 'Infrastructure & MLOps' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Infrastructure & MLOps.link.generated-index.description": {
+    "message": "基礎設施與 MLOps：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Infrastructure & MLOps' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Security & Access": {
+    "message": "安全與存取",
+    "description": "The label for category 'Security & Access' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Security & Access.link.generated-index.description": {
+    "message": "安全與存取：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Security & Access' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Reliability & Safety": {
+    "message": "可靠性與安全",
+    "description": "The label for category 'Reliability & Safety' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Reliability & Safety.link.generated-index.description": {
+    "message": "可靠性與安全：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Reliability & Safety' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Evaluation & Observability": {
+    "message": "評估與可觀測性",
+    "description": "The label for category 'Evaluation & Observability' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Evaluation & Observability.link.generated-index.description": {
+    "message": "評估與可觀測性：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Evaluation & Observability' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.AI Design Patterns": {
+    "message": "AI 設計模式",
+    "description": "The label for category 'AI Design Patterns' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.AI Design Patterns.link.generated-index.description": {
+    "message": "AI 設計模式：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'AI Design Patterns' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Case Studies": {
+    "message": "案例研究",
+    "description": "The label for category 'Case Studies' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Case Studies.link.generated-index.description": {
+    "message": "案例研究：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Case Studies' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Tool Use & Computer Agents": {
+    "message": "工具使用與電腦代理",
+    "description": "The label for category 'Tool Use & Computer Agents' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Tool Use & Computer Agents.link.generated-index.description": {
+    "message": "工具使用與電腦代理：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Tool Use & Computer Agents' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Voice & Audio Agents": {
+    "message": "語音與音訊代理",
+    "description": "The label for category 'Voice & Audio Agents' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Voice & Audio Agents.link.generated-index.description": {
+    "message": "語音與音訊代理：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Voice & Audio Agents' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Multimodal Generation": {
+    "message": "多模態生成",
+    "description": "The label for category 'Multimodal Generation' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Multimodal Generation.link.generated-index.description": {
+    "message": "多模態生成：瀏覽本節所有章節。",
+    "description": "The generated-index page description for category 'Multimodal Generation' in sidebar 'guideSidebar'"
+  }
+}
