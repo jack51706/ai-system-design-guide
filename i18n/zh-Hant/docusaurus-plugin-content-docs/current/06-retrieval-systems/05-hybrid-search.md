@@ -114,29 +114,19 @@ def sparse_search(query: str, top_k: int = 10) -> list[Result]:
 
 ### 架構 1：平行檢索搭配融合
 
-```
-                    +------------------+
-                    |      Query       |
-                    +--------+---------+
-                             |
-              +--------------+--------------+
-              v                             v
-    +-------------------+         +-------------------+
-    |  Dense Retrieval  |         |  Sparse Retrieval |
-    |   (Vector DB)     |         |    (BM25/ES)      |
-    +---------+---------+         +---------+---------+
-              |                             |
-              +--------------+--------------+
-                             v
-                    +-------------------+
-                    |      Fusion       |
-                    |  (RRF, weighted)  |
-                    +---------+---------+
-                              |
-                              v
-                    +-------------------+
-                    |  Final Results    |
-                    +-------------------+
+```mermaid
+flowchart TD
+    Q["查詢"]
+    D["稠密檢索<br/>(Vector DB)"]
+    S["稀疏檢索<br/>(BM25/ES)"]
+    F["融合<br/>(RRF、加權)"]
+    R["最終結果"]
+
+    Q --> D
+    Q --> S
+    D --> F
+    S --> F
+    F --> R
 ```
 
 **優點：** 分工清楚、每一端都能採用同類最佳的方案（例如 Pinecone + Algolia）、可獨立調校
@@ -166,14 +156,16 @@ results = client.search(
 
 ### 架構 3：分階段檢索
 
-```
-Query --> Sparse (fast, broad) --> Top 1000
-                    |
-                    v
-          Dense reranking --> Top 100
-                    |
-                    v
-           Cross-encoder --> Top 10
+```mermaid
+flowchart TD
+    Q["查詢"]
+    S["稀疏（快速、廣泛）<br/>Top 1000"]
+    D["稠密重排序<br/>Top 100"]
+    C["Cross-encoder<br/>Top 10"]
+
+    Q --> S
+    S --> D
+    D --> C
 ```
 
 **優點：** 有效率，每一階段都進一步精煉
@@ -486,15 +478,15 @@ def hybrid_search(query: str, final_k: int = 10):
 
 ### 延遲預算
 
-```
-Typical hybrid search latency breakdown:
+典型的混合搜尋延遲分解：
 
-Dense embedding:           30-50ms
-Dense retrieval:          30-50ms
-Sparse retrieval:         20-40ms  (parallel with dense)
-Fusion:                    1-5ms
-Total:                   60-100ms
-```
+| 階段 | 延遲 | 備註 |
+|-------|---------|-------|
+| 稠密嵌入 | 30-50ms | |
+| 稠密檢索 | 30-50ms | |
+| 稀疏檢索 | 20-40ms | 與稠密平行 |
+| 融合 | 1-5ms | |
+| 總計 | 60-100ms | |
 
 **最佳化做法：**
 - 讓稠密與稀疏平行執行

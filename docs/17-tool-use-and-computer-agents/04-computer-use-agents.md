@@ -25,28 +25,24 @@ Computer-use agents let an LLM see a screen, reason about it, and act through mo
 
 A computer-use agent is an LLM that controls a graphical interface by interpreting screenshots and issuing low-level input commands (mouse moves, clicks, keystrokes). It replaces the human in the human-computer interaction loop.
 
-```
-Traditional Tool Use:           Computer Use:
-
-User Request                    User Request
-     |                               |
-     v                               v
- LLM reasons                    LLM reasons
-     |                               |
-     v                               v
- Structured API call             Screenshot captured
- {"tool": "search",                  |
-  "query": "..."}                    v
-     |                          LLM sees pixels, finds button
-     v                               |
- API returns JSON                    v
-     |                          Mouse click at (x=340, y=220)
-     v                               |
- LLM formats answer                  v
-                                New screenshot captured
-                                     |
-                                     v
-                                LLM verifies result, continues...
+```mermaid
+flowchart TD
+    subgraph TRAD["Traditional Tool Use"]
+        direction TB
+        T1["User Request"] --> T2["LLM reasons"]
+        T2 --> T3["Structured API call<br/>{tool: search, query: ...}"]
+        T3 --> T4["API returns JSON"]
+        T4 --> T5["LLM formats answer"]
+    end
+    subgraph CU["Computer Use"]
+        direction TB
+        C1["User Request"] --> C2["LLM reasons"]
+        C2 --> C3["Screenshot captured"]
+        C3 --> C4["LLM sees pixels, finds button"]
+        C4 --> C5["Mouse click at (x=340, y=220)"]
+        C5 --> C6["New screenshot captured"]
+        C6 --> C7["LLM verifies result, continues..."]
+    end
 ```
 
 The key difference: traditional tool use requires pre-defined APIs with known schemas. Computer use works with any application that has a visual interface -- no API required.
@@ -69,38 +65,14 @@ Multiple providers now offer computer-use capabilities:
 
 Every computer-use agent follows the same core loop, often called the "agent loop" or "action loop":
 
-```
-+------------------+
-|  Capture Screen  |<-----------+
-+--------+---------+            |
-         |                      |
-         v                      |
-+------------------+            |
-|  Send to LLM     |            |
-|  (screenshot +   |            |
-|   task context)  |            |
-+--------+---------+            |
-         |                      |
-         v                      |
-+------------------+            |
-|  LLM Reasons     |            |
-|  about next      |            |
-|  action           |           |
-+--------+---------+            |
-         |                      |
-    +----+----+                 |
-    |         |                 |
-    v         v                 |
- [Action]  [Done]               |
-    |                           |
-    v                           |
-+------------------+            |
-| Execute Action   |            |
-| (click, type,    |            |
-|  scroll, key)    |            |
-+--------+---------+            |
-         |                      |
-         +----------------------+
+```mermaid
+flowchart TD
+    A["Capture Screen"] --> B["Send to LLM<br/>(screenshot + task context)"]
+    B --> C["LLM Reasons<br/>about next action"]
+    C --> D{"Action or Done?"}
+    D -->|"Done"| E["Done"]
+    D -->|"Action"| F["Execute Action<br/>(click, type, scroll, key)"]
+    F --> A
 ```
 
 Each iteration:
@@ -195,26 +167,18 @@ Computer-use agents must run in isolated environments. The model has full contro
 
 ### Standard Architecture: Docker + VNC
 
-```
-+-----------------------------------------------------+
-|  Docker Container                                   |
-|                                                     |
-|  Xvfb (Virtual X11) + Mutter (WM) + Tint2 (Panel)  |
-|         |                                           |
-|         v                                           |
-|  +------------------+     +-------------------+     |
-|  | Virtual Desktop  |---->| Screenshot Capture|     |
-|  | 1280x800         |     | (scrot/maim)      |     |
-|  | Firefox, apps    |     +--------+----------+     |
-|  +------------------+              |                |
-|                                    v                |
-|                           +--------+----------+     |
-|                           | Agent Runtime     |     |
-|                           | - Calls Claude API|     |
-|                           | - Executes actions|     |
-|                           | - Manages loop    |     |
-|                           +-------------------+     |
-+-----------------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph DOCKER["Docker Container"]
+        direction TB
+        X["Xvfb (Virtual X11) + Mutter (WM) + Tint2 (Panel)"]
+        VD["Virtual Desktop<br/>1280x800<br/>Firefox, apps"]
+        SC["Screenshot Capture<br/>(scrot/maim)"]
+        AR["Agent Runtime<br/>- Calls Claude API<br/>- Executes actions<br/>- Manages loop"]
+        X --> VD
+        VD --> SC
+        SC --> AR
+    end
 ```
 
 ### Cloud-Hosted Alternatives
@@ -322,14 +286,13 @@ The agent loop should track action history and detect repeats. If the same actio
 
 Each iteration of the agent loop involves:
 
-```
-Screenshot capture:     ~100ms
-Image encoding (base64): ~50ms
-API call (with image):   ~2-5s  (model inference)
-Action execution:        ~100ms
-                        --------
-Total per action:        ~2.5-5.5s
-```
+| Step | Time | Notes |
+|------|------|-------|
+| Screenshot capture | ~100ms | |
+| Image encoding (base64) | ~50ms | |
+| API call (with image) | ~2-5s | model inference |
+| Action execution | ~100ms | |
+| **Total per action** | **~2.5-5.5s** | |
 
 A typical 10-step task takes 25-55 seconds. Compare this to Playwright which completes the same 10 steps in under 2 seconds.
 

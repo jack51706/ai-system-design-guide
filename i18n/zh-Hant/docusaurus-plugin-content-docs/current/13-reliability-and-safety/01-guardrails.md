@@ -49,40 +49,13 @@ LLM 具有機率性，可能產生：
 
 ### 縱深防禦
 
-```
-User Input
-    |
-    v
-+--------------------+
-| INPUT GUARDRAILS   | <-- Block malicious input
-|  * Topic filtering |
-|  * PII detection   |
-|  * Jailbreak/      |
-|    injection detect |
-|  * Input validation |
-+--------+-----------+
-         |
-         v
-+--------------------+
-|  LLM Generation    |
-+--------+-----------+
-         |
-         v
-+--------------------+
-| OUTPUT GUARDRAILS  | <-- Block harmful output
-|  * Content filter  |
-|  * Factuality check|
-|  * Format valid.   |
-|  * Relevance check |
-+--------+-----------+
-         |
-         v
-+--------------------+
-| ACTION VALIDATION  | <-- Verify safe actions
-+--------+-----------+
-         |
-         v
-    Safe Response
+```mermaid
+flowchart TD
+    A["使用者輸入"] --> B["輸入防護機制<br/>* 主題過濾<br/>* PII 偵測<br/>* 越獄 / 注入偵測<br/>* 輸入驗證"]
+    B -->|"封鎖惡意輸入"| C["LLM 生成"]
+    C --> D["輸出防護機制<br/>* 內容過濾<br/>* 事實性檢查<br/>* 格式驗證<br/>* 相關性檢查"]
+    D -->|"封鎖有害輸出"| E["動作驗證"]
+    E -->|"驗證動作安全"| F["安全回應"]
 ```
 
 ---
@@ -1010,8 +983,11 @@ result = guard(
 - 揭露：在適當時清楚表明自己是 AI
 
 **回退鏈：**
-```
-Primary LLM -> Backup LLM -> Canned responses -> Human escalation
+```mermaid
+flowchart LR
+    A["主要 LLM"] --> B["備援 LLM"]
+    B --> C["預設罐頭回應"]
+    C --> D["人工升級"]
 ```
 
 **監控：**

@@ -60,17 +60,23 @@ Cross-encoder 看得出查詢中的「CUDA memory」與 Doc 1 中的「GPU memor
 ### Bi-Encoder 與 Cross-Encoder 的比較
 
 **Bi-Encoder（第一階段）：**
-```
-Query --> Encoder --> Query Embedding -+
-                                      +-> Similarity
-Document --> Encoder --> Doc Embedding +
+```mermaid
+flowchart LR
+    Q["查詢"] --> QE["Encoder"]
+    QE --> QV["查詢 Embedding"]
+    D["文件"] --> DE["Encoder"]
+    DE --> DV["文件 Embedding"]
+    QV --> S["相似度"]
+    DV --> S
 ```
 - 每份文件為 O(1)（嵌入是預先計算好的）
 - 看不到查詢與文件之間的互動關係
 
 **Cross-Encoder（重排序）：**
-```
-[Query, Document] --> Encoder --> Relevance Score
+```mermaid
+flowchart LR
+    QD["[查詢, 文件]"] --> E["Encoder"]
+    E --> RS["相關性分數"]
 ```
 - 每次查詢為 O(n)（需處理每一筆候選）
 - 看得到完整的查詢與文件上下文
@@ -80,34 +86,32 @@ Document --> Encoder --> Doc Embedding +
 
 生產環境的檢索使用一個兩階段漏斗：
 
-```
-+----------------------------------------------------------------+
-|  STAGE 1: Retrieval (Bi-Encoder)                                |
-|                                                                 |
-|  Query --> Embed --> Top-K candidates (K=100)                   |
-|  Scale: Search 1 Billion docs. Cost: Low (ms).                 |
-+----------------------------+-----------------------------------+
-                             |
-                             v
-+----------------------------------------------------------------+
-|  STAGE 2: Reranking (Cross-Encoder)                             |
-|                                                                 |
-|  For each candidate:                                            |
-|    score = reranker([query, candidate])                         |
-|  Scale: Search Top 100 docs. Cost: High (10-100ms).            |
-|                                                                 |
-|  Return Top-N by reranker score (N=5-10)                        |
-+----------------------------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph S1["階段 1：檢索 (Bi-Encoder)"]
+        direction LR
+        Q1["查詢"] --> EM["Embed"]
+        EM --> TK["前 K 筆候選 (K=100)"]
+        N1["規模：搜尋 10 億份文件<br/>成本：低（毫秒級）"]
+    end
+    subgraph S2["階段 2：重排序 (Cross-Encoder)"]
+        SC["對每一筆候選：<br/>score = reranker([query, candidate])"]
+        N2["規模：搜尋前 100 份文件<br/>成本：高（10 到 100 毫秒）"]
+        RN["依重排序分數回傳前 N 筆 (N=5-10)"]
+        SC --> RN
+    end
+    S1 --> S2
 ```
 
 ### 多階段管線
 
 對於非常大型的語料庫：
 
-```
-Stage 1: Sparse (BM25)      -> Top 1000
-Stage 2: Dense (Bi-encoder) -> Top 100
-Stage 3: Cross-encoder      -> Top 10
+```mermaid
+flowchart TD
+    A["階段 1：Sparse (BM25)"] -->|"前 1000 筆"| B["階段 2：Dense (Bi-encoder)"]
+    B -->|"前 100 筆"| C["階段 3：Cross-encoder"]
+    C -->|"前 10 筆"| D["最終結果"]
 ```
 
 每個階段都是以速度換取準確度。

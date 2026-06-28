@@ -25,28 +25,24 @@
 
 電腦使用代理是一種 LLM，它透過解讀截圖並發出低階輸入指令（滑鼠移動、點擊、鍵盤輸入）來控制圖形介面。它取代了人機互動迴圈中的人類角色。
 
-```
-Traditional Tool Use:           Computer Use:
-
-User Request                    User Request
-     |                               |
-     v                               v
- LLM reasons                    LLM reasons
-     |                               |
-     v                               v
- Structured API call             Screenshot captured
- {"tool": "search",                  |
-  "query": "..."}                    v
-     |                          LLM sees pixels, finds button
-     v                               |
- API returns JSON                    v
-     |                          Mouse click at (x=340, y=220)
-     v                               |
- LLM formats answer                  v
-                                New screenshot captured
-                                     |
-                                     v
-                                LLM verifies result, continues...
+```mermaid
+flowchart TD
+    subgraph TRAD["傳統工具使用"]
+        direction TB
+        T1["使用者請求"] --> T2["LLM 推理"]
+        T2 --> T3["結構化 API 呼叫<br/>{tool: search, query: ...}"]
+        T3 --> T4["API 回傳 JSON"]
+        T4 --> T5["LLM 整理出答案"]
+    end
+    subgraph CU["電腦使用"]
+        direction TB
+        C1["使用者請求"] --> C2["LLM 推理"]
+        C2 --> C3["擷取截圖"]
+        C3 --> C4["LLM 看像素，找到按鈕"]
+        C4 --> C5["在 (x=340, y=220) 點擊滑鼠"]
+        C5 --> C6["擷取新截圖"]
+        C6 --> C7["LLM 驗證結果，繼續..."]
+    end
 ```
 
 關鍵差異在於：傳統工具使用需要預先定義、具有已知結構描述（schema）的 API。電腦使用則適用於任何具有視覺介面的應用程式，不需要 API。
@@ -69,38 +65,14 @@ User Request                    User Request
 
 每個電腦使用代理都遵循相同的核心迴圈，通常稱為「代理迴圈（agent loop）」或「動作迴圈（action loop）」：
 
-```
-+------------------+
-|  Capture Screen  |<-----------+
-+--------+---------+            |
-         |                      |
-         v                      |
-+------------------+            |
-|  Send to LLM     |            |
-|  (screenshot +   |            |
-|   task context)  |            |
-+--------+---------+            |
-         |                      |
-         v                      |
-+------------------+            |
-|  LLM Reasons     |            |
-|  about next      |            |
-|  action           |           |
-+--------+---------+            |
-         |                      |
-    +----+----+                 |
-    |         |                 |
-    v         v                 |
- [Action]  [Done]               |
-    |                           |
-    v                           |
-+------------------+            |
-| Execute Action   |            |
-| (click, type,    |            |
-|  scroll, key)    |            |
-+--------+---------+            |
-         |                      |
-         +----------------------+
+```mermaid
+flowchart TD
+    A["擷取螢幕"] --> B["送往 LLM<br/>（截圖 + 任務上下文）"]
+    B --> C["LLM 推理<br/>下一個動作"]
+    C --> D{"動作或完成？"}
+    D -->|"完成"| E["完成"]
+    D -->|"動作"| F["執行動作<br/>（點擊、輸入、捲動、按鍵）"]
+    F --> A
 ```
 
 每一次迭代：
@@ -195,26 +167,18 @@ response = client.messages.create(
 
 ### 標準架構：Docker + VNC
 
-```
-+-----------------------------------------------------+
-|  Docker Container                                   |
-|                                                     |
-|  Xvfb (Virtual X11) + Mutter (WM) + Tint2 (Panel)  |
-|         |                                           |
-|         v                                           |
-|  +------------------+     +-------------------+     |
-|  | Virtual Desktop  |---->| Screenshot Capture|     |
-|  | 1280x800         |     | (scrot/maim)      |     |
-|  | Firefox, apps    |     +--------+----------+     |
-|  +------------------+              |                |
-|                                    v                |
-|                           +--------+----------+     |
-|                           | Agent Runtime     |     |
-|                           | - Calls Claude API|     |
-|                           | - Executes actions|     |
-|                           | - Manages loop    |     |
-|                           +-------------------+     |
-+-----------------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph DOCKER["Docker Container"]
+        direction TB
+        X["Xvfb (Virtual X11) + Mutter (WM) + Tint2 (Panel)"]
+        VD["虛擬桌面<br/>1280x800<br/>Firefox、各應用程式"]
+        SC["截圖擷取<br/>(scrot/maim)"]
+        AR["Agent Runtime<br/>- 呼叫 Claude API<br/>- 執行動作<br/>- 管理迴圈"]
+        X --> VD
+        VD --> SC
+        SC --> AR
+    end
 ```
 
 ### 雲端託管的替代方案
@@ -322,14 +286,13 @@ Cookie 橫幅、彈出視窗、權限對話框會在意料之外出現：
 
 代理迴圈的每一次迭代涉及：
 
-```
-Screenshot capture:     ~100ms
-Image encoding (base64): ~50ms
-API call (with image):   ~2-5s  (model inference)
-Action execution:        ~100ms
-                        --------
-Total per action:        ~2.5-5.5s
-```
+| 步驟 | 時間 | 備註 |
+|------|------|-------|
+| 截圖擷取 | ~100ms | |
+| 影像編碼（base64） | ~50ms | |
+| API 呼叫（含影像） | ~2-5s | 模型推論 |
+| 動作執行 | ~100ms | |
+| **每次動作總計** | **~2.5-5.5s** | |
 
 一個典型的 10 步驟任務需要 25 至 55 秒。相比之下，Playwright 完成相同的 10 個步驟只需不到 2 秒。
 

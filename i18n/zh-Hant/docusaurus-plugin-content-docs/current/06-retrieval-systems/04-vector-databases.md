@@ -104,12 +104,21 @@ ANN 索引以部分準確度換取速度。請依你的需求進行調校。
 3. 多層抽象（階層式）
 4. 搜尋：從頂層往下導航，貪婪式最近鄰
 
-```
-Layer 2:   *--------*--------*
-           |        |        |
-Layer 1:   *--*--*--*--*--*--*
-           |  |  |  |  |  |  |
-Layer 0:   ********************  (all vectors)
+```mermaid
+flowchart TD
+    subgraph L2["Layer 2（稀疏，長距離跳躍）"]
+        A2["節點"] --- B2["節點"] --- C2["節點"]
+    end
+    subgraph L1["Layer 1（中間層）"]
+        A1["節點"] --- B1["節點"] --- C1["節點"] --- D1["節點"] --- E1["節點"] --- F1["節點"] --- G1["節點"]
+    end
+    subgraph L0["Layer 0（所有向量）"]
+        N0["每個向量構成的密集圖"]
+    end
+    A2 --> A1
+    B2 --> D1
+    C2 --> G1
+    L1 --> L0
 ```
 
 **優點：**
@@ -421,23 +430,17 @@ class VectorDBMaintenance:
 
 ### 高可用性
 
-```
-+-------------------------------------------------------------+
-|                    Load Balancer                              |
-+----------------------------+--------------------------------+
-                             |
-            +----------------+----------------+
-            v                v                v
-     +--------------+ +--------------+ +--------------+
-     |  Replica 1   | |  Replica 2   | |  Replica 3   |
-     |   (Read)     | |   (Read)     | |   (Primary)  |
-     +--------------+ +--------------+ +--------------+
-                                             |
-                                       (Replication)
-                                             |
-                                       +-----v-----+
-                                       |  Storage   |
-                                       +-----------+
+```mermaid
+flowchart TD
+    LB["Load Balancer"]
+    R1["Replica 1<br/>（唯讀）"]
+    R2["Replica 2<br/>（唯讀）"]
+    R3["Replica 3<br/>（Primary）"]
+    S["Storage"]
+    LB --> R1
+    LB --> R2
+    LB --> R3
+    R3 -->|"複寫"| S
 ```
 
 **關鍵模式：**
@@ -544,19 +547,17 @@ def estimate_self_hosted_cost(
 
 ### 決策樹
 
-```
-Need < 100K vectors?
-+-- Yes -> pgvector (if already using PostgreSQL)
-|          +-- Chroma (for prototyping)
-|
-+-- No -> Need managed service?
-          +-- Yes -> Cloud-first?
-          |          +-- Yes -> Pinecone (easiest)
-          |          +-- No -> Qdrant Cloud or Zilliz
-          |
-          +-- No -> Need enterprise features?
-                    +-- Yes -> Milvus on Kubernetes
-                    +-- No -> Qdrant or Weaviate self-hosted
+```mermaid
+flowchart TD
+    Q1{"需要少於 100K 向量？"}
+    Q1 -->|"是"| A1["pgvector<br/>（若已使用 PostgreSQL）<br/>或 Chroma（用於原型開發）"]
+    Q1 -->|"否"| Q2{"需要託管服務？"}
+    Q2 -->|"是"| Q3{"雲端優先？"}
+    Q3 -->|"是"| A2["Pinecone（最簡單）"]
+    Q3 -->|"否"| A3["Qdrant Cloud 或 Zilliz"]
+    Q2 -->|"否"| Q4{"需要企業級功能？"}
+    Q4 -->|"是"| A4["Milvus on Kubernetes"]
+    Q4 -->|"否"| A5["Qdrant 或 Weaviate 自架"]
 ```
 
 ### 評估準則

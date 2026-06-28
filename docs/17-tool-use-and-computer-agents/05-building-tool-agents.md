@@ -64,23 +64,11 @@ The tool schema is the contract between the LLM and your system. A well-designed
 
 **6. Use `strict: true`**: Anthropic's strict mode guarantees the model output matches the schema exactly. Always enable it in production.
 
-```
-Good Tool Design:                    Bad Tool Design:
-
-+-------------------+                +-------------------+
-| search_customers  |                | customer_tool     |
-| - query (string)  |                | - action (string) |
-| - limit (int 1-10)|                | - data (object)   |
-+-------------------+                | - options (any)   |
-| create_customer   |                +-------------------+
-| - name (string)   |                "action" can be
-| - email (string)  |                "search", "create",
-+-------------------+                "update", "delete"
-| update_customer   |                => model confused,
-| - id (string)     |                   schema too loose,
-| - fields (object) |                   hard to validate
-+-------------------+
-```
+| Good Tool Design (atomic tools) | Bad Tool Design (god tool) |
+|---------------------------------|----------------------------|
+| `search_customers`: query (string), limit (int 1-10) | `customer_tool`: action (string), data (object), options (any) |
+| `create_customer`: name (string), email (string) | `action` can be "search", "create", "update", "delete" |
+| `update_customer`: id (string), fields (object) | Result: model confused, schema too loose, hard to validate |
 
 ---
 
@@ -90,17 +78,15 @@ An MCP server is a standalone process that exposes tools, resources, and prompts
 
 ### MCP Architecture
 
-```
-+------------------+          JSON-RPC           +------------------+
-|                  |  ========================>  |                  |
-|   MCP Client     |                             |   MCP Server     |
-|   (AI App)       |  <========================  |   (Your Code)    |
-|                  |                             |                  |
-|  - Claude Code   |  Transport:                 |  Exposes:        |
-|  - Custom Agent  |  - stdio (local)            |  - Tools         |
-|  - IDE Plugin    |  - Streamable HTTP (remote)  |  - Resources     |
-|                  |                             |  - Prompts       |
-+------------------+                             +------------------+
+```mermaid
+flowchart LR
+    Client["MCP Client (AI App)<br/>- Claude Code<br/>- Custom Agent<br/>- IDE Plugin"]
+    Server["MCP Server (Your Code)<br/>Exposes:<br/>- Tools<br/>- Resources<br/>- Prompts"]
+    Client -->|"JSON-RPC request"| Server
+    Server -->|"JSON-RPC response"| Client
+    Transport["Transport:<br/>- stdio (local)<br/>- Streamable HTTP (remote)"]
+    Client -.- Transport
+    Transport -.- Server
 ```
 
 ### TypeScript MCP Server
@@ -180,22 +166,13 @@ MCP clients discover capabilities via standard JSON-RPC methods: `tools/list` re
 
 ### Input Validation Layers
 
-```
-+---------------------+
-|  Schema Validation   |  <-- JSON Schema / Zod / Pydantic
-|  (type, range, enum) |      Catches: wrong types, out-of-range
-+----------+----------+
-           |
-           v
-+---------------------+
-|  Business Validation |  <-- Your handler code
-|  (exists, permitted) |      Catches: invalid IDs, unauthorized
-+----------+----------+
-           |
-           v
-+---------------------+
-|  Execution           |  <-- Actual operation
-+---------------------+
+```mermaid
+flowchart TD
+    Schema["Schema Validation (type, range, enum)<br/>JSON Schema / Zod / Pydantic<br/>Catches: wrong types, out-of-range"]
+    Business["Business Validation (exists, permitted)<br/>Your handler code<br/>Catches: invalid IDs, unauthorized"]
+    Execution["Execution<br/>Actual operation"]
+    Schema --> Business
+    Business --> Execution
 ```
 
 Always validate at both layers. Schema validation catches malformed input. Business validation catches semantically invalid input.
@@ -256,16 +233,15 @@ Real tasks require multiple tools called in sequence. There are two composition 
 
 The LLM decides which tool to call next based on previous results:
 
-```
-User: "Find customer Jane Smith and create a high-priority ticket for her billing issue"
-
-Turn 1:  LLM -> search_customers("Jane Smith")
-         Result: {"id": "ACC-123", "name": "Jane Smith", ...}
-
-Turn 2:  LLM -> create_ticket("ACC-123", "Billing issue", "...", "high")
-         Result: "Ticket TK-789 created."
-
-Turn 3:  LLM -> "I found Jane Smith (ACC-123) and created ticket TK-789."
+```mermaid
+flowchart TD
+    User["User: Find customer Jane Smith and create a<br/>high-priority ticket for her billing issue"]
+    Turn1["Turn 1: LLM calls search_customers('Jane Smith')<br/>Result: {id: ACC-123, name: Jane Smith, ...}"]
+    Turn2["Turn 2: LLM calls create_ticket('ACC-123', 'Billing issue', '...', 'high')<br/>Result: Ticket TK-789 created."]
+    Turn3["Turn 3: LLM responds: I found Jane Smith (ACC-123)<br/>and created ticket TK-789."]
+    User --> Turn1
+    Turn1 --> Turn2
+    Turn2 --> Turn3
 ```
 
 Each tool call is a separate API round-trip. The model reasons about results between calls.
@@ -326,21 +302,13 @@ To make your API callable by any LLM, expose it via FastAPI with Pydantic models
 
 ### Three Testing Layers
 
-```
-+---------------------------+
-|   Eval Suites             |  End-to-end: does the agent
-|   (Agent + LLM + Tools)  |  complete the task?
-+-------------+-------------+
-              |
-+-------------v-------------+
-|   Integration Tests       |  Does tool X work correctly
-|   (Tool + Dependencies)   |  with real DB / API?
-+-------------+-------------+
-              |
-+-------------v-------------+
-|   Unit Tests              |  Does validation logic
-|   (Tool Logic Only)       |  handle edge cases?
-+---------------------------+
+```mermaid
+flowchart TD
+    Eval["Eval Suites (Agent + LLM + Tools)<br/>End-to-end: does the agent complete the task?"]
+    Integration["Integration Tests (Tool + Dependencies)<br/>Does tool X work correctly with real DB / API?"]
+    Unit["Unit Tests (Tool Logic Only)<br/>Does validation logic handle edge cases?"]
+    Eval --> Integration
+    Integration --> Unit
 ```
 
 ### Unit Tests for Tools
@@ -387,25 +355,19 @@ Every tool call should log: trace/span IDs, timestamp, tool name, input args, ou
 
 ### Tracing Architecture
 
-```
-+-------------+     +----------------+     +--------------+
-|  Agent      |---->|  Tool Handler  |---->|  Backend     |
-|  (LLM call) |     |  (MCP Server)  |     |  (DB/API)    |
-+------+------+     +--------+-------+     +------+-------+
-       |                     |                     |
-       v                     v                     v
-+------+---------------------+---------------------+------+
-|                    Trace Collector                       |
-|              (OpenTelemetry / Langfuse)                  |
-+---------------------------+------------------------------+
-                            |
-                            v
-                   +--------+--------+
-                   |   Dashboard     |
-                   |   - Success %   |
-                   |   - Latency     |
-                   |   - Cost        |
-                   +-----------------+
+```mermaid
+flowchart TD
+    Agent["Agent (LLM call)"]
+    ToolHandler["Tool Handler (MCP Server)"]
+    Backend["Backend (DB/API)"]
+    Collector["Trace Collector<br/>(OpenTelemetry / Langfuse)"]
+    Dashboard["Dashboard<br/>- Success %<br/>- Latency<br/>- Cost"]
+    Agent --> ToolHandler
+    ToolHandler --> Backend
+    Agent --> Collector
+    ToolHandler --> Collector
+    Backend --> Collector
+    Collector --> Dashboard
 ```
 
 ---

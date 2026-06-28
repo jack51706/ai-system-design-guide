@@ -22,30 +22,12 @@ Evaluation is the hardest unsolved problem in RAG. You can build a retrieval pip
 
 The RAG Triad is the foundational framework for evaluating RAG systems. It decomposes correctness into three independent dimensions, each catching a different failure mode.
 
-```
-                          User Query
-                              |
-                              v
-                    +-------------------+
-                    |    RETRIEVER      |
-                    +-------------------+
-                              |
-                   (1) Context Relevance
-                    "Did we retrieve the
-                     right documents?"
-                              |
-                              v
-                    +-------------------+
-                    |    GENERATOR      |
-                    +-------------------+
-                         /         \
-            (2) Groundedness      (3) Answer Relevance
-            "Is the answer         "Does the answer
-             supported by           address the actual
-             the context?"          question?"
-                  |                       |
-                  v                       v
-             No hallucination       No tangential answers
+```mermaid
+flowchart TD
+    Q["User Query"] --> R["RETRIEVER"]
+    R -->|"(1) Context Relevance:<br/>Did we retrieve the<br/>right documents?"| G["GENERATOR"]
+    G -->|"(2) Groundedness:<br/>Is the answer supported<br/>by the context?"| H["No hallucination"]
+    G -->|"(3) Answer Relevance:<br/>Does the answer address<br/>the actual question?"| T["No tangential answers"]
 ```
 
 ### Dimension 1: Context Relevance
@@ -106,50 +88,49 @@ RAGAS (Retrieval Augmented Generation Assessment) is the most widely adopted ope
 
 ### Core RAGAS Metrics
 
-```
-  RAGAS Metric Suite (v0.2+)
-  |
-  +-- Retrieval Metrics
-  |     +-- Context Precision: Are relevant docs ranked higher?
-  |     +-- Context Recall: Did we find all relevant docs?
-  |     +-- Context Entities Recall: Did we capture key entities?
-  |     +-- Context Relevance: Is retrieved context pertinent?
-  |
-  +-- Generation Metrics
-  |     +-- Faithfulness: Are claims supported by context?
-  |     +-- Answer Relevance: Does the answer address the query?
-  |     +-- Answer Correctness: Does the answer match ground truth?
-  |     +-- Answer Similarity: Semantic overlap with reference answer
-  |
-  +-- Noise & Robustness
-  |     +-- Noise Sensitivity: How much does irrelevant context hurt?
-  |
-  +-- Multi-Modal (2025+)
-        +-- Multimodal Faithfulness: Claims supported by images + text?
-        +-- Multimodal Relevance: Are retrieved images relevant?
+```mermaid
+flowchart TD
+    S["RAGAS Metric Suite (v0.2+)"]
+    S --> RM["Retrieval Metrics"]
+    S --> GM["Generation Metrics"]
+    S --> NR["Noise & Robustness"]
+    S --> MM["Multi-Modal (2025+)"]
+
+    RM --> RM1["Context Precision:<br/>Are relevant docs ranked higher?"]
+    RM --> RM2["Context Recall:<br/>Did we find all relevant docs?"]
+    RM --> RM3["Context Entities Recall:<br/>Did we capture key entities?"]
+    RM --> RM4["Context Relevance:<br/>Is retrieved context pertinent?"]
+
+    GM --> GM1["Faithfulness:<br/>Are claims supported by context?"]
+    GM --> GM2["Answer Relevance:<br/>Does the answer address the query?"]
+    GM --> GM3["Answer Correctness:<br/>Does the answer match ground truth?"]
+    GM --> GM4["Answer Similarity:<br/>Semantic overlap with reference answer"]
+
+    NR --> NR1["Noise Sensitivity:<br/>How much does irrelevant context hurt?"]
+
+    MM --> MM1["Multimodal Faithfulness:<br/>Claims supported by images + text?"]
+    MM --> MM2["Multimodal Relevance:<br/>Are retrieved images relevant?"]
 ```
 
 ### How RAGAS Faithfulness Works (Under the Hood)
 
-```
-Step 1: Claim Extraction
-  Answer: "Revenue grew 15% in Q3, driven by APAC expansion
-           and the new enterprise tier launched in July."
+```mermaid
+flowchart TD
+    A["Step 1: Claim Extraction<br/>Answer: 'Revenue grew 15% in Q3, driven by<br/>APAC expansion and the new enterprise tier<br/>launched in July.'"]
+    A --> C1["c1: 'Revenue grew 15% in Q3'"]
+    A --> C2["c2: 'Growth was driven by APAC expansion'"]
+    A --> C3["c3: 'Growth was driven by the new enterprise tier'"]
+    A --> C4["c4: 'The enterprise tier was launched in July'"]
 
-  Claims:
-    c1: "Revenue grew 15% in Q3"
-    c2: "Growth was driven by APAC expansion"
-    c3: "Growth was driven by the new enterprise tier"
-    c4: "The enterprise tier was launched in July"
+    C1 -->|"Step 2: Found in Context chunk 3"| V1["SUPPORTED"]
+    C2 -->|"Found in Context chunk 1"| V2["SUPPORTED"]
+    C3 -->|"Not found in any context"| V3["UNSUPPORTED"]
+    C4 -->|"Context says 'August' not 'July'"| V4["CONTRADICTED"]
 
-Step 2: Evidence Matching (per claim)
-  c1: Found in Context chunk 3 --> SUPPORTED
-  c2: Found in Context chunk 1 --> SUPPORTED
-  c3: Not found in any context --> UNSUPPORTED
-  c4: Context says "August" not "July" --> CONTRADICTED
-
-Step 3: Score Calculation
-  Faithfulness = supported / total = 2/4 = 0.50
+    V1 --> SC["Step 3: Score Calculation<br/>Faithfulness = supported / total = 2/4 = 0.50"]
+    V2 --> SC
+    V3 --> SC
+    V4 --> SC
 ```
 
 ### How RAGAS Context Precision Works
@@ -192,21 +173,16 @@ The RAG Triad evaluates the system end-to-end. Component-level evaluation isolat
 
 ### Retriever Evaluation
 
-```
-  Query Set (100+ queries with known relevant documents)
-        |
-        v
-  Run Retriever --> Retrieved docs per query
-        |
-        v
-  Compare against ground truth relevance labels
-        |
-        v
-  Metrics:
-    +-- Recall@K: What fraction of relevant docs are in the top K?
-    +-- MRR (Mean Reciprocal Rank): How high is the first relevant doc?
-    +-- NDCG@K: Quality-weighted ranking metric
-    +-- Precision@K: What fraction of top K are relevant?
+```mermaid
+flowchart TD
+    QS["Query Set<br/>(100+ queries with known relevant documents)"]
+    QS --> RR["Run Retriever<br/>Retrieved docs per query"]
+    RR --> CMP["Compare against ground truth relevance labels"]
+    CMP --> M["Metrics"]
+    M --> M1["Recall@K:<br/>What fraction of relevant docs are in the top K?"]
+    M --> M2["MRR (Mean Reciprocal Rank):<br/>How high is the first relevant doc?"]
+    M --> M3["NDCG@K:<br/>Quality-weighted ranking metric"]
+    M --> M4["Precision@K:<br/>What fraction of top K are relevant?"]
 ```
 
 **Key Retriever Benchmarks**:
@@ -222,35 +198,28 @@ The RAG Triad evaluates the system end-to-end. Component-level evaluation isolat
 
 Isolate the generator by fixing the retrieval context and varying only the generation.
 
-```
-  Fixed Context (known relevant chunks)
-  + Query
-        |
-        v
-  Run Generator --> Answer
-        |
-        v
-  Metrics:
-    +-- Faithfulness (RAGAS): Does it stay grounded?
-    +-- Completeness: Does it cover all relevant info in context?
-    +-- Conciseness: Is it appropriately brief?
-    +-- Format Compliance: Does it follow the expected output format?
-    +-- Citation Accuracy: Do citations point to the right chunks?
+```mermaid
+flowchart TD
+    IN["Fixed Context (known relevant chunks)<br/>+ Query"]
+    IN --> RG["Run Generator<br/>Answer"]
+    RG --> M["Metrics"]
+    M --> M1["Faithfulness (RAGAS):<br/>Does it stay grounded?"]
+    M --> M2["Completeness:<br/>Does it cover all relevant info in context?"]
+    M --> M3["Conciseness:<br/>Is it appropriately brief?"]
+    M --> M4["Format Compliance:<br/>Does it follow the expected output format?"]
+    M --> M5["Citation Accuracy:<br/>Do citations point to the right chunks?"]
 ```
 
 ### Reranker Evaluation
 
-```
-  Query + Initial retrieval results (e.g., top 100 from BM25)
-        |
-        v
-  Run Reranker --> Reranked results
-        |
-        v
-  Metrics:
-    +-- NDCG improvement: Did reranking move relevant docs up?
-    +-- Recall preservation: Did reranking lose any relevant docs?
-    +-- Latency: What did reranking add to query time?
+```mermaid
+flowchart TD
+    IN["Query + Initial retrieval results<br/>(e.g., top 100 from BM25)"]
+    IN --> RR["Run Reranker<br/>Reranked results"]
+    RR --> M["Metrics"]
+    M --> M1["NDCG improvement:<br/>Did reranking move relevant docs up?"]
+    M --> M2["Recall preservation:<br/>Did reranking lose any relevant docs?"]
+    M --> M3["Latency:<br/>What did reranking add to query time?"]
 ```
 
 ---
@@ -263,22 +232,20 @@ Using an LLM to evaluate another LLM's output is the dominant evaluation paradig
 
 ```
   Evaluation Prompt Template:
-  +------------------------------------------------------------------+
-  | You are evaluating a RAG system. Given:                           |
-  | - User Query: {query}                                             |
-  | - Retrieved Context: {context}                                    |
-  | - Generated Answer: {answer}                                      |
-  |                                                                    |
-  | Rate the following on a scale of 1-5:                             |
-  | 1. Faithfulness: Are all claims in the answer supported by        |
-  |    the context? (1=hallucinated, 5=fully grounded)                |
-  | 2. Relevance: Does the answer address the user's question?        |
-  |    (1=off-topic, 5=directly answers)                              |
-  | 3. Completeness: Does the answer cover all relevant info?         |
-  |    (1=missing key info, 5=comprehensive)                          |
-  |                                                                    |
-  | Provide scores and brief justifications in JSON.                  |
-  +------------------------------------------------------------------+
+You are evaluating a RAG system. Given:
+- User Query: {query}
+- Retrieved Context: {context}
+- Generated Answer: {answer}
+
+Rate the following on a scale of 1-5:
+1. Faithfulness: Are all claims in the answer supported by
+   the context? (1=hallucinated, 5=fully grounded)
+2. Relevance: Does the answer address the user's question?
+   (1=off-topic, 5=directly answers)
+3. Completeness: Does the answer cover all relevant info?
+   (1=missing key info, 5=comprehensive)
+
+Provide scores and brief justifications in JSON.
 ```
 
 ### Known Biases and Mitigations
@@ -307,42 +274,13 @@ A golden test set is a curated, versioned collection of (query, expected_context
 
 ### Building Process
 
-```
-  Step 1: Seed Collection
-  +-------------------------------------------------------+
-  | Source production queries (logs, support tickets)       |
-  | Target: 200-500 diverse queries                        |
-  | Coverage: all topics, question types, difficulty levels |
-  +-------------------------------------------------------+
-            |
-            v
-  Step 2: Synthetic Augmentation
-  +-------------------------------------------------------+
-  | Use RAGAS or DataMorgana to generate additional queries |
-  | from your corpus:                                       |
-  |   - Simple factual questions (40%)                     |
-  |   - Multi-hop reasoning questions (25%)                |
-  |   - Conditional/comparative questions (20%)            |
-  |   - Adversarial/edge cases (15%)                       |
-  +-------------------------------------------------------+
-            |
-            v
-  Step 3: Human Annotation
-  +-------------------------------------------------------+
-  | For each query, annotate:                               |
-  |   - Expected relevant document IDs (for retrieval eval) |
-  |   - Reference answer (for generation eval)              |
-  |   - Difficulty label (easy / medium / hard)             |
-  |   - Category tags (topic, question type)                |
-  +-------------------------------------------------------+
-            |
-            v
-  Step 4: Versioning and Freezing
-  +-------------------------------------------------------+
-  | Store in version control (golden_set_v3.json)           |
-  | FREEZE the set for each evaluation cycle                |
-  | Never modify a frozen set -- create a new version       |
-  +-------------------------------------------------------+
+```mermaid
+flowchart TD
+    S1["Step 1: Seed Collection<br/>Source production queries (logs, support tickets)<br/>Target: 200-500 diverse queries<br/>Coverage: all topics, question types, difficulty levels"]
+    S2["Step 2: Synthetic Augmentation<br/>Use RAGAS or DataMorgana to generate additional queries from your corpus:<br/>- Simple factual questions (40%)<br/>- Multi-hop reasoning questions (25%)<br/>- Conditional/comparative questions (20%)<br/>- Adversarial/edge cases (15%)"]
+    S3["Step 3: Human Annotation<br/>For each query, annotate:<br/>- Expected relevant document IDs (for retrieval eval)<br/>- Reference answer (for generation eval)<br/>- Difficulty label (easy / medium / hard)<br/>- Category tags (topic, question type)"]
+    S4["Step 4: Versioning and Freezing<br/>Store in version control (golden_set_v3.json)<br/>FREEZE the set for each evaluation cycle<br/>Never modify a frozen set, create a new version"]
+    S1 --> S2 --> S3 --> S4
 ```
 
 ### Golden Set Composition Guidelines
@@ -385,10 +323,14 @@ Every RAG pipeline change (new embeddings, chunk size, prompt edit, reranker swa
 
 ### CI/CD Integration
 
-```
-  PR (RAG change) --> CI: Load golden set --> Run pipeline --> Compute metrics
-                          --> Compare vs. baseline --> FAIL if drop > 5%, WARN if > 2%
-                          --> Post metrics table as PR comment
+```mermaid
+flowchart LR
+    PR["PR (RAG change)"] --> L["CI: Load golden set"]
+    L --> RP["Run pipeline"]
+    RP --> CM["Compute metrics"]
+    CM --> CB["Compare vs. baseline"]
+    CB --> G["FAIL if drop > 5%,<br/>WARN if > 2%"]
+    G --> P["Post metrics table<br/>as PR comment"]
 ```
 
 ### Quality Gates
@@ -467,21 +409,13 @@ LLM-as-judge evaluation is powerful but expensive. Understanding the cost struct
 
 ### When to Use What
 
-```
-  Starting a new RAG project?
-    --> RAGAS for quick baseline metrics + synthetic test generation
-
-  Adding RAG eval to CI/CD?
-    --> DeepEval (pytest integration, quality gates as assertions)
-
-  Need production monitoring?
-    --> UpTrain or Braintrust (drift detection, alerting)
-
-  Want end-to-end observability?
-    --> LangSmith (if LangChain) or Braintrust (if framework-agnostic)
-
-  Building custom eval pipeline?
-    --> Roll your own with LLM-as-judge + the RAG Triad structure
+```mermaid
+flowchart TD
+    Q1{"Starting a new RAG project?"} -->|"Yes"| A1["RAGAS for quick baseline metrics<br/>+ synthetic test generation"]
+    Q2{"Adding RAG eval to CI/CD?"} -->|"Yes"| A2["DeepEval (pytest integration,<br/>quality gates as assertions)"]
+    Q3{"Need production monitoring?"} -->|"Yes"| A3["UpTrain or Braintrust<br/>(drift detection, alerting)"]
+    Q4{"Want end-to-end observability?"} -->|"Yes"| A4["LangSmith (if LangChain) or<br/>Braintrust (if framework-agnostic)"]
+    Q5{"Building custom eval pipeline?"} -->|"Yes"| A5["Roll your own with LLM-as-judge<br/>+ the RAG Triad structure"]
 ```
 
 ### Custom Evaluator Pattern

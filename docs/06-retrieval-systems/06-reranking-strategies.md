@@ -60,17 +60,23 @@ The cross-encoder sees that "CUDA memory" in the query relates to "GPU memory...
 ### Bi-Encoder vs Cross-Encoder
 
 **Bi-Encoder (First Stage):**
-```
-Query --> Encoder --> Query Embedding -+
-                                      +-> Similarity
-Document --> Encoder --> Doc Embedding +
+```mermaid
+flowchart LR
+    Q["Query"] --> QE["Encoder"]
+    QE --> QV["Query Embedding"]
+    D["Document"] --> DE["Encoder"]
+    DE --> DV["Doc Embedding"]
+    QV --> S["Similarity"]
+    DV --> S
 ```
 - O(1) per document (embeddings pre-computed)
 - Cannot see query-document interactions
 
 **Cross-Encoder (Reranking):**
-```
-[Query, Document] --> Encoder --> Relevance Score
+```mermaid
+flowchart LR
+    QD["[Query, Document]"] --> E["Encoder"]
+    E --> RS["Relevance Score"]
 ```
 - O(n) per query (process each candidate)
 - Sees full query-document context
@@ -80,34 +86,32 @@ Document --> Encoder --> Doc Embedding +
 
 Production retrieval uses a two-stage funnel:
 
-```
-+----------------------------------------------------------------+
-|  STAGE 1: Retrieval (Bi-Encoder)                                |
-|                                                                 |
-|  Query --> Embed --> Top-K candidates (K=100)                   |
-|  Scale: Search 1 Billion docs. Cost: Low (ms).                 |
-+----------------------------+-----------------------------------+
-                             |
-                             v
-+----------------------------------------------------------------+
-|  STAGE 2: Reranking (Cross-Encoder)                             |
-|                                                                 |
-|  For each candidate:                                            |
-|    score = reranker([query, candidate])                         |
-|  Scale: Search Top 100 docs. Cost: High (10-100ms).            |
-|                                                                 |
-|  Return Top-N by reranker score (N=5-10)                        |
-+----------------------------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph S1["STAGE 1: Retrieval (Bi-Encoder)"]
+        direction LR
+        Q1["Query"] --> EM["Embed"]
+        EM --> TK["Top-K candidates (K=100)"]
+        N1["Scale: Search 1 Billion docs<br/>Cost: Low (ms)"]
+    end
+    subgraph S2["STAGE 2: Reranking (Cross-Encoder)"]
+        SC["For each candidate:<br/>score = reranker([query, candidate])"]
+        N2["Scale: Search Top 100 docs<br/>Cost: High (10-100ms)"]
+        RN["Return Top-N by reranker score (N=5-10)"]
+        SC --> RN
+    end
+    S1 --> S2
 ```
 
 ### Multi-Stage Pipeline
 
 For very large corpora:
 
-```
-Stage 1: Sparse (BM25)      -> Top 1000
-Stage 2: Dense (Bi-encoder) -> Top 100
-Stage 3: Cross-encoder      -> Top 10
+```mermaid
+flowchart TD
+    A["Stage 1: Sparse (BM25)"] -->|"Top 1000"| B["Stage 2: Dense (Bi-encoder)"]
+    B -->|"Top 100"| C["Stage 3: Cross-encoder"]
+    C -->|"Top 10"| D["Final Results"]
 ```
 
 Each stage trades speed for accuracy.

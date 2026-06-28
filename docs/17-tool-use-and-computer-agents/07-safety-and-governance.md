@@ -101,20 +101,11 @@ Prompt injection in tool-using agents is qualitatively different from prompt inj
 
 ### Attack Surface for Tool-Using Agents
 
-```
-                    Direct Injection
-                    (user input)
-                         |
-                         v
-+-------+          +-----+-----+          +--------+
-| User  | -------> |   Agent   | -------> | Tools  |
-+-------+          +-----+-----+          +--------+
-                         ^
-                         |
-              Indirect Injection
-              (documents, emails,
-               web pages, API
-               responses, DB rows)
+```mermaid
+flowchart LR
+    User["User"] -->|"Direct Injection<br/>(user input)"| Agent["Agent"]
+    Agent --> Tools["Tools"]
+    Indirect["Indirect Injection<br/>(documents, emails,<br/>web pages, API<br/>responses, DB rows)"] --> Agent
 ```
 
 ### Indirect Injection Through Tool Outputs
@@ -171,18 +162,11 @@ Galileo AI research (2025) on multi-agent system failures found that cascading f
 
 ### How Cascading Failures Happen
 
-```
-Agent A                Agent B                Agent C
-(correct)              (poisoned)             (acts on bad data)
-   |                      |                      |
-   +------ msg --------->+|                      |
-   |                      |                      |
-   |                      +--- corrupted msg --->+|
-   |                      |                      |
-   |                      |                      +--- bad action
-   |                      |                      |   (writes to DB,
-   |                      |                      |    sends email,
-   |                      |                      |    triggers alert)
+```mermaid
+flowchart LR
+    A["Agent A<br/>(correct)"] -->|"msg"| B["Agent B<br/>(poisoned)"]
+    B -->|"corrupted msg"| C["Agent C<br/>(acts on bad data)"]
+    C --> Action["bad action<br/>(writes to DB,<br/>sends email,<br/>triggers alert)"]
 ```
 
 ### Wrong Tool Selection
@@ -207,30 +191,14 @@ Executing code or interacting with systems through an AI agent requires isolatio
 
 ### Technology Comparison
 
-```
-+------------------------------------------------------------------+
-|                     Isolation Spectrum                            |
-|                                                                  |
-|  Weaker                                              Stronger    |
-|  <------------------------------------------------------>        |
-|                                                                  |
-|  Docker        gVisor          WASM          Firecracker          |
-|  Container     (user-space     (capability   (microVM with       |
-|  (shared       kernel)         sandbox)      own guest kernel)   |
-|  kernel)                                                         |
-|                                                                  |
-|  Startup:      Startup:        Startup:      Startup:            |
-|  ~100ms        ~100ms          ~microseconds ~125ms              |
-|                                                                  |
-|  Overhead:     Overhead:       Overhead:     Overhead:           |
-|  Minimal       20-50% on       Near-native   <5 MiB/VM          |
-|                syscalls        for compute   150 VMs/sec/host    |
-|                                                                  |
-|  Best for:     Best for:       Best for:     Best for:           |
-|  Trusted       Semi-trusted    Pure compute  Untrusted code      |
-|  workloads     workloads       no OS needed  full OS needed      |
-+------------------------------------------------------------------+
-```
+Isolation spectrum, from weaker to stronger:
+
+| Technology | Isolation Model | Startup | Overhead | Best For |
+|---|---|---|---|---|
+| Docker Container | Shared kernel | ~100ms | Minimal | Trusted workloads |
+| gVisor | User-space kernel | ~100ms | 20-50% on syscalls | Semi-trusted workloads |
+| WASM | Capability sandbox | ~microseconds | Near-native for compute | Pure compute, no OS needed |
+| Firecracker | microVM with own guest kernel | ~125ms | <5 MiB/VM, 150 VMs/sec/host | Untrusted code, full OS needed |
 
 ### Docker Containers
 
@@ -309,23 +277,12 @@ Allowlist approach (robust):
 
 ### Tiered Authorization Model
 
-```
-+------------------------------------------------------------------+
-|                     Risk Tier Model                               |
-|                                                                   |
-|  Tier 1 (Auto-Approved)         Tier 2 (HITL Required)           |
-|  - Read from approved tables    - Write to any database           |
-|  - Query public APIs            - Send emails                     |
-|  - Generate reports             - Create/modify user accounts     |
-|  - Search knowledge base        - Deploy code changes             |
-|                                                                   |
-|  Tier 3 (Manager + HITL)        Tier 4 (Prohibited)              |
-|  - Access PII/PHI data          - Delete production data          |
-|  - Modify security configs      - Transfer funds                  |
-|  - Cross-region data transfer   - Modify access controls          |
-|  - Bulk operations (>1000 rows) - Disable monitoring/logging      |
-+------------------------------------------------------------------+
-```
+| Tier | Authorization | Example Actions |
+|---|---|---|
+| Tier 1 | Auto-Approved | Read from approved tables; Query public APIs; Generate reports; Search knowledge base |
+| Tier 2 | HITL Required | Write to any database; Send emails; Create/modify user accounts; Deploy code changes |
+| Tier 3 | Manager + HITL | Access PII/PHI data; Modify security configs; Cross-region data transfer; Bulk operations (>1000 rows) |
+| Tier 4 | Prohibited | Delete production data; Transfer funds; Modify access controls; Disable monitoring/logging |
 
 ---
 
@@ -335,39 +292,15 @@ HITL gates are the last line of defense. But the PropensityBench results (ASI09 
 
 ### Effective HITL Design
 
-```
-Agent Action Request
-        |
-        v
-+-------+--------+
-| Risk Classifier |  <-- Separate model or rule engine
-| (not the agent  |      that classifies the action
-|  itself)        |
-+-------+--------+
-        |
-   +----+----+
-   |         |
-   v         v
-Low Risk   High Risk
-(auto-     (queue for
- approve)   human review)
-               |
-               v
-     +---------+---------+
-     | Human Review UI   |
-     | - Show action     |
-     | - Show context    |
-     | - Show risk score |
-     | - Show alternatives|
-     | - Time limit      |
-     +---------+---------+
-               |
-          +----+----+
-          |         |
-       Approve    Reject
-          |         |
-          v         v
-       Execute   Log + Alert
+```mermaid
+flowchart TD
+    Request["Agent Action Request"] --> Classifier{"Risk Classifier<br/>(separate model or rule engine,<br/>not the agent itself)"}
+    Classifier -->|"Low Risk"| AutoApprove["Auto-approve"]
+    Classifier -->|"High Risk"| Queue["Queue for human review"]
+    Queue --> ReviewUI["Human Review UI<br/>- Show action<br/>- Show context<br/>- Show risk score<br/>- Show alternatives<br/>- Time limit"]
+    ReviewUI --> Decision{"Decision"}
+    Decision -->|"Approve"| Execute["Execute"]
+    Decision -->|"Reject"| LogAlert["Log + Alert"]
 ```
 
 ### HITL Anti-Patterns
@@ -429,22 +362,12 @@ Every tool call output and every agent response must pass through validation bef
 
 A dedicated safety layer between the agent and its tools:
 
-```
-+--------+     +----------+     +---------+     +-------+
-| Agent  | --> | Firewall | --> | Tool    | --> | Tool  |
-| (LLM)  |     | (Policy  |     | Executor|     | (API, |
-|        |     |  Engine) |     |         |     |  DB)  |
-+--------+     +----------+     +---------+     +-------+
-                    |
-                    v
-              +----------+
-              | Policy   |
-              | Rules    |
-              | - Allowlist|
-              | - DLP     |
-              | - Rate    |
-              |   limits  |
-              +----------+
+```mermaid
+flowchart LR
+    Agent["Agent<br/>(LLM)"] --> Firewall["Firewall<br/>(Policy Engine)"]
+    Firewall --> Executor["Tool Executor"]
+    Executor --> Tool["Tool<br/>(API, DB)"]
+    Firewall --> Policy["Policy Rules<br/>- Allowlist<br/>- DLP<br/>- Rate limits"]
 ```
 
 ---
@@ -466,13 +389,11 @@ In 2026, compliance frameworks (SOC 2, HIPAA, PCI-DSS) require deterministic tra
 
 ### Log Architecture
 
-```
-+--------+     +-----------+     +-------------+     +----------+
-| Agent  | --> | Event     | --> | Immutable   | --> | SIEM /   |
-| Runtime|     | Collector |     | Log Store   |     | Audit    |
-|        |     | (async,   |     | (append-    |     | Platform |
-|        |     |  buffered)|     |  only)      |     |          |
-+--------+     +-----------+     +-------------+     +----------+
+```mermaid
+flowchart LR
+    Runtime["Agent Runtime"] --> Collector["Event Collector<br/>(async, buffered)"]
+    Collector --> Store["Immutable Log Store<br/>(append-only)"]
+    Store --> SIEM["SIEM / Audit Platform"]
 ```
 
 ### Key Requirements
@@ -490,34 +411,12 @@ Every agent system in production must have multiple shutdown mechanisms.
 
 ### Kill Switch Hierarchy
 
-```
-+------------------------------------------------------------------+
-|                     Kill Switch Levels                            |
-|                                                                   |
-|  Level 1: Task Abort                                              |
-|  - Stop the current task                                          |
-|  - Preserve session state                                         |
-|  - Agent can be resumed                                           |
-|  - Trigger: automated (budget exceeded, error rate spike)         |
-|                                                                   |
-|  Level 2: Agent Shutdown                                          |
-|  - Stop all tasks for a specific agent                            |
-|  - Drain in-flight operations gracefully                          |
-|  - No new tasks accepted                                          |
-|  - Trigger: manual (operator) or automated (anomaly detection)    |
-|                                                                   |
-|  Level 3: System Halt                                             |
-|  - Stop ALL agents across the platform                            |
-|  - Immediate halt (no graceful drain)                             |
-|  - Revoke all agent credentials                                   |
-|  - Trigger: manual only (requires two authorized operators)       |
-|                                                                   |
-|  Level 4: Credential Revocation                                   |
-|  - Revoke all API keys, tokens, certificates                     |
-|  - Block agent network access at the firewall level              |
-|  - Trigger: security incident confirmed                           |
-+------------------------------------------------------------------+
-```
+| Level | Scope | Behavior | Trigger |
+|---|---|---|---|
+| Level 1: Task Abort | Stop the current task | Preserve session state; agent can be resumed | Automated (budget exceeded, error rate spike) |
+| Level 2: Agent Shutdown | Stop all tasks for a specific agent | Drain in-flight operations gracefully; no new tasks accepted | Manual (operator) or automated (anomaly detection) |
+| Level 3: System Halt | Stop ALL agents across the platform | Immediate halt (no graceful drain); revoke all agent credentials | Manual only (requires two authorized operators) |
+| Level 4: Credential Revocation | Revoke all API keys, tokens, certificates | Block agent network access at the firewall level | Security incident confirmed |
 
 ### Implementation Requirements
 
@@ -646,58 +545,27 @@ For organizations deploying tool-using agents in EU jurisdictions:
 
 No single layer of defense is sufficient. The following architecture layers multiple independent safety mechanisms.
 
-```
-+===================================================================+
-|                DEFENSE-IN-DEPTH ARCHITECTURE                      |
-|                                                                   |
-|  Layer 1: INPUT VALIDATION                                        |
-|  +-------------------------------------------------------------+ |
-|  | - Sanitize user inputs                                       | |
-|  | - Strip injection patterns from external data                | |
-|  | - Validate request schema                                    | |
-|  | - Rate limit inbound requests                                | |
-|  +-------------------------------------------------------------+ |
-|                              |                                    |
-|  Layer 2: AGENT CONSTRAINTS                                       |
-|  +-------------------------------------------------------------+ |
-|  | - Instruction hierarchy (system > user > tool output)        | |
-|  | - Tool allowlist (only approved tools available)             | |
-|  | - Parameter validation on all tool calls                     | |
-|  | - Token and cost budgets per task                            | |
-|  +-------------------------------------------------------------+ |
-|                              |                                    |
-|  Layer 3: EXECUTION ISOLATION                                     |
-|  +-------------------------------------------------------------+ |
-|  | - Sandboxed execution (Firecracker/gVisor)                   | |
-|  | - Network segmentation (no direct internet access)           | |
-|  | - Filesystem isolation (read-only except output dir)         | |
-|  | - Process-level resource limits (CPU, memory, time)          | |
-|  +-------------------------------------------------------------+ |
-|                              |                                    |
-|  Layer 4: TOOL-LEVEL SECURITY                                     |
-|  +-------------------------------------------------------------+ |
-|  | - Capability-based access control per tool                   | |
-|  | - Least-privilege credentials (scoped tokens, RLS)           | |
-|  | - Firewall model (policy engine between agent and tools)     | |
-|  | - DLP inspection on all outbound data                        | |
-|  +-------------------------------------------------------------+ |
-|                              |                                    |
-|  Layer 5: HUMAN OVERSIGHT                                         |
-|  +-------------------------------------------------------------+ |
-|  | - Tiered HITL gates (risk-based routing)                     | |
-|  | - Approval rate monitoring (detect rubber-stamping)          | |
-|  | - Escalation paths for anomalous actions                     | |
-|  | - Time-limited approvals (auto-reject, not auto-approve)     | |
-|  +-------------------------------------------------------------+ |
-|                              |                                    |
-|  Layer 6: MONITORING AND RESPONSE                                 |
-|  +-------------------------------------------------------------+ |
-|  | - Immutable audit logs (full decision chain)                 | |
-|  | - Real-time anomaly detection                                | |
-|  | - Kill switches (4 levels: task, agent, system, credentials) | |
-|  | - Automated incident response playbooks                      | |
-|  +-------------------------------------------------------------+ |
-+===================================================================+
+```mermaid
+flowchart TD
+    subgraph L1["Layer 1: INPUT VALIDATION"]
+        L1items["- Sanitize user inputs<br/>- Strip injection patterns from external data<br/>- Validate request schema<br/>- Rate limit inbound requests"]
+    end
+    subgraph L2["Layer 2: AGENT CONSTRAINTS"]
+        L2items["- Instruction hierarchy (system > user > tool output)<br/>- Tool allowlist (only approved tools available)<br/>- Parameter validation on all tool calls<br/>- Token and cost budgets per task"]
+    end
+    subgraph L3["Layer 3: EXECUTION ISOLATION"]
+        L3items["- Sandboxed execution (Firecracker/gVisor)<br/>- Network segmentation (no direct internet access)<br/>- Filesystem isolation (read-only except output dir)<br/>- Process-level resource limits (CPU, memory, time)"]
+    end
+    subgraph L4["Layer 4: TOOL-LEVEL SECURITY"]
+        L4items["- Capability-based access control per tool<br/>- Least-privilege credentials (scoped tokens, RLS)<br/>- Firewall model (policy engine between agent and tools)<br/>- DLP inspection on all outbound data"]
+    end
+    subgraph L5["Layer 5: HUMAN OVERSIGHT"]
+        L5items["- Tiered HITL gates (risk-based routing)<br/>- Approval rate monitoring (detect rubber-stamping)<br/>- Escalation paths for anomalous actions<br/>- Time-limited approvals (auto-reject, not auto-approve)"]
+    end
+    subgraph L6["Layer 6: MONITORING AND RESPONSE"]
+        L6items["- Immutable audit logs (full decision chain)<br/>- Real-time anomaly detection<br/>- Kill switches (4 levels: task, agent, system, credentials)<br/>- Automated incident response playbooks"]
+    end
+    L1 --> L2 --> L3 --> L4 --> L5 --> L6
 ```
 
 ### Why Defense-in-Depth Matters

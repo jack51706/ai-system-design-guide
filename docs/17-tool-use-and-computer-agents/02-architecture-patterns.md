@@ -25,48 +25,13 @@ The most widely deployed pattern in production. The LLM decides which tool to ca
 
 ### Architecture
 
-```
-+-------------------------------------------------------------------+
-|              Function/Tool Calling Pattern                        |
-+-------------------------------------------------------------------+
-|                                                                   |
-|  +------------------+                                             |
-|  |  User Message     |                                            |
-|  +--------+---------+                                             |
-|           |                                                       |
-|           v                                                       |
-|  +--------+---------+     +------------------+                    |
-|  |  LLM Reasoning   |---->|  Tool Selection  |                   |
-|  |                   |     |                  |                    |
-|  |  "I need to look  |     |  tool: search_db |                   |
-|  |   up the order"  |     |  args: {id: 42}  |                    |
-|  +-------------------+     +--------+---------+                   |
-|                                     |                             |
-|                                     v                             |
-|                            +--------+---------+                   |
-|                            |  Tool Executor   |                   |
-|                            |  (Framework)     |                   |
-|                            |                  |                   |
-|                            |  Validates args  |                   |
-|                            |  Calls function  |                   |
-|                            |  Returns result  |                   |
-|                            +--------+---------+                   |
-|                                     |                             |
-|                                     v                             |
-|                            +--------+---------+                   |
-|                            |  Result Injected |                   |
-|                            |  into Context    |                   |
-|                            |                  |                   |
-|                            |  {status: "shipped",                 |
-|                            |   tracking: "1Z..."} |               |
-|                            +--------+---------+                   |
-|                                     |                             |
-|                                     v                             |
-|                            +--------+---------+                   |
-|                            |  LLM Generates   |                   |
-|                            |  Final Response  |                   |
-|                            +------------------+                   |
-+-------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    A["User Message"] --> B["LLM Reasoning<br/>(I need to look up the order)"]
+    B --> C["Tool Selection<br/>tool: search_db<br/>args: {id: 42}"]
+    C --> D["Tool Executor (Framework)<br/>Validates args<br/>Calls function<br/>Returns result"]
+    D --> E["Result Injected into Context<br/>{status: shipped, tracking: 1Z...}"]
+    E --> F["LLM Generates Final Response"]
 ```
 
 ### The Three Steps in Detail
@@ -134,44 +99,22 @@ The model sees a screenshot of the screen, reasons about what to do, and emits a
 
 ### Architecture
 
-```
-+-------------------------------------------------------------------+
-|              Vision-Based Automation Pattern                      |
-+-------------------------------------------------------------------+
-|                                                                   |
-|  +------------------+                                             |
-|  |  Task Goal        |  "Fill out the expense form with           |
-|  |  (NL instruction) |   last week's receipts"                    |
-|  +--------+---------+                                             |
-|           |                                                       |
-|           v                                                       |
-|  +--------+--------------------------------------------------+    |
-|  |                    VISION-ACTION LOOP                      |    |
-|  |                                                            |    |
-|  |   +------------+    +-------------+    +------------+     |    |
-|  |   |  OBSERVE   |    |  REASON     |    |  ACT       |     |    |
-|  |   |            |    |             |    |            |     |    |
-|  |   | Screenshot |--->| Analyze     |--->| Emit action|     |    |
-|  |   | (base64)   |    | screenshot  |    | {type:     |     |    |
-|  |   |            |    | + goal      |    |  "click",  |     |    |
-|  |   |            |    | + history   |    |  x: 450,   |     |    |
-|  |   |            |    | + prev acts |    |  y: 320}   |     |    |
-|  |   +-----^------+    +-------------+    +------+-----+     |    |
-|  |         |                                      |          |    |
-|  |         +--------------------------------------+          |    |
-|  |                    (Loop until done)                       |    |
-|  +-----------------------------------------------------------+    |
-|                            |                                      |
-|                            v                                      |
-|  +-------------------------+------------------------------+       |
-|  |         Sandboxed Environment (VM / Docker + VNC)      |       |
-|  |                                                        |       |
-|  |   +----------+  +----------+  +----------+            |       |
-|  |   | Desktop  |  | Browser  |  | Apps     |            |       |
-|  |   | (Xfce)   |  | (Chrome) |  | (any)    |            |       |
-|  |   +----------+  +----------+  +----------+            |       |
-|  +--------------------------------------------------------+       |
-+-------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    G["Task Goal (NL instruction)<br/>Fill out the expense form with last week's receipts"] --> Loop
+    subgraph Loop["VISION-ACTION LOOP (Loop until done)"]
+        direction LR
+        O["OBSERVE<br/>Screenshot (base64)"] --> R["REASON<br/>Analyze screenshot<br/>+ goal + history + prev acts"]
+        R --> A["ACT<br/>Emit action<br/>{type: click, x: 450, y: 320}"]
+        A --> O
+    end
+    Loop --> Sandbox
+    subgraph Sandbox["Sandboxed Environment (VM / Docker + VNC)"]
+        direction LR
+        D1["Desktop (Xfce)"]
+        D2["Browser (Chrome)"]
+        D3["Apps (any)"]
+    end
 ```
 
 ### The Observe-Reason-Act Cycle
@@ -236,23 +179,14 @@ The user describes a task in natural language. The LLM generates code. The code 
 
 ### Architecture
 
-```
-User (NL): "Analyze the CSV and plot the top 10 products"
-  |
-  v
-[LLM Generates Code] --> Python/Bash/JS
-  |
-  v
-[Permission Gate] --> "Run this code? [y/N]" (auto-approve, always-ask, or rules-based)
-  |
-  v
-[Code Executor] --> Execute, capture stdout/stderr/return value
-  |
-  v
-[Output Observer] --> Error? Feed back to LLM for fix. Success? Present to user.
-  |
-  v
-[LLM Decides] --> Done? Return result. Need more? Generate next code block. (Loop)
+```mermaid
+flowchart TD
+    U["User (NL): Analyze the CSV and plot the top 10 products"] --> A["LLM Generates Code<br/>Python/Bash/JS"]
+    A --> B["Permission Gate<br/>Run this code? [y/N]<br/>(auto-approve, always-ask, or rules-based)"]
+    B --> C["Code Executor<br/>Execute, capture stdout/stderr/return value"]
+    C --> D["Output Observer<br/>Error? Feed back to LLM for fix.<br/>Success? Present to user."]
+    D --> E["LLM Decides<br/>Done? Return result.<br/>Need more? Generate next code block."]
+    E -->|"Loop"| A
 ```
 
 ### The NL-Code-Execute-Observe Cycle
@@ -317,23 +251,15 @@ Instead of one agent with many tools, you have multiple specialized agents that 
 
 ### Architecture
 
-```
-  [User Request]
-       |
-       v
-  [ORCHESTRATOR] (Frontier model: Claude Opus, GPT-4o)
-  Analyzes task, selects agent, routes and waits
-       |
-  +----+----+----+
-  |         |         |
-  v         v         v
-[Code Agent]  [Data Agent]  [Web Agent]
- bash, edit,   SQL, plot,    fetch, scrape,
- git           csv            browse
-  |         |         |
-  v         v         v
-[Sandbox]  [Sandbox]  [Sandbox]
-(Docker)   (Docker)   (Docker)
+```mermaid
+flowchart TD
+    U["User Request"] --> O["ORCHESTRATOR (Frontier model: Claude Opus, GPT-4o)<br/>Analyzes task, selects agent, routes and waits"]
+    O --> CA["Code Agent<br/>bash, edit, git"]
+    O --> DA["Data Agent<br/>SQL, plot, csv"]
+    O --> WA["Web Agent<br/>fetch, scrape, browse"]
+    CA --> S1["Sandbox (Docker)"]
+    DA --> S2["Sandbox (Docker)"]
+    WA --> S3["Sandbox (Docker)"]
 ```
 
 ### Orchestration Strategies
@@ -348,16 +274,13 @@ Instead of one agent with many tools, you have multiple specialized agents that 
 
 ### Cost Optimization: The Plan-and-Execute Advantage
 
-```
-Traditional: [Frontier Model] handles all steps       Cost: $1.00/task
-
-Plan-and-Execute:
-  [Frontier Model] plans (1 call)                     Cost: $0.05
-  [Small Model] executes steps 1-3                    Cost: $0.03
-  [Frontier Model] aggregates (1 call)                Cost: $0.05
-                                                      Total: $0.13/task
-                                                      Savings: ~87%
-```
+| Approach | Step | Cost |
+|----------|------|------|
+| Traditional | Frontier Model handles all steps | $1.00/task |
+| Plan-and-Execute | Frontier Model plans (1 call) | $0.05 |
+| Plan-and-Execute | Small Model executes steps 1-3 | $0.03 |
+| Plan-and-Execute | Frontier Model aggregates (1 call) | $0.05 |
+| Plan-and-Execute | **Total** | **$0.13/task (Savings: ~87%)** |
 
 The 2026 trend is treating agent cost optimization as a first-class concern, similar to how cloud cost optimization became essential in the microservices era.
 
@@ -369,20 +292,11 @@ This is the most consequential architecture decision for any tool-use agent.
 
 ### Comparison
 
-```
-  UNSANDBOXED (Host Access)              SANDBOXED (Isolated)
-  +------------------------+             +------------------------+
-  | LLM output executes    |             | LLM output executes    |
-  | directly on host OS    |             | inside Docker/VM/E2B   |
-  |                        |             |                        |
-  | Risk: rm -rf /         |             | Isolated filesystem,   |
-  | Risk: data exfiltration|             | network, processes     |
-  |                        |             |                        |
-  | Used by: OpenClaw,     |             | Used by: OpenHands,    |
-  | Open Interpreter,      |             | OpenAI Codex, Jules,   |
-  | Claude Code (default)  |             | Cursor Background Agents|
-  +------------------------+             +------------------------+
-```
+| Aspect | UNSANDBOXED (Host Access) | SANDBOXED (Isolated) |
+|--------|---------------------------|----------------------|
+| Execution | LLM output executes directly on host OS | LLM output executes inside Docker/VM/E2B |
+| Risk profile | Risk: `rm -rf /`, data exfiltration | Isolated filesystem, network, processes |
+| Used by | OpenClaw, Open Interpreter, Claude Code (default) | OpenHands, OpenAI Codex, Jules, Cursor Background Agents |
 
 ### Sandbox Implementation Options
 
@@ -489,15 +403,14 @@ class ToolExecutor:
 
 The most powerful error handling pattern in 2026. The agent observes its own failures and autonomously fixes them:
 
-```
-LLM generates code/tool call
-  --> Execute --> Success? -- YES --> Return result
-                     |
-                     NO
-                     |
-                     v
-              Feed error + stderr to LLM --> LLM generates fix --> Execute again
-              (max 5 corrections to prevent infinite loops)
+```mermaid
+flowchart TD
+    A["LLM generates code/tool call"] --> B["Execute"]
+    B --> C{"Success?"}
+    C -->|"YES"| D["Return result"]
+    C -->|"NO"| E["Feed error + stderr to LLM"]
+    E --> F["LLM generates fix<br/>(max 5 corrections to prevent infinite loops)"]
+    F --> B
 ```
 
 This is how Claude Code, OpenHands, and Cline handle test failures: run tests, see failures, edit code, re-run tests, repeat until green.
@@ -510,27 +423,32 @@ MCP has become the standard protocol for tool integration in 2026. Here are the 
 
 ### Pattern A: Direct MCP Connection
 
-```
-[Agent (Client)] <-- stdio / HTTP --> [MCP Server]
+```mermaid
+flowchart LR
+    A["Agent (Client)"] <-->|"stdio / HTTP"| B["MCP Server"]
 ```
 Simplest pattern. One agent, one server. Used for single-purpose tools (database, file system).
 
 ### Pattern B: Multi-Server Fan-Out
 
-```
-                  +--> [GitHub MCP]
-[Agent (Client)]--+--> [Postgres MCP]
-                  +--> [Slack MCP]
+```mermaid
+flowchart LR
+    A["Agent (Client)"] --> B["GitHub MCP"]
+    A --> C["Postgres MCP"]
+    A --> D["Slack MCP"]
 ```
 Agent connects to multiple MCP servers simultaneously. Tool schemas are merged into one manifest. Used by Claude Code and multi-tool assistants.
 
 ### Pattern C: MCP Gateway (Enterprise)
 
-```
-[Agent 1] --+                          +--> [GitHub MCP]
-[Agent 2] --+--> [MCP Gateway]  --+--> [Postgres MCP]
-[Agent 3] --+    (Auth, Rate Limit,    +--> [Slack MCP]
-                  Audit, Route)
+```mermaid
+flowchart LR
+    A1["Agent 1"] --> GW
+    A2["Agent 2"] --> GW
+    A3["Agent 3"] --> GW
+    GW["MCP Gateway<br/>(Auth, Rate Limit, Audit, Route)"] --> G["GitHub MCP"]
+    GW --> P["Postgres MCP"]
+    GW --> S["Slack MCP"]
 ```
 Central gateway handles auth, rate limiting, and audit logging. Agents authenticate only with the gateway. Used for enterprise and multi-tenant deployments.
 
@@ -550,16 +468,17 @@ These are on the 2026 roadmap but not yet ratified.
 
 Use this decision tree to select the right pattern for your use case:
 
-```
-Does the target system have an API?
- +-- YES --> Pattern 1 (Tool Calling). Wrap as MCP server. Fastest, most reliable.
- +-- NO  --> Does the task require GUI interaction?
-              +-- YES --> Pattern 2 (Vision-Based). Sandbox in VM. Accept latency.
-              +-- NO  --> Is the task primarily code/data work?
-                           +-- YES --> Pattern 3 (Code Exec). Sandbox if multi-tenant.
-                           +-- NO  --> Complex enough for multiple specialists?
-                                        +-- YES --> Pattern 4 (Multi-Agent Orch.)
-                                        +-- NO  --> Pattern 1 with custom tool.
+```mermaid
+flowchart TD
+    Q1{"Does the target system have an API?"}
+    Q1 -->|"YES"| P1["Pattern 1 (Tool Calling)<br/>Wrap as MCP server. Fastest, most reliable."]
+    Q1 -->|"NO"| Q2{"Does the task require GUI interaction?"}
+    Q2 -->|"YES"| P2["Pattern 2 (Vision-Based)<br/>Sandbox in VM. Accept latency."]
+    Q2 -->|"NO"| Q3{"Is the task primarily code/data work?"}
+    Q3 -->|"YES"| P3["Pattern 3 (Code Exec)<br/>Sandbox if multi-tenant."]
+    Q3 -->|"NO"| Q4{"Complex enough for multiple specialists?"}
+    Q4 -->|"YES"| P4["Pattern 4 (Multi-Agent Orch.)"]
+    Q4 -->|"NO"| P5["Pattern 1 with custom tool."]
 ```
 
 ### Hybrid Architectures

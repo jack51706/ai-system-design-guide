@@ -53,14 +53,24 @@
 
 ### 文件處理
 
-```
-Input Documents          Agent Pipeline              Output
-+-----------+     +---------------------------+     +----------+
-| Invoices  | --> | OCR/Parser Tool           | --> | Structured|
-| Contracts | --> | Entity Extraction Agent   | --> | Data in   |
-| Forms     | --> | Validation + Cross-check  | --> | ERP/CRM   |
-| Emails    | --> | Human Review (exceptions) | --> |           |
-+-----------+     +---------------------------+     +----------+
+```mermaid
+flowchart LR
+    subgraph Input["輸入文件"]
+        I1["發票"]
+        I2["合約"]
+        I3["表單"]
+        I4["電子郵件"]
+    end
+    subgraph Pipeline["代理管線"]
+        P1["OCR/Parser 工具"]
+        P2["實體擷取代理"]
+        P3["驗證 + 交叉比對"]
+        P4["人工審查（例外）"]
+    end
+    subgraph Output["輸出"]
+        O1["ERP/CRM 中的結構化資料"]
+    end
+    Input --> Pipeline --> Output
 ```
 
 **來自生產環境部署的真實指標：**
@@ -130,13 +140,22 @@ ServiceNow 記錄了 80% 的客戶支援諮詢自主處理率，以及複雜案�
 
 ### 監控與告警
 
-```
-Metrics Pipeline          Agent Layer              Actions
-+----------+        +-------------------+        +----------+
-| Prometheus| -----> | Alert Triage Agent| -----> | Suppress  |
-| Datadog   | -----> | (reads dashboards,| -----> | Escalate  |
-| PagerDuty | -----> |  correlates events)| ----> | Auto-heal |
-+----------+        +-------------------+        +----------+
+```mermaid
+flowchart LR
+    subgraph Metrics["指標管線"]
+        M1["Prometheus"]
+        M2["Datadog"]
+        M3["PagerDuty"]
+    end
+    subgraph Agent["代理層"]
+        A1["告警分流代理<br/>（讀取儀表板，<br/>關聯事件）"]
+    end
+    subgraph Actions["動作"]
+        AC1["抑制"]
+        AC2["升級"]
+        AC3["自動修復"]
+    end
+    Metrics --> Agent --> Actions
 ```
 
 ### 事件回應
@@ -212,22 +231,16 @@ OpenClaw 是一個開源 AI 代理框架，在 2026 年 1 月更名後的 60 天
 
 ### 架構
 
-```
-+------------------+     +-------------------+     +------------------+
-| Messaging Layer  |     | OpenClaw Core     |     | Enterprise       |
-| (Telegram,       | --> | (Agent Router +   | --> | Systems          |
-|  Discord,        |     |  SOUL.md Configs) |     | (SAP, WMS, HR)   |
-|  WhatsApp)       |     |                   |     |                  |
-+------------------+     +---+-------+-------+     +------------------+
-                              |       |
-                    +---------+       +----------+
-                    |                            |
-              +-----v------+            +--------v-------+
-              | NemoClaw   |            | Audit Logger   |
-              | (Nvidia    |            | (All actions   |
-              |  Security  |            |  logged with   |
-              |  Add-on)   |            |  full trace)   |
-              +------------+            +----------------+
+```mermaid
+flowchart TD
+    ML["訊息層<br/>(Telegram, Discord, WhatsApp)"]
+    CORE["OpenClaw Core<br/>(Agent Router + SOUL.md Configs)"]
+    ENT["企業系統<br/>(SAP, WMS, HR)"]
+    NEMO["NemoClaw<br/>(Nvidia 安全附加元件)"]
+    AUDIT["稽核記錄器<br/>（所有動作均記錄並附完整軌跡）"]
+    ML --> CORE --> ENT
+    CORE --> NEMO
+    CORE --> AUDIT
 ```
 
 ### 成果
@@ -283,21 +296,16 @@ OpenClaw 是一個開源 AI 代理框架，在 2026 年 1 月更名後的 60 天
 
 ### 架構
 
-```
-+------------------+     +-------------------+     +------------------+
-| COBOL Codebase   |     | Claude Code       |     | Java/Spring Boot |
-| (2.4M lines)     | --> | (Analysis +       | --> | (New Codebase)   |
-|                  |     |  Translation)     |     |                  |
-+------------------+     +---+---------------+     +------------------+
-                              |
-                    +---------+---------+
-                    |                   |
-              +-----v------+     +------v--------+
-              | Computer   |     | Validation    |
-              | Use Agent  |     | Agent         |
-              | (Legacy UI |     | (Parallel Run |
-              |  Testing)  |     |  Comparison)  |
-              +-----------+      +---------------+
+```mermaid
+flowchart TD
+    COBOL["COBOL 程式碼庫<br/>(2.4M 行)"]
+    CC["Claude Code<br/>（分析 + 轉譯）"]
+    JAVA["Java/Spring Boot<br/>（新程式碼庫）"]
+    CUA["Computer Use 代理<br/>（遺留 UI 測試）"]
+    VA["驗證代理<br/>（並行執行比對）"]
+    COBOL --> CC --> JAVA
+    CC --> CUA
+    CC --> VA
 ```
 
 ### 成果
@@ -337,18 +345,21 @@ OpenClaw 是一個開源 AI 代理框架，在 2026 年 1 月更名後的 60 天
 
 四個專門代理在一個協調的管線中運作：
 
-```
-+-----------+     +-----------+     +-----------+     +-----------+
-| Trade     | --> | Regulatory| --> | Document  | --> | Reporting |
-| Monitor   |     | Classifier|     | Assembler |     | Agent     |
-| Agent     |     | Agent     |     | Agent     |     |           |
-+-----------+     +-----------+     +-----------+     +-----------+
-     |                 |                 |                 |
-     v                 v                 v                 v
- Trade DB         Reg. Rule        Doc Store          FINRA/SEC
- (read-only)      Engine           (read/write)       Portal
-                  (read-only)                         (write, with
-                                                       HITL gate)
+```mermaid
+flowchart TD
+    A1["交易監控代理"]
+    A2["法規分類器代理"]
+    A3["文件組裝器代理"]
+    A4["申報代理"]
+    A1 --> A2 --> A3 --> A4
+    T1["交易資料庫<br/>（唯讀）"]
+    T2["法規規則引擎<br/>（唯讀）"]
+    T3["文件儲存<br/>（讀／寫）"]
+    T4["FINRA/SEC 入口網站<br/>（寫入，含 HITL 關卡）"]
+    A1 --> T1
+    A2 --> T2
+    A3 --> T3
+    A4 --> T4
 ```
 
 **代理 1 - 交易監控**：即時掃描交易資訊流，標記符合法規申報門檻的交易（大額交易、跨境、集中持倉）。工具：交易資料庫（唯讀）、市場資料資訊流。

@@ -28,25 +28,11 @@
 
 ### 決策矩陣
 
-```
-                    Small Corpus           Large Corpus
-                    (<100K tokens)         (>1M tokens)
-                 +---------------------+---------------------+
-  Static Data    |  Long Context Wins  |  RAG Required       |
-  (rarely        |  - Stuff it all in  |  - Can't fit in     |
-   changes)      |  - Simpler arch     |    context window   |
-                 |  - No index needed  |  - Index + retrieve |
-                 +---------------------+---------------------+
-  Dynamic Data   |  Hybrid Approach    |  RAG Required       |
-  (updates       |  - Cache context    |  - Incremental      |
-   frequently)   |  - Invalidate on    |    indexing          |
-                 |    change           |  - Real-time updates |
-                 +---------------------+---------------------+
-  Multi-User     |  RAG Preferred      |  RAG Required       |
-  (per-user      |  - Personalized     |  - Tenant isolation  |
-   data)         |    retrieval        |  - Access control    |
-                 +---------------------+---------------------+
-```
+| 資料類型 | 小型語料庫（<100K tokens） | 大型語料庫（>1M tokens） |
+|-----------|-----------------------------|---------------------------|
+| **靜態資料**（很少變動） | 長上下文勝出：全部塞進去、架構較簡單、不需索引 | 需要 RAG：塞不進上下文視窗、索引 + 檢索 |
+| **動態資料**（頻繁更新） | 混合做法：快取上下文、變動時讓快取失效 | 需要 RAG：增量索引、即時更新 |
+| **多使用者**（每位使用者各自的資料） | 偏好 RAG：個人化檢索 | 需要 RAG：租戶隔離、存取控制 |
 
 ### 正面對決比較
 
@@ -68,20 +54,11 @@ LLM 對上下文視窗的注意力並非均勻分布。位於長上下文中段�
 
 致勝的架構是兩者兼用：先用 RAG 從大型語料庫中檢索出前段候選，再把這些候選載入長上下文視窗，進行跨文件推理。
 
-```
-  User Query
-      |
-      v
-+------------------+     +-------------------+
-|  RAG Retrieval   |---->|  Long Context     |
-|  (Find top 20    |     |  Synthesis        |
-|   from 10M docs) |     |  (Reason across   |
-+------------------+     |   20 docs deeply) |
-                          +-------------------+
-                                  |
-                                  v
-                          Final Answer with
-                          Cross-Doc Citations
+```mermaid
+flowchart TD
+    Q["使用者查詢"] --> R["RAG 檢索<br/>（從 10M 份文件中找出前 20 名）"]
+    R --> S["長上下文綜合<br/>（深入跨 20 份文件推理）"]
+    S --> A["附跨文件引用的<br/>最終答案"]
 ```
 
 **經驗法則**：如果你的語料庫塞得進上下文，而且你負擔得起延遲，也負擔得起成本，那就用長上下文。否則就用 RAG。對大多數有成本與延遲限制的生產系統來說，RAG 仍然是正確的預設選項。
@@ -94,28 +71,13 @@ LLM 對上下文視窗的注意力並非均勻分布。位於長上下文中段�
 
 ### 四路由器（Four-Path Router）
 
-```
-                         User Query
-                             |
-                             v
-                    +------------------+
-                    |  Query Classifier |
-                    |  (LLM or trained  |
-                    |   classifier)     |
-                    +--------+---------+
-                             |
-            +--------+-------+-------+--------+
-            |        |               |        |
-            v        v               v        v
-        +------+ +--------+    +--------+ +--------+
-        |Direct| |Simple  |    |Complex | |Agentic |
-        | LLM  | |  RAG   |    |  RAG   | |  RAG   |
-        +------+ +--------+    +--------+ +--------+
-        "What    "What is      "Compare   "Analyze
-        is 2+2?" our refund    Q3 vs Q4   all legal
-                  policy?"     revenue    risks in
-                               trends"    these 50
-                                          contracts"
+```mermaid
+flowchart TD
+    Q["使用者查詢"] --> C["Query Classifier<br/>（LLM 或訓練好的分類器）"]
+    C --> D["Direct LLM<br/>「2+2 等於多少？」"]
+    C --> S["Simple RAG<br/>「我們的退款政策是什麼？」"]
+    C --> X["Complex RAG<br/>「比較 Q3 與 Q4 的營收趨勢」"]
+    C --> A["Agentic RAG<br/>「分析這 50 份合約中的所有法律風險」"]
 ```
 
 ### 分類訊號
@@ -213,32 +175,12 @@ class DomainRouter:
 
 ### 三層快取架構
 
-```
-  User Query
-      |
-      v
-+---------------------+
-| Layer 1: Exact Cache |  Hash(query) -> response
-| (Redis/Memcached)    |  TTL: 1 hour
-| Hit rate: ~15-25%    |  Latency: <5ms
-+----------+----------+
-           | miss
-           v
-+---------------------+
-| Layer 2: Semantic    |  Embed(query) -> nearest neighbor
-| Cache (Vector DB)    |  Threshold: cosine > 0.95
-| Hit rate: ~20-35%    |  Latency: <50ms
-+----------+----------+
-           | miss
-           v
-+---------------------+
-| Layer 3: Document    |  Cache retrieved chunks
-| Cache               |  Skip re-embedding
-| (saves embedding $) |  TTL: until doc changes
-+----------+----------+
-           | miss
-           v
-    Full RAG Pipeline
+```mermaid
+flowchart TD
+    Q["使用者查詢"] --> L1["Layer 1：Exact Cache（Redis/Memcached）<br/>Hash(query) -> response<br/>TTL：1 小時、命中率：~15-25%、延遲：<5ms"]
+    L1 -->|"未命中"| L2["Layer 2：Semantic Cache（Vector DB）<br/>Embed(query) -> 最近鄰<br/>門檻：cosine > 0.95、命中率：~20-35%、延遲：<50ms"]
+    L2 -->|"未命中"| L3["Layer 3：Document Cache（省下嵌入費用）<br/>快取檢索到的區塊、略過重新嵌入<br/>TTL：直到文件變動"]
+    L3 -->|"未命中"| F["完整 RAG 管線"]
 ```
 
 ### 語意快取實作
@@ -325,38 +267,26 @@ async def on_document_updated(doc_id: str):
 
 ### 索引切分模式
 
-```
-Pattern 1: Per-Domain Indexes
-+--------+  +--------+  +--------+  +--------+
-|  Legal |  |   HR   |  |Finance |  |  Eng   |
-| Index  |  | Index  |  | Index  |  | Index  |
-+--------+  +--------+  +--------+  +--------+
-    |            |            |           |
-    +----------- +-----+------+-----------+
-                       |
-                 Query Router
-                       |
-                  User Query
-
-
-Pattern 2: Per-Tenant Indexes (Silo Model)
-+----------+  +----------+  +----------+
-| Tenant A |  | Tenant B |  | Tenant C |
-|  Index   |  |  Index   |  |  Index   |
-| (Acme)   |  | (Globex) |  | (Wayne)  |
-+----------+  +----------+  +----------+
-
-
-Pattern 3: Shared Index with Metadata Filtering (Pool Model)
-+-------------------------------------------+
-|           Shared Vector Index              |
-|  +-------+  +-------+  +-------+          |
-|  | doc_1 |  | doc_2 |  | doc_3 |  ...     |
-|  | t:A   |  | t:B   |  | t:A   |          |
-|  +-------+  +-------+  +-------+          |
-|                                            |
-|  WHERE tenant_id = "A"  <-- filter         |
-+-------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph P1["模式 1：依領域切分索引"]
+        direction TB
+        LI["Legal Index"] --> QR["Query Router"]
+        HI["HR Index"] --> QR
+        FI["Finance Index"] --> QR
+        EI["Eng Index"] --> QR
+        QR --> UQ["使用者查詢"]
+    end
+    subgraph P2["模式 2：依租戶切分索引（Silo Model）"]
+        direction LR
+        TA["Tenant A Index（Acme）"]
+        TB["Tenant B Index（Globex）"]
+        TC["Tenant C Index（Wayne）"]
+    end
+    subgraph P3["模式 3：以中繼資料過濾的共享索引（Pool Model）"]
+        direction TB
+        SI["Shared Vector Index<br/>doc_1（t:A）、doc_2（t:B）、doc_3（t:A）、...<br/>WHERE tenant_id = 'A'（過濾）"]
+    end
 ```
 
 ### 各模式的適用時機
@@ -372,25 +302,11 @@ Pattern 3: Shared Index with Metadata Filtering (Pool Model)
 
 對於非常龐大的語料庫，採用兩層索引：一個粗粒度的「摘要索引」用於路由，以及細粒度的「區塊索引」用於精確查找。
 
-```
-  Query: "What is the refund policy for enterprise plans?"
-      |
-      v
-+--------------------+
-| Summary Index      |  Contains doc-level summaries
-| (10K entries)      |  Fast, broad search
-+--------+-----------+
-         |
-         | Top 3 matching docs identified
-         v
-+--------------------+
-| Chunk Index        |  Contains 500-token chunks
-| (2M entries)       |  Precise, targeted search
-| Filtered to 3 docs |
-+--------+-----------+
-         |
-         v
-   Top 5 chunks -> LLM
+```mermaid
+flowchart TD
+    Q["查詢：「企業方案的退款政策是什麼？」"] --> SI["Summary Index（10K 筆）<br/>包含文件層級的摘要<br/>快速、廣泛搜尋"]
+    SI -->|"找出前 3 名相符的文件"| CI["Chunk Index（2M 筆）<br/>包含 500-token 的區塊<br/>精確、鎖定式搜尋<br/>過濾至 3 份文件"]
+    CI --> L["前 5 個區塊 -> LLM"]
 ```
 
 ---
@@ -401,20 +317,23 @@ Pattern 3: Shared Index with Metadata Filtering (Pool Model)
 
 ### 循序式與最佳化管線的比較
 
-```
-SEQUENTIAL (Naive):
-Query -> Embed(200ms) -> Search(150ms) -> Rerank(300ms) -> Generate(800ms)
-Total: ~1450ms
-
-OPTIMIZED (Parallel + Cached):
-Query ----+---> Embed(200ms) ---> Vector Search(150ms) ---+
-          |                                                |--> RRF Merge -> Rerank(300ms) -> Generate(800ms)
-          +---> BM25 Keyword Search(100ms) ---------------+
-          |
-          +---> Cache Check(5ms) -- HIT --> Return cached (5ms total)
-
-With cache miss: ~1050ms (embedding + keyword in parallel)
-With cache hit:  ~5ms
+```mermaid
+flowchart TD
+    subgraph SEQ["循序式（Naive）- 總計：~1450ms"]
+        direction LR
+        SQ["查詢"] --> SE["Embed（200ms）"] --> SS["Search（150ms）"] --> SR["Rerank（300ms）"] --> SG["Generate（800ms）"]
+    end
+    subgraph OPT["最佳化（Parallel + Cached）- 未命中：~1050ms、命中：~5ms"]
+        direction LR
+        OQ["查詢"] --> OE["Embed（200ms）"]
+        OE --> OV["Vector Search（150ms）"]
+        OQ --> OB["BM25 Keyword Search（100ms）"]
+        OV --> RRF["RRF Merge"]
+        OB --> RRF
+        RRF --> OR["Rerank（300ms）"] --> OG["Generate（800ms）"]
+        OQ --> OC["Cache Check（5ms）"]
+        OC -->|"命中"| RC["回傳快取（總計 5ms）"]
+    end
 ```
 
 ### 平行檢索
@@ -505,24 +424,27 @@ class EmbeddingBatcher:
 
 在使用者還沒打完字之前就開始檢索（偵測到停頓時），並在生成 token 產生的同時把它們串流出去。
 
-```
-Timeline:
-0ms     User starts typing...
-300ms   Pause detected -> trigger retrieval speculatively
-500ms   User submits query
-        Retrieval already 200ms in -> finishes at 650ms
-650ms   Reranking begins
-950ms   First generation token streams to user
-1800ms  Full response complete
+採用推測式檢索：
 
-vs. without speculation:
-0ms     User submits query
-200ms   Embedding
-350ms   Retrieval
-650ms   Reranking
-1500ms  First token
-2300ms  Full response complete
-```
+| 時間 | 事件 |
+|------|-------|
+| 0ms | 使用者開始打字... |
+| 300ms | 偵測到停頓 -> 推測性地觸發檢索 |
+| 500ms | 使用者送出查詢（檢索已進行 200ms -> 在 650ms 完成） |
+| 650ms | 開始重排序 |
+| 950ms | 第一個生成 token 串流給使用者 |
+| 1800ms | 完整回應結束 |
+
+未採用推測：
+
+| 時間 | 事件 |
+|------|-------|
+| 0ms | 使用者送出查詢 |
+| 200ms | 嵌入 |
+| 350ms | 檢索 |
+| 650ms | 重排序 |
+| 1500ms | 第一個 token |
+| 2300ms | 完整回應結束 |
 
 ---
 
@@ -532,29 +454,13 @@ Corrective RAG（CRAG）在檢索與生成之間加入了一層驗證。系統�
 
 ### CRAG 決策迴圈
 
-```
-  User Query
-      |
-      v
-  Retrieve Top-K
-      |
-      v
-+------------------+
-| Relevance Grader  |  "Are these docs relevant to the query?"
-| (LLM or trained   |
-|  classifier)      |
-+--------+---------+
-         |
-    +----+----+--------+
-    |         |        |
-    v         v        v
- CORRECT   AMBIGUOUS  WRONG
-    |         |        |
-    v         v        v
- Generate  Supplement  Discard &
- directly  with web    re-retrieve
-           search      with reformulated
-                       query
+```mermaid
+flowchart TD
+    Q["使用者查詢"] --> R["檢索 Top-K"]
+    R --> G{"Relevance Grader<br/>（LLM 或訓練好的分類器）<br/>「這些文件與查詢相關嗎？」"}
+    G -->|"CORRECT"| C["直接生成"]
+    G -->|"AMBIGUOUS"| A["以網路搜尋補充"]
+    G -->|"WRONG"| W["捨棄並以重新表述的查詢重新檢索"]
 ```
 
 ### 實作
@@ -642,29 +548,14 @@ Self-RAG 用內嵌的評論 token 擴展了這個模式。模型會在每一步�
 
 ### 檢索決策樹
 
-```
-  User Query
-      |
-      v
-  "Does this query need external knowledge?"
-      |
-  +---+---+
-  |       |
-  No      Yes
-  |       |
-  v       v
-Direct   "How complex is the retrieval need?"
- LLM      |
-answer  +-+--+---------+
-        |    |         |
-        v    v         v
-     Single Multi    Agentic
-      hop   hop      (planning
-        |    |       required)
-        v    v         |
-     1 index 2-3       v
-     top-5  indexes  Full agent
-             top-10  loop
+```mermaid
+flowchart TD
+    Q["使用者查詢"] --> N{"這個查詢需要外部知識嗎？"}
+    N -->|"否"| D["Direct LLM 回答"]
+    N -->|"是"| C{"檢索需求有多複雜？"}
+    C -->|"單跳"| S["1 個索引、top-5"]
+    C -->|"多跳"| M["2-3 個索引、top-10"]
+    C -->|"Agentic（需要規劃）"| A["完整 agent 迴圈"]
 ```
 
 ### 查詢複雜度估算器
@@ -741,35 +632,21 @@ def plan_retrieval_budget(query: str, max_budget_tokens: int = 4000):
 
 ### 典型 RAG 查詢的成本拆解
 
-```
-Component         Cost per Query    % of Total    Optimization
------------------------------------------------------------------
-Embedding         $0.000005         ~1%           Batch + cache
-Vector Search     $0.00001          ~2%           Index optimization
-Reranking         $0.0001           ~15%          Skip for simple queries
-LLM Generation    $0.0005-0.005     ~80%          Model tiering, caching
------------------------------------------------------------------
-Total (naive)     ~$0.001-0.006
-Total (optimized) ~$0.0001-0.001    (5-10x reduction)
-```
+| 元件 | 每次查詢成本 | 佔總成本比例 | 最佳化 |
+|-----------|----------------|------------|--------------|
+| Embedding | $0.000005 | ~1% | 批次化 + 快取 |
+| Vector Search | $0.00001 | ~2% | 索引最佳化 |
+| Reranking | $0.0001 | ~15% | 簡單查詢時略過 |
+| LLM Generation | $0.0005-0.005 | ~80% | 模型分層、快取 |
+| **總計（未最佳化）** | ~$0.001-0.006 | | |
+| **總計（已最佳化）** | ~$0.0001-0.001 | | （降低 5-10 倍） |
 
 ### 分層模型策略
 
-```
-                Query Complexity
-                Low         Medium        High
-             +----------+----------+----------+
- Generation  |  Small   |  Mid     |  Large   |
- Model       |  Model   |  Model   |  Model   |
-             | (4o-mini)| (Claude  | (Claude  |
-             |          |  Sonnet) |  Opus)   |
-             | ~$0.0002 | ~$0.002  | ~$0.02   |
-             +----------+----------+----------+
-
- Reranking   |  Skip    | Lightweight| Cross-  |
-             |          | reranker   | encoder |
-             +----------+----------+----------+
-```
+| 查詢複雜度 | 低 | 中 | 高 |
+|------------------|-----|--------|------|
+| **Generation Model** | Small Model（4o-mini）、~$0.0002 | Mid Model（Claude Sonnet）、~$0.002 | Large Model（Claude Opus）、~$0.02 |
+| **Reranking** | 略過 | 輕量級 reranker | Cross-encoder |
 
 ### 漸進式詳細度模式
 
@@ -846,38 +723,12 @@ class CostGuard:
 
 ### RAG 失效模式分類
 
-```
-+------------------------------------------------------------------+
-|                    RAG Failure Modes                               |
-+------------------------------------------------------------------+
-|                                                                    |
-|  RETRIEVAL FAILURES          GENERATION FAILURES                   |
-|  +---------------------+    +-------------------------+           |
-|  | Missing documents   |    | Hallucination despite   |           |
-|  | (not indexed)       |    | good context            |           |
-|  +---------------------+    +-------------------------+           |
-|  | Wrong chunks        |    | Ignoring retrieved      |           |
-|  | (low precision)     |    | context                 |           |
-|  +---------------------+    +-------------------------+           |
-|  | Missed chunks       |    | Over-reliance on one    |           |
-|  | (low recall)        |    | source                  |           |
-|  +---------------------+    +-------------------------+           |
-|  | Stale embeddings    |    | Citation fabrication    |           |
-|  | (drift)             |    |                         |           |
-|  +---------------------+    +-------------------------+           |
-|                                                                    |
-|  SYSTEM FAILURES             QUALITY FAILURES                      |
-|  +---------------------+    +-------------------------+           |
-|  | Index unavailable   |    | Chunking artifacts      |           |
-|  +---------------------+    +-------------------------+           |
-|  | Embedding service   |    | Context window overflow |           |
-|  | timeout             |    +-------------------------+           |
-|  +---------------------+    | Answer too vague        |           |
-|  | Reranker OOM        |    | (over-hedging)          |           |
-|  +---------------------+    +-------------------------+           |
-|                                                                    |
-+------------------------------------------------------------------+
-```
+| 類別 | 失效模式 |
+|----------|---------------|
+| **檢索失效** | 缺漏文件（未索引）；錯誤區塊（precision 偏低）；漏掉區塊（recall 偏低）；嵌入過時（drift） |
+| **生成失效** | 雖有良好上下文仍幻覺；忽略檢索到的上下文；過度依賴單一來源；引用造假 |
+| **系統失效** | 索引無法使用；嵌入服務逾時；Reranker OOM |
+| **品質失效** | 分塊瑕疵；上下文視窗溢位；答案過於含糊（過度避重就輕） |
 
 ### 分塊的 80% 法則
 
@@ -932,30 +783,12 @@ When RAG quality drops, investigate in this order:
 
 ### RAG 監控堆疊
 
-```
-+--------------------------------------------------------------------+
-|                    RAG Observability Layers                          |
-+--------------------------------------------------------------------+
-|                                                                      |
-|  L1: INFRASTRUCTURE          L2: PIPELINE                           |
-|  +----------------------+   +-----------------------------+         |
-|  | Latency (p50/p95/p99)|   | Retrieval precision@K      |         |
-|  | Error rates          |   | Retrieval recall@K         |         |
-|  | Throughput (QPS)     |   | Reranker effectiveness     |         |
-|  | Cache hit rate       |   | Chunk utilization rate     |         |
-|  | Index size/growth    |   | Context window fill rate   |         |
-|  +----------------------+   +-----------------------------+         |
-|                                                                      |
-|  L3: QUALITY                 L4: BUSINESS                           |
-|  +----------------------+   +-----------------------------+         |
-|  | Faithfulness score   |   | User satisfaction (thumbs) |         |
-|  | Answer relevancy     |   | Task completion rate       |         |
-|  | Hallucination rate   |   | Escalation to human rate   |         |
-|  | Citation accuracy    |   | Cost per successful query  |         |
-|  +----------------------+   +-----------------------------+         |
-|                                                                      |
-+--------------------------------------------------------------------+
-```
+| 層級 | 指標 |
+|-------|---------|
+| **L1：基礎設施** | 延遲（p50/p95/p99）；錯誤率；吞吐量（QPS）；快取命中率；索引大小／成長 |
+| **L2：管線** | Retrieval precision@K；Retrieval recall@K；Reranker 效益；區塊使用率；上下文視窗填充率 |
+| **L3：品質** | 忠實度分數；答案相關性；幻覺率；引用準確度 |
+| **L4：業務** | 使用者滿意度（讚／倒讚）；任務完成率；轉交人工率；每筆成功查詢成本 |
 
 ### 關鍵指標與告警
 
@@ -1038,47 +871,36 @@ async def nightly_quality_check(sample_size: int = 200):
 
 ### 擴展維度
 
-```
-Documents:   1K  -->  100K  -->  1M  -->  100M
-             |        |         |         |
-Chunks:      10K      1M        10M       1B
-             |        |         |         |
-Index Size:  50MB     5GB       50GB      5TB
-             |        |         |         |
-Strategy:    Single   Single    Sharded   Distributed
-             Node     Node +    Index     Cluster +
-                      Replicas             Tiered
-```
+| 維度 | 階段 1 | 階段 2 | 階段 3 | 階段 4 |
+|-----------|---------|---------|---------|---------|
+| **文件數** | 1K | 100K | 1M | 100M |
+| **區塊數** | 10K | 1M | 10M | 1B |
+| **索引大小** | 50MB | 5GB | 50GB | 5TB |
+| **策略** | 單一節點 | 單一節點 + 複本 | 分片索引 | 分散式叢集 + 分層 |
 
 ### 大規模的擷取管線
 
-```
-  Document Sources
-  (S3, DBs, APIs, File Shares)
-         |
-         v
-+-------------------+
-| Ingestion Queue   |  (Kafka / SQS)
-| - Deduplication   |
-| - Priority queue  |
-+--------+----------+
-         |
-    +----+----+----+----+
-    |    |    |    |    |     Parallel workers
-    v    v    v    v    v
-  +--+ +--+ +--+ +--+ +--+
-  |W1| |W2| |W3| |W4| |W5|  Parse + Chunk + Embed
-  +--+ +--+ +--+ +--+ +--+
-    |    |    |    |    |
-    +----+----+----+----+
-         |
-         v
-+-------------------+
-| Vector DB Cluster |
-| (Sharded by       |
-|  doc_type or      |
-|  tenant_id)       |
-+-------------------+
+```mermaid
+flowchart TD
+    DS["文件來源<br/>（S3、DBs、APIs、File Shares）"] --> IQ["Ingestion Queue（Kafka / SQS）<br/>- 去重<br/>- 優先佇列"]
+    subgraph PW["平行工作者（Parse + Chunk + Embed）"]
+        direction LR
+        W1["W1"]
+        W2["W2"]
+        W3["W3"]
+        W4["W4"]
+        W5["W5"]
+    end
+    IQ --> W1
+    IQ --> W2
+    IQ --> W3
+    IQ --> W4
+    IQ --> W5
+    W1 --> VDB["Vector DB Cluster<br/>（依 doc_type 或 tenant_id 分片）"]
+    W2 --> VDB
+    W3 --> VDB
+    W4 --> VDB
+    W5 --> VDB
 ```
 
 ### 分片策略
@@ -1128,20 +950,15 @@ class IndexMaintenanceScheduler:
 
 將讀取與寫入路徑分離，使得擷取作業永遠不會拖累查詢延遲。
 
-```
-  Ingestion Pipeline              Query Pipeline
-        |                              |
-        v                              v
-  +-----------+     Replication   +-----------+
-  |  Primary  | ----------------> |  Replica  |
-  |  (Write)  |                   |  (Read)   |
-  +-----------+                   +-----------+
-                                  |  Replica  |
-                                  |  (Read)   |
-                                  +-----------+
-                                  |  Replica  |
-                                  |  (Read)   |
-                                  +-----------+
+```mermaid
+flowchart LR
+    IP["擷取管線"] --> P["Primary（寫入）"]
+    P -->|"複寫"| R1["Replica（讀取）"]
+    P -->|"複寫"| R2["Replica（讀取）"]
+    P -->|"複寫"| R3["Replica（讀取）"]
+    QP["查詢管線"] --> R1
+    QP --> R2
+    QP --> R3
 ```
 
 ---
@@ -1152,40 +969,23 @@ class IndexMaintenanceScheduler:
 
 ### 三種隔離模型
 
-```
-SILO MODEL (Strongest Isolation)
-+----------+  +----------+  +----------+
-| Tenant A |  | Tenant B |  | Tenant C |
-| +------+ |  | +------+ |  | +------+ |
-| |Index | |  | |Index | |  | |Index | |
-| +------+ |  | +------+ |  | +------+ |
-| |Cache | |  | |Cache | |  | |Cache | |
-| +------+ |  | +------+ |  | +------+ |
-+----------+  +----------+  +----------+
-Cost: $$$$    Best for: Enterprise, Regulated Industries
-
-
-POOL MODEL (Cost-Efficient)
-+-------------------------------------------+
-|              Shared Index                  |
-|  [A] [B] [A] [C] [B] [A] [C] [B] [C]    |
-|                                            |
-|  Every query includes:                     |
-|  WHERE tenant_id = ? (MANDATORY)           |
-+-------------------------------------------+
-Cost: $       Best for: SMB SaaS
-
-
-BRIDGE MODEL (Hybrid)
-+----------+  +----------------------------+
-| Tenant A |  |     Shared Pool            |
-| (Enterprise) | [B] [C] [D] [E] [F] [G]  |
-| +------+ |  |                            |
-| |Dedicated|  | WHERE tenant_id = ?       |
-| |Index | |  +----------------------------+
-| +------+ |
-+----------+
-Cost: $$      Best for: Mixed customer base
+```mermaid
+flowchart TD
+    subgraph SILO["SILO MODEL（隔離最強）- 成本：$$$$ - 最適合：企業、受監管的產業"]
+        direction LR
+        TA["Tenant A<br/>Index + Cache"]
+        TB["Tenant B<br/>Index + Cache"]
+        TC["Tenant C<br/>Index + Cache"]
+    end
+    subgraph POOL["POOL MODEL（成本效益高）- 成本：$ - 最適合：SMB SaaS"]
+        direction TB
+        SI["Shared Index<br/>[A] [B] [A] [C] [B] [A] [C] [B] [C]<br/>每筆查詢都包含：WHERE tenant_id = ?（強制）"]
+    end
+    subgraph BRIDGE["BRIDGE MODEL（混合）- 成本：$$ - 最適合：客群混合"]
+        direction LR
+        BA["Tenant A（企業）<br/>專屬 Index"]
+        BP["Shared Pool<br/>[B] [C] [D] [E] [F] [G]<br/>WHERE tenant_id = ?"]
+    end
 ```
 
 ### 安全性：縱深防禦
@@ -1232,28 +1032,12 @@ class TenantIsolatedRetriever:
 
 租戶脈絡必須在管線的每一個階段都被注入，從擷取一路貫穿到生成。
 
-```
-Document Upload (Tenant A)
-        |
-        v
-  +---------------------+
-  | Validate Ownership  |  Does this doc belong to Tenant A?
-  +---------------------+
-        |
-        v
-  +---------------------+
-  | Chunk + Embed       |  Attach tenant_id to every chunk
-  +---------------------+
-        |
-        v
-  +---------------------+
-  | Index with Metadata |  {"tenant_id": "A", "doc_id": "...", ...}
-  +---------------------+
-        |
-        v
-  +---------------------+
-  | Invalidate Cache    |  Clear Tenant A's cache entries
-  +---------------------+             for affected documents
+```mermaid
+flowchart TD
+    U["文件上傳（Tenant A）"] --> V["驗證擁有權<br/>這份文件屬於 Tenant A 嗎？"]
+    V --> C["Chunk + Embed<br/>為每個區塊附加 tenant_id"]
+    C --> I["附中繼資料索引<br/>{'tenant_id': 'A', 'doc_id': '...', ...}"]
+    I --> X["讓快取失效<br/>清除 Tenant A 受影響文件的快取項目"]
 ```
 
 ### 防止吵鬧鄰居（Noisy Neighbor）
@@ -1299,141 +1083,61 @@ class TenantRateLimiter:
 
 ### 範例 1：客戶支援 RAG
 
+```mermaid
+flowchart TD
+    CQ["客戶查詢"] --> QN["Query Normalizer"]
+    QN --> SC["Semantic Cache<br/>（命中 -> 略過）"]
+    SC --> IC["Intent Classifier"]
+    IC --> KB["Knowledge Base RAG<br/>（文章、FAQs）"]
+    IC --> DB["Order/Acct Database<br/>（SQL 查找）"]
+    KB --> RG["Response Gen<br/>（附引用 + 信心度）"]
+    DB --> RG
+    RG --> AR["信心度 > 0.8<br/>自動回覆"]
+    RG --> RH["信心度 < 0.8<br/>轉交人工"]
 ```
-+------------------------------------------------------------------+
-|                   Customer Support RAG System                     |
-+------------------------------------------------------------------+
-|                                                                    |
-|  Customer Query                                                    |
-|       |                                                            |
-|       v                                                            |
-|  +------------+    +---------+    +------------------+             |
-|  | Query      |--->| Semantic|--->| Intent           |             |
-|  | Normalizer |    | Cache   |    | Classifier       |             |
-|  +------------+    +---------+    +--------+---------+             |
-|                     (hit->skip)            |                       |
-|                                   +--------+---------+             |
-|                                   |                  |             |
-|                                   v                  v             |
-|                             +-----------+    +-------------+      |
-|                             | Knowledge |    | Order/Acct  |      |
-|                             | Base RAG  |    | Database    |      |
-|                             | (articles,|    | (SQL lookup)|      |
-|                             |  FAQs)    |    +-------------+      |
-|                             +-----------+           |              |
-|                                   |                 |              |
-|                                   +--------+--------+              |
-|                                            |                       |
-|                                            v                       |
-|                                   +------------------+             |
-|                                   | Response Gen     |             |
-|                                   | (with citations  |             |
-|                                   |  + confidence)   |             |
-|                                   +--------+---------+             |
-|                                            |                       |
-|                                   +--------+---------+             |
-|                                   |                  |             |
-|                                   v                  v             |
-|                            confidence > 0.8    confidence < 0.8   |
-|                            Auto-respond        Route to human      |
-|                                                                    |
-+------------------------------------------------------------------+
 
-Scale: 50K articles, 2M customer interactions/month
-Latency SLA: p95 < 3s
-Cache hit rate: ~45%
-Auto-resolution rate: ~60%
-```
+規模：50K 篇文章、每月 2M 次客戶互動
+延遲 SLA：p95 < 3s
+快取命中率：~45%
+自動解決率：~60%
 
 ### 範例 2：企業知識平台
 
+```mermaid
+flowchart TD
+    AT["Auth + Tenant Resolution"] --> QR["Query Router"]
+    subgraph IDX["依領域切分的索引（全部以租戶過濾）"]
+        direction LR
+        DI["Docs Idx"]
+        WI["Wiki Idx"]
+        TI["Tickets Idx"]
+    end
+    QR --> DI
+    QR --> WI
+    QR --> TI
+    DI --> RR["Cross-Encoder Reranker"]
+    WI --> RR
+    TI --> RR
+    RR --> LLM["Tiered LLM Generation"]
+    LLM <--> PF["Permission Filter<br/>（文件層級 ACLs）"]
+    LLM --> RA["Response + Audit Trail"]
 ```
-+------------------------------------------------------------------+
-|              Enterprise Multi-Tenant Knowledge Platform            |
-+------------------------------------------------------------------+
-|                                                                    |
-|  +------------------+                                              |
-|  | Auth + Tenant    |                                              |
-|  | Resolution       |                                              |
-|  +--------+---------+                                              |
-|           |                                                        |
-|           v                                                        |
-|  +------------------+                                              |
-|  | Query Router     |                                              |
-|  +--+----+----+-----+                                              |
-|     |    |    |                                                     |
-|     v    v    v                                                     |
-|  +----+ +----+ +--------+                                          |
-|  |Docs| |Wiki| |Tickets |  Per-domain indexes                     |
-|  |Idx | |Idx | |Idx     |  (all tenant-filtered)                   |
-|  +----+ +----+ +--------+                                          |
-|     |    |    |                                                     |
-|     +----+----+                                                     |
-|          |                                                          |
-|          v                                                          |
-|  +------------------+                                              |
-|  | Cross-Encoder    |                                              |
-|  | Reranker         |                                              |
-|  +--------+---------+                                              |
-|           |                                                        |
-|           v                                                        |
-|  +------------------+     +-------------------+                    |
-|  | Tiered LLM       |<--->| Permission Filter |                    |
-|  | Generation        |     | (doc-level ACLs)  |                    |
-|  +------------------+     +-------------------+                    |
-|           |                                                        |
-|           v                                                        |
-|  +------------------+                                              |
-|  | Response + Audit |                                              |
-|  | Trail            |                                              |
-|  +------------------+                                              |
-|                                                                    |
-+------------------------------------------------------------------+
 
-Scale: 200 tenants, 10M documents total, 500K queries/day
-Isolation: Bridge model (5 enterprise silos + shared pool)
-Ingestion: Async via Kafka, ~50K docs/day
-```
+規模：200 個租戶、總計 10M 份文件、每日 500K 筆查詢
+隔離：Bridge model（5 個企業 silo + 共享池）
+擷取：透過 Kafka 非同步，~50K 份文件/天
 
 ### 範例 3：法律文件分析
 
-```
-  User: "Summarize indemnification clauses across all vendor contracts"
-      |
-      v
-  +---------------------+
-  | Agentic RAG Planner |
-  +---------------------+
-      |
-      | Plan: 1. Find all vendor contracts
-      |        2. Extract indemnification clauses
-      |        3. Synthesize comparison
-      |
-      v
-  +---------------------+    +-------------------+
-  | Step 1: Metadata    |--->| Filter: doc_type  |
-  | Search              |    | = "vendor_contract"|
-  +---------------------+    +-------------------+
-      |                            |
-      | 47 contracts found         |
-      v                            v
-  +---------------------+    +-------------------+
-  | Step 2: Section     |--->| Filter: section   |
-  | Retrieval           |    | = "indemnification"|
-  +---------------------+    +-------------------+
-      |                            |
-      | 43 relevant sections       |
-      v                            |
-  +---------------------+         |
-  | Step 3: Long Context|<--------+
-  | Synthesis           |
-  | (load 43 sections   |
-  |  into 1M context)   |
-  +---------------------+
-      |
-      v
-  Comparative summary with
-  per-contract citations
+```mermaid
+flowchart TD
+    U["使用者：「彙整所有供應商合約中的賠償條款」"] --> P["Agentic RAG Planner<br/>計畫：1. 找出所有供應商合約<br/>2. 擷取賠償條款<br/>3. 綜合比較"]
+    P --> S1["步驟 1：Metadata Search"]
+    S1 --> F1["Filter：doc_type = 'vendor_contract'"]
+    S1 -->|"找到 47 份合約"| S2["步驟 2：Section Retrieval"]
+    S2 --> F2["Filter：section = 'indemnification'"]
+    S2 -->|"43 個相關段落"| S3["步驟 3：Long Context Synthesis<br/>（將 43 個段落載入 1M 上下文）"]
+    S3 --> R["附各合約引用的比較摘要"]
 ```
 
 ---

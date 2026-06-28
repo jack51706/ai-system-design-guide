@@ -53,14 +53,24 @@ Document processing, data entry, and reporting represent the highest-volume ente
 
 ### Document Processing
 
-```
-Input Documents          Agent Pipeline              Output
-+-----------+     +---------------------------+     +----------+
-| Invoices  | --> | OCR/Parser Tool           | --> | Structured|
-| Contracts | --> | Entity Extraction Agent   | --> | Data in   |
-| Forms     | --> | Validation + Cross-check  | --> | ERP/CRM   |
-| Emails    | --> | Human Review (exceptions) | --> |           |
-+-----------+     +---------------------------+     +----------+
+```mermaid
+flowchart LR
+    subgraph Input["Input Documents"]
+        I1["Invoices"]
+        I2["Contracts"]
+        I3["Forms"]
+        I4["Emails"]
+    end
+    subgraph Pipeline["Agent Pipeline"]
+        P1["OCR/Parser Tool"]
+        P2["Entity Extraction Agent"]
+        P3["Validation + Cross-check"]
+        P4["Human Review (exceptions)"]
+    end
+    subgraph Output["Output"]
+        O1["Structured Data in ERP/CRM"]
+    end
+    Input --> Pipeline --> Output
 ```
 
 **Real metrics from production deployments:**
@@ -130,13 +140,22 @@ Monitoring, incident response, and infrastructure management. This category has 
 
 ### Monitoring and Alerting
 
-```
-Metrics Pipeline          Agent Layer              Actions
-+----------+        +-------------------+        +----------+
-| Prometheus| -----> | Alert Triage Agent| -----> | Suppress  |
-| Datadog   | -----> | (reads dashboards,| -----> | Escalate  |
-| PagerDuty | -----> |  correlates events)| ----> | Auto-heal |
-+----------+        +-------------------+        +----------+
+```mermaid
+flowchart LR
+    subgraph Metrics["Metrics Pipeline"]
+        M1["Prometheus"]
+        M2["Datadog"]
+        M3["PagerDuty"]
+    end
+    subgraph Agent["Agent Layer"]
+        A1["Alert Triage Agent<br/>(reads dashboards,<br/>correlates events)"]
+    end
+    subgraph Actions["Actions"]
+        AC1["Suppress"]
+        AC2["Escalate"]
+        AC3["Auto-heal"]
+    end
+    Metrics --> Agent --> Actions
 ```
 
 ### Incident Response
@@ -212,22 +231,16 @@ A mid-sized European logistics company (800 employees, 12 warehouses) deployed O
 
 ### Architecture
 
-```
-+------------------+     +-------------------+     +------------------+
-| Messaging Layer  |     | OpenClaw Core     |     | Enterprise       |
-| (Telegram,       | --> | (Agent Router +   | --> | Systems          |
-|  Discord,        |     |  SOUL.md Configs) |     | (SAP, WMS, HR)   |
-|  WhatsApp)       |     |                   |     |                  |
-+------------------+     +---+-------+-------+     +------------------+
-                              |       |
-                    +---------+       +----------+
-                    |                            |
-              +-----v------+            +--------v-------+
-              | NemoClaw   |            | Audit Logger   |
-              | (Nvidia    |            | (All actions   |
-              |  Security  |            |  logged with   |
-              |  Add-on)   |            |  full trace)   |
-              +------------+            +----------------+
+```mermaid
+flowchart TD
+    ML["Messaging Layer<br/>(Telegram, Discord, WhatsApp)"]
+    CORE["OpenClaw Core<br/>(Agent Router + SOUL.md Configs)"]
+    ENT["Enterprise Systems<br/>(SAP, WMS, HR)"]
+    NEMO["NemoClaw<br/>(Nvidia Security Add-on)"]
+    AUDIT["Audit Logger<br/>(All actions logged with full trace)"]
+    ML --> CORE --> ENT
+    CORE --> NEMO
+    CORE --> AUDIT
 ```
 
 ### Results
@@ -283,21 +296,16 @@ Instead of a traditional lift-and-shift, the company used Claude Code and Claude
 
 ### Architecture
 
-```
-+------------------+     +-------------------+     +------------------+
-| COBOL Codebase   |     | Claude Code       |     | Java/Spring Boot |
-| (2.4M lines)     | --> | (Analysis +       | --> | (New Codebase)   |
-|                  |     |  Translation)     |     |                  |
-+------------------+     +---+---------------+     +------------------+
-                              |
-                    +---------+---------+
-                    |                   |
-              +-----v------+     +------v--------+
-              | Computer   |     | Validation    |
-              | Use Agent  |     | Agent         |
-              | (Legacy UI |     | (Parallel Run |
-              |  Testing)  |     |  Comparison)  |
-              +-----------+      +---------------+
+```mermaid
+flowchart TD
+    COBOL["COBOL Codebase<br/>(2.4M lines)"]
+    CC["Claude Code<br/>(Analysis + Translation)"]
+    JAVA["Java/Spring Boot<br/>(New Codebase)"]
+    CUA["Computer Use Agent<br/>(Legacy UI Testing)"]
+    VA["Validation Agent<br/>(Parallel Run Comparison)"]
+    COBOL --> CC --> JAVA
+    CC --> CUA
+    CC --> VA
 ```
 
 ### Results
@@ -337,18 +345,21 @@ A mid-tier investment bank needed to automate its regulatory compliance workflow
 
 Four specialized agents working in a coordinated pipeline:
 
-```
-+-----------+     +-----------+     +-----------+     +-----------+
-| Trade     | --> | Regulatory| --> | Document  | --> | Reporting |
-| Monitor   |     | Classifier|     | Assembler |     | Agent     |
-| Agent     |     | Agent     |     | Agent     |     |           |
-+-----------+     +-----------+     +-----------+     +-----------+
-     |                 |                 |                 |
-     v                 v                 v                 v
- Trade DB         Reg. Rule        Doc Store          FINRA/SEC
- (read-only)      Engine           (read/write)       Portal
-                  (read-only)                         (write, with
-                                                       HITL gate)
+```mermaid
+flowchart TD
+    A1["Trade Monitor Agent"]
+    A2["Regulatory Classifier Agent"]
+    A3["Document Assembler Agent"]
+    A4["Reporting Agent"]
+    A1 --> A2 --> A3 --> A4
+    T1["Trade DB<br/>(read-only)"]
+    T2["Reg. Rule Engine<br/>(read-only)"]
+    T3["Doc Store<br/>(read/write)"]
+    T4["FINRA/SEC Portal<br/>(write, with HITL gate)"]
+    A1 --> T1
+    A2 --> T2
+    A3 --> T3
+    A4 --> T4
 ```
 
 **Agent 1 - Trade Monitor**: Scans trade feeds in real-time, flags transactions matching regulatory reporting thresholds (large trades, cross-border, concentrated positions). Tools: Trade database (read-only), market data feeds.

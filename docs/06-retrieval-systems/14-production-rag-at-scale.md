@@ -28,25 +28,11 @@ With every major frontier family now supporting 1M+ token context windows (Claud
 
 ### The Decision Matrix
 
-```
-                    Small Corpus           Large Corpus
-                    (<100K tokens)         (>1M tokens)
-                 +---------------------+---------------------+
-  Static Data    |  Long Context Wins  |  RAG Required       |
-  (rarely        |  - Stuff it all in  |  - Can't fit in     |
-   changes)      |  - Simpler arch     |    context window   |
-                 |  - No index needed  |  - Index + retrieve |
-                 +---------------------+---------------------+
-  Dynamic Data   |  Hybrid Approach    |  RAG Required       |
-  (updates       |  - Cache context    |  - Incremental      |
-   frequently)   |  - Invalidate on    |    indexing          |
-                 |    change           |  - Real-time updates |
-                 +---------------------+---------------------+
-  Multi-User     |  RAG Preferred      |  RAG Required       |
-  (per-user      |  - Personalized     |  - Tenant isolation  |
-   data)         |    retrieval        |  - Access control    |
-                 +---------------------+---------------------+
-```
+| Data Type | Small Corpus (<100K tokens) | Large Corpus (>1M tokens) |
+|-----------|-----------------------------|---------------------------|
+| **Static Data** (rarely changes) | Long Context Wins: stuff it all in, simpler arch, no index needed | RAG Required: can't fit in context window, index + retrieve |
+| **Dynamic Data** (updates frequently) | Hybrid Approach: cache context, invalidate on change | RAG Required: incremental indexing, real-time updates |
+| **Multi-User** (per-user data) | RAG Preferred: personalized retrieval | RAG Required: tenant isolation, access control |
 
 ### Head-to-Head Comparison
 
@@ -68,20 +54,11 @@ LLMs do not attend uniformly across their context window. Information positioned
 
 The winning architecture combines both: use RAG to retrieve the top candidates from a large corpus, then load those candidates into a long context window for cross-document reasoning.
 
-```
-  User Query
-      |
-      v
-+------------------+     +-------------------+
-|  RAG Retrieval   |---->|  Long Context     |
-|  (Find top 20    |     |  Synthesis        |
-|   from 10M docs) |     |  (Reason across   |
-+------------------+     |   20 docs deeply) |
-                          +-------------------+
-                                  |
-                                  v
-                          Final Answer with
-                          Cross-Doc Citations
+```mermaid
+flowchart TD
+    Q["User Query"] --> R["RAG Retrieval<br/>(Find top 20 from 10M docs)"]
+    R --> S["Long Context Synthesis<br/>(Reason across 20 docs deeply)"]
+    S --> A["Final Answer with<br/>Cross-Doc Citations"]
 ```
 
 **Rule of Thumb**: If your corpus fits in context AND you can afford the latency AND you can afford the cost, use long context. Otherwise, use RAG. For most production systems with cost and latency constraints, RAG remains the correct default.
@@ -94,28 +71,13 @@ Not every query needs retrieval. A production system classifies incoming queries
 
 ### The Four-Path Router
 
-```
-                         User Query
-                             |
-                             v
-                    +------------------+
-                    |  Query Classifier |
-                    |  (LLM or trained  |
-                    |   classifier)     |
-                    +--------+---------+
-                             |
-            +--------+-------+-------+--------+
-            |        |               |        |
-            v        v               v        v
-        +------+ +--------+    +--------+ +--------+
-        |Direct| |Simple  |    |Complex | |Agentic |
-        | LLM  | |  RAG   |    |  RAG   | |  RAG   |
-        +------+ +--------+    +--------+ +--------+
-        "What    "What is      "Compare   "Analyze
-        is 2+2?" our refund    Q3 vs Q4   all legal
-                  policy?"     revenue    risks in
-                               trends"    these 50
-                                          contracts"
+```mermaid
+flowchart TD
+    Q["User Query"] --> C["Query Classifier<br/>(LLM or trained classifier)"]
+    C --> D["Direct LLM<br/>'What is 2+2?'"]
+    C --> S["Simple RAG<br/>'What is our refund policy?'"]
+    C --> X["Complex RAG<br/>'Compare Q3 vs Q4 revenue trends'"]
+    C --> A["Agentic RAG<br/>'Analyze all legal risks in these 50 contracts'"]
 ```
 
 ### Classification Signals
@@ -213,32 +175,12 @@ Semantic caching recognizes when a new query has essentially the same meaning as
 
 ### Three-Layer Caching Architecture
 
-```
-  User Query
-      |
-      v
-+---------------------+
-| Layer 1: Exact Cache |  Hash(query) -> response
-| (Redis/Memcached)    |  TTL: 1 hour
-| Hit rate: ~15-25%    |  Latency: <5ms
-+----------+----------+
-           | miss
-           v
-+---------------------+
-| Layer 2: Semantic    |  Embed(query) -> nearest neighbor
-| Cache (Vector DB)    |  Threshold: cosine > 0.95
-| Hit rate: ~20-35%    |  Latency: <50ms
-+----------+----------+
-           | miss
-           v
-+---------------------+
-| Layer 3: Document    |  Cache retrieved chunks
-| Cache               |  Skip re-embedding
-| (saves embedding $) |  TTL: until doc changes
-+----------+----------+
-           | miss
-           v
-    Full RAG Pipeline
+```mermaid
+flowchart TD
+    Q["User Query"] --> L1["Layer 1: Exact Cache (Redis/Memcached)<br/>Hash(query) -> response<br/>TTL: 1 hour, Hit rate: ~15-25%, Latency: <5ms"]
+    L1 -->|"miss"| L2["Layer 2: Semantic Cache (Vector DB)<br/>Embed(query) -> nearest neighbor<br/>Threshold: cosine > 0.95, Hit rate: ~20-35%, Latency: <50ms"]
+    L2 -->|"miss"| L3["Layer 3: Document Cache (saves embedding $)<br/>Cache retrieved chunks, Skip re-embedding<br/>TTL: until doc changes"]
+    L3 -->|"miss"| F["Full RAG Pipeline"]
 ```
 
 ### Semantic Cache Implementation
@@ -325,38 +267,26 @@ A single monolithic index does not scale. Production systems partition their vec
 
 ### Index Partitioning Patterns
 
-```
-Pattern 1: Per-Domain Indexes
-+--------+  +--------+  +--------+  +--------+
-|  Legal |  |   HR   |  |Finance |  |  Eng   |
-| Index  |  | Index  |  | Index  |  | Index  |
-+--------+  +--------+  +--------+  +--------+
-    |            |            |           |
-    +----------- +-----+------+-----------+
-                       |
-                 Query Router
-                       |
-                  User Query
-
-
-Pattern 2: Per-Tenant Indexes (Silo Model)
-+----------+  +----------+  +----------+
-| Tenant A |  | Tenant B |  | Tenant C |
-|  Index   |  |  Index   |  |  Index   |
-| (Acme)   |  | (Globex) |  | (Wayne)  |
-+----------+  +----------+  +----------+
-
-
-Pattern 3: Shared Index with Metadata Filtering (Pool Model)
-+-------------------------------------------+
-|           Shared Vector Index              |
-|  +-------+  +-------+  +-------+          |
-|  | doc_1 |  | doc_2 |  | doc_3 |  ...     |
-|  | t:A   |  | t:B   |  | t:A   |          |
-|  +-------+  +-------+  +-------+          |
-|                                            |
-|  WHERE tenant_id = "A"  <-- filter         |
-+-------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph P1["Pattern 1: Per-Domain Indexes"]
+        direction TB
+        LI["Legal Index"] --> QR["Query Router"]
+        HI["HR Index"] --> QR
+        FI["Finance Index"] --> QR
+        EI["Eng Index"] --> QR
+        QR --> UQ["User Query"]
+    end
+    subgraph P2["Pattern 2: Per-Tenant Indexes (Silo Model)"]
+        direction LR
+        TA["Tenant A Index (Acme)"]
+        TB["Tenant B Index (Globex)"]
+        TC["Tenant C Index (Wayne)"]
+    end
+    subgraph P3["Pattern 3: Shared Index with Metadata Filtering (Pool Model)"]
+        direction TB
+        SI["Shared Vector Index<br/>doc_1 (t:A), doc_2 (t:B), doc_3 (t:A), ...<br/>WHERE tenant_id = 'A' (filter)"]
+    end
 ```
 
 ### When to Use Each Pattern
@@ -372,25 +302,11 @@ Pattern 3: Shared Index with Metadata Filtering (Pool Model)
 
 For very large corpora, use a two-tier index: a coarse "summary index" for routing, and fine-grained "chunk indexes" for precision.
 
-```
-  Query: "What is the refund policy for enterprise plans?"
-      |
-      v
-+--------------------+
-| Summary Index      |  Contains doc-level summaries
-| (10K entries)      |  Fast, broad search
-+--------+-----------+
-         |
-         | Top 3 matching docs identified
-         v
-+--------------------+
-| Chunk Index        |  Contains 500-token chunks
-| (2M entries)       |  Precise, targeted search
-| Filtered to 3 docs |
-+--------+-----------+
-         |
-         v
-   Top 5 chunks -> LLM
+```mermaid
+flowchart TD
+    Q["Query: 'What is the refund policy for enterprise plans?'"] --> SI["Summary Index (10K entries)<br/>Contains doc-level summaries<br/>Fast, broad search"]
+    SI -->|"Top 3 matching docs identified"| CI["Chunk Index (2M entries)<br/>Contains 500-token chunks<br/>Precise, targeted search<br/>Filtered to 3 docs"]
+    CI --> L["Top 5 chunks -> LLM"]
 ```
 
 ---
@@ -401,20 +317,23 @@ A naive sequential RAG pipeline adds latency at every step. Production pipelines
 
 ### Sequential vs Optimized Pipeline
 
-```
-SEQUENTIAL (Naive):
-Query -> Embed(200ms) -> Search(150ms) -> Rerank(300ms) -> Generate(800ms)
-Total: ~1450ms
-
-OPTIMIZED (Parallel + Cached):
-Query ----+---> Embed(200ms) ---> Vector Search(150ms) ---+
-          |                                                |--> RRF Merge -> Rerank(300ms) -> Generate(800ms)
-          +---> BM25 Keyword Search(100ms) ---------------+
-          |
-          +---> Cache Check(5ms) -- HIT --> Return cached (5ms total)
-
-With cache miss: ~1050ms (embedding + keyword in parallel)
-With cache hit:  ~5ms
+```mermaid
+flowchart TD
+    subgraph SEQ["SEQUENTIAL (Naive) - Total: ~1450ms"]
+        direction LR
+        SQ["Query"] --> SE["Embed (200ms)"] --> SS["Search (150ms)"] --> SR["Rerank (300ms)"] --> SG["Generate (800ms)"]
+    end
+    subgraph OPT["OPTIMIZED (Parallel + Cached) - miss: ~1050ms, hit: ~5ms"]
+        direction LR
+        OQ["Query"] --> OE["Embed (200ms)"]
+        OE --> OV["Vector Search (150ms)"]
+        OQ --> OB["BM25 Keyword Search (100ms)"]
+        OV --> RRF["RRF Merge"]
+        OB --> RRF
+        RRF --> OR["Rerank (300ms)"] --> OG["Generate (800ms)"]
+        OQ --> OC["Cache Check (5ms)"]
+        OC -->|"HIT"| RC["Return cached (5ms total)"]
+    end
 ```
 
 ### Parallel Retrieval
@@ -505,24 +424,27 @@ class EmbeddingBatcher:
 
 Start retrieval before the user finishes typing (on pause detection) and stream generation tokens as they are produced.
 
-```
-Timeline:
-0ms     User starts typing...
-300ms   Pause detected -> trigger retrieval speculatively
-500ms   User submits query
-        Retrieval already 200ms in -> finishes at 650ms
-650ms   Reranking begins
-950ms   First generation token streams to user
-1800ms  Full response complete
+With speculative retrieval:
 
-vs. without speculation:
-0ms     User submits query
-200ms   Embedding
-350ms   Retrieval
-650ms   Reranking
-1500ms  First token
-2300ms  Full response complete
-```
+| Time | Event |
+|------|-------|
+| 0ms | User starts typing... |
+| 300ms | Pause detected -> trigger retrieval speculatively |
+| 500ms | User submits query (retrieval already 200ms in -> finishes at 650ms) |
+| 650ms | Reranking begins |
+| 950ms | First generation token streams to user |
+| 1800ms | Full response complete |
+
+Without speculation:
+
+| Time | Event |
+|------|-------|
+| 0ms | User submits query |
+| 200ms | Embedding |
+| 350ms | Retrieval |
+| 650ms | Reranking |
+| 1500ms | First token |
+| 2300ms | Full response complete |
 
 ---
 
@@ -532,29 +454,13 @@ Corrective RAG (CRAG) adds a verification layer between retrieval and generation
 
 ### The CRAG Decision Loop
 
-```
-  User Query
-      |
-      v
-  Retrieve Top-K
-      |
-      v
-+------------------+
-| Relevance Grader  |  "Are these docs relevant to the query?"
-| (LLM or trained   |
-|  classifier)      |
-+--------+---------+
-         |
-    +----+----+--------+
-    |         |        |
-    v         v        v
- CORRECT   AMBIGUOUS  WRONG
-    |         |        |
-    v         v        v
- Generate  Supplement  Discard &
- directly  with web    re-retrieve
-           search      with reformulated
-                       query
+```mermaid
+flowchart TD
+    Q["User Query"] --> R["Retrieve Top-K"]
+    R --> G{"Relevance Grader<br/>(LLM or trained classifier)<br/>'Are these docs relevant to the query?'"}
+    G -->|"CORRECT"| C["Generate directly"]
+    G -->|"AMBIGUOUS"| A["Supplement with web search"]
+    G -->|"WRONG"| W["Discard & re-retrieve with reformulated query"]
 ```
 
 ### Implementation
@@ -643,29 +549,14 @@ Not every query benefits from retrieval. Adaptive retrieval decides dynamically 
 
 ### The Retrieval Decision Tree
 
-```
-  User Query
-      |
-      v
-  "Does this query need external knowledge?"
-      |
-  +---+---+
-  |       |
-  No      Yes
-  |       |
-  v       v
-Direct   "How complex is the retrieval need?"
- LLM      |
-answer  +-+--+---------+
-        |    |         |
-        v    v         v
-     Single Multi    Agentic
-      hop   hop      (planning
-        |    |       required)
-        v    v         |
-     1 index 2-3       v
-     top-5  indexes  Full agent
-             top-10  loop
+```mermaid
+flowchart TD
+    Q["User Query"] --> N{"Does this query need external knowledge?"}
+    N -->|"No"| D["Direct LLM answer"]
+    N -->|"Yes"| C{"How complex is the retrieval need?"}
+    C -->|"Single hop"| S["1 index, top-5"]
+    C -->|"Multi hop"| M["2-3 indexes, top-10"]
+    C -->|"Agentic (planning required)"| A["Full agent loop"]
 ```
 
 ### Query Complexity Estimator
@@ -742,35 +633,21 @@ At scale, RAG costs compound across embedding, retrieval, reranking, and generat
 
 ### Cost Breakdown of a Typical RAG Query
 
-```
-Component         Cost per Query    % of Total    Optimization
------------------------------------------------------------------
-Embedding         $0.000005         ~1%           Batch + cache
-Vector Search     $0.00001          ~2%           Index optimization
-Reranking         $0.0001           ~15%          Skip for simple queries
-LLM Generation    $0.0005-0.005     ~80%          Model tiering, caching
------------------------------------------------------------------
-Total (naive)     ~$0.001-0.006
-Total (optimized) ~$0.0001-0.001    (5-10x reduction)
-```
+| Component | Cost per Query | % of Total | Optimization |
+|-----------|----------------|------------|--------------|
+| Embedding | $0.000005 | ~1% | Batch + cache |
+| Vector Search | $0.00001 | ~2% | Index optimization |
+| Reranking | $0.0001 | ~15% | Skip for simple queries |
+| LLM Generation | $0.0005-0.005 | ~80% | Model tiering, caching |
+| **Total (naive)** | ~$0.001-0.006 | | |
+| **Total (optimized)** | ~$0.0001-0.001 | | (5-10x reduction) |
 
 ### Tiered Model Strategy
 
-```
-                Query Complexity
-                Low         Medium        High
-             +----------+----------+----------+
- Generation  |  Small   |  Mid     |  Large   |
- Model       |  Model   |  Model   |  Model   |
-             | (4o-mini)| (Claude  | (Claude  |
-             |          |  Sonnet) |  Opus)   |
-             | ~$0.0002 | ~$0.002  | ~$0.02   |
-             +----------+----------+----------+
-
- Reranking   |  Skip    | Lightweight| Cross-  |
-             |          | reranker   | encoder |
-             +----------+----------+----------+
-```
+| Query Complexity | Low | Medium | High |
+|------------------|-----|--------|------|
+| **Generation Model** | Small Model (4o-mini), ~$0.0002 | Mid Model (Claude Sonnet), ~$0.002 | Large Model (Claude Opus), ~$0.02 |
+| **Reranking** | Skip | Lightweight reranker | Cross-encoder |
 
 ### Progressive Detail Pattern
 
@@ -847,38 +724,12 @@ Production RAG systems have compounding failure probabilities. With 95% reliabil
 
 ### The RAG Failure Taxonomy
 
-```
-+------------------------------------------------------------------+
-|                    RAG Failure Modes                               |
-+------------------------------------------------------------------+
-|                                                                    |
-|  RETRIEVAL FAILURES          GENERATION FAILURES                   |
-|  +---------------------+    +-------------------------+           |
-|  | Missing documents   |    | Hallucination despite   |           |
-|  | (not indexed)       |    | good context            |           |
-|  +---------------------+    +-------------------------+           |
-|  | Wrong chunks        |    | Ignoring retrieved      |           |
-|  | (low precision)     |    | context                 |           |
-|  +---------------------+    +-------------------------+           |
-|  | Missed chunks       |    | Over-reliance on one    |           |
-|  | (low recall)        |    | source                  |           |
-|  +---------------------+    +-------------------------+           |
-|  | Stale embeddings    |    | Citation fabrication    |           |
-|  | (drift)             |    |                         |           |
-|  +---------------------+    +-------------------------+           |
-|                                                                    |
-|  SYSTEM FAILURES             QUALITY FAILURES                      |
-|  +---------------------+    +-------------------------+           |
-|  | Index unavailable   |    | Chunking artifacts      |           |
-|  +---------------------+    +-------------------------+           |
-|  | Embedding service   |    | Context window overflow |           |
-|  | timeout             |    +-------------------------+           |
-|  +---------------------+    | Answer too vague        |           |
-|  | Reranker OOM        |    | (over-hedging)          |           |
-|  +---------------------+    +-------------------------+           |
-|                                                                    |
-+------------------------------------------------------------------+
-```
+| Category | Failure Modes |
+|----------|---------------|
+| **Retrieval Failures** | Missing documents (not indexed); Wrong chunks (low precision); Missed chunks (low recall); Stale embeddings (drift) |
+| **Generation Failures** | Hallucination despite good context; Ignoring retrieved context; Over-reliance on one source; Citation fabrication |
+| **System Failures** | Index unavailable; Embedding service timeout; Reranker OOM |
+| **Quality Failures** | Chunking artifacts; Context window overflow; Answer too vague (over-hedging) |
 
 ### The 80% Rule of Chunking
 
@@ -933,30 +784,12 @@ Production RAG requires dedicated monitoring beyond standard application metrics
 
 ### The RAG Monitoring Stack
 
-```
-+--------------------------------------------------------------------+
-|                    RAG Observability Layers                          |
-+--------------------------------------------------------------------+
-|                                                                      |
-|  L1: INFRASTRUCTURE          L2: PIPELINE                           |
-|  +----------------------+   +-----------------------------+         |
-|  | Latency (p50/p95/p99)|   | Retrieval precision@K      |         |
-|  | Error rates          |   | Retrieval recall@K         |         |
-|  | Throughput (QPS)     |   | Reranker effectiveness     |         |
-|  | Cache hit rate       |   | Chunk utilization rate     |         |
-|  | Index size/growth    |   | Context window fill rate   |         |
-|  +----------------------+   +-----------------------------+         |
-|                                                                      |
-|  L3: QUALITY                 L4: BUSINESS                           |
-|  +----------------------+   +-----------------------------+         |
-|  | Faithfulness score   |   | User satisfaction (thumbs) |         |
-|  | Answer relevancy     |   | Task completion rate       |         |
-|  | Hallucination rate   |   | Escalation to human rate   |         |
-|  | Citation accuracy    |   | Cost per successful query  |         |
-|  +----------------------+   +-----------------------------+         |
-|                                                                      |
-+--------------------------------------------------------------------+
-```
+| Layer | Metrics |
+|-------|---------|
+| **L1: Infrastructure** | Latency (p50/p95/p99); Error rates; Throughput (QPS); Cache hit rate; Index size/growth |
+| **L2: Pipeline** | Retrieval precision@K; Retrieval recall@K; Reranker effectiveness; Chunk utilization rate; Context window fill rate |
+| **L3: Quality** | Faithfulness score; Answer relevancy; Hallucination rate; Citation accuracy |
+| **L4: Business** | User satisfaction (thumbs); Task completion rate; Escalation to human rate; Cost per successful query |
 
 ### Key Metrics and Alerts
 
@@ -1039,47 +872,36 @@ Moving from thousands to millions of documents introduces challenges in indexing
 
 ### Scaling Dimensions
 
-```
-Documents:   1K  -->  100K  -->  1M  -->  100M
-             |        |         |         |
-Chunks:      10K      1M        10M       1B
-             |        |         |         |
-Index Size:  50MB     5GB       50GB      5TB
-             |        |         |         |
-Strategy:    Single   Single    Sharded   Distributed
-             Node     Node +    Index     Cluster +
-                      Replicas             Tiered
-```
+| Dimension | Stage 1 | Stage 2 | Stage 3 | Stage 4 |
+|-----------|---------|---------|---------|---------|
+| **Documents** | 1K | 100K | 1M | 100M |
+| **Chunks** | 10K | 1M | 10M | 1B |
+| **Index Size** | 50MB | 5GB | 50GB | 5TB |
+| **Strategy** | Single Node | Single Node + Replicas | Sharded Index | Distributed Cluster + Tiered |
 
 ### Ingestion Pipeline at Scale
 
-```
-  Document Sources
-  (S3, DBs, APIs, File Shares)
-         |
-         v
-+-------------------+
-| Ingestion Queue   |  (Kafka / SQS)
-| - Deduplication   |
-| - Priority queue  |
-+--------+----------+
-         |
-    +----+----+----+----+
-    |    |    |    |    |     Parallel workers
-    v    v    v    v    v
-  +--+ +--+ +--+ +--+ +--+
-  |W1| |W2| |W3| |W4| |W5|  Parse + Chunk + Embed
-  +--+ +--+ +--+ +--+ +--+
-    |    |    |    |    |
-    +----+----+----+----+
-         |
-         v
-+-------------------+
-| Vector DB Cluster |
-| (Sharded by       |
-|  doc_type or      |
-|  tenant_id)       |
-+-------------------+
+```mermaid
+flowchart TD
+    DS["Document Sources<br/>(S3, DBs, APIs, File Shares)"] --> IQ["Ingestion Queue (Kafka / SQS)<br/>- Deduplication<br/>- Priority queue"]
+    subgraph PW["Parallel workers (Parse + Chunk + Embed)"]
+        direction LR
+        W1["W1"]
+        W2["W2"]
+        W3["W3"]
+        W4["W4"]
+        W5["W5"]
+    end
+    IQ --> W1
+    IQ --> W2
+    IQ --> W3
+    IQ --> W4
+    IQ --> W5
+    W1 --> VDB["Vector DB Cluster<br/>(Sharded by doc_type or tenant_id)"]
+    W2 --> VDB
+    W3 --> VDB
+    W4 --> VDB
+    W5 --> VDB
 ```
 
 ### Sharding Strategies
@@ -1129,20 +951,15 @@ class IndexMaintenanceScheduler:
 
 Separate read and write paths so that ingestion never degrades query latency.
 
-```
-  Ingestion Pipeline              Query Pipeline
-        |                              |
-        v                              v
-  +-----------+     Replication   +-----------+
-  |  Primary  | ----------------> |  Replica  |
-  |  (Write)  |                   |  (Read)   |
-  +-----------+                   +-----------+
-                                  |  Replica  |
-                                  |  (Read)   |
-                                  +-----------+
-                                  |  Replica  |
-                                  |  (Read)   |
-                                  +-----------+
+```mermaid
+flowchart LR
+    IP["Ingestion Pipeline"] --> P["Primary (Write)"]
+    P -->|"Replication"| R1["Replica (Read)"]
+    P -->|"Replication"| R2["Replica (Read)"]
+    P -->|"Replication"| R3["Replica (Read)"]
+    QP["Query Pipeline"] --> R1
+    QP --> R2
+    QP --> R3
 ```
 
 ---
@@ -1153,40 +970,23 @@ Multi-tenant RAG is the most common production pattern for SaaS products. Gettin
 
 ### Three Isolation Models
 
-```
-SILO MODEL (Strongest Isolation)
-+----------+  +----------+  +----------+
-| Tenant A |  | Tenant B |  | Tenant C |
-| +------+ |  | +------+ |  | +------+ |
-| |Index | |  | |Index | |  | |Index | |
-| +------+ |  | +------+ |  | +------+ |
-| |Cache | |  | |Cache | |  | |Cache | |
-| +------+ |  | +------+ |  | +------+ |
-+----------+  +----------+  +----------+
-Cost: $$$$    Best for: Enterprise, Regulated Industries
-
-
-POOL MODEL (Cost-Efficient)
-+-------------------------------------------+
-|              Shared Index                  |
-|  [A] [B] [A] [C] [B] [A] [C] [B] [C]    |
-|                                            |
-|  Every query includes:                     |
-|  WHERE tenant_id = ? (MANDATORY)           |
-+-------------------------------------------+
-Cost: $       Best for: SMB SaaS
-
-
-BRIDGE MODEL (Hybrid)
-+----------+  +----------------------------+
-| Tenant A |  |     Shared Pool            |
-| (Enterprise) | [B] [C] [D] [E] [F] [G]  |
-| +------+ |  |                            |
-| |Dedicated|  | WHERE tenant_id = ?       |
-| |Index | |  +----------------------------+
-| +------+ |
-+----------+
-Cost: $$      Best for: Mixed customer base
+```mermaid
+flowchart TD
+    subgraph SILO["SILO MODEL (Strongest Isolation) - Cost: $$$$ - Best for: Enterprise, Regulated Industries"]
+        direction LR
+        TA["Tenant A<br/>Index + Cache"]
+        TB["Tenant B<br/>Index + Cache"]
+        TC["Tenant C<br/>Index + Cache"]
+    end
+    subgraph POOL["POOL MODEL (Cost-Efficient) - Cost: $ - Best for: SMB SaaS"]
+        direction TB
+        SI["Shared Index<br/>[A] [B] [A] [C] [B] [A] [C] [B] [C]<br/>Every query includes: WHERE tenant_id = ? (MANDATORY)"]
+    end
+    subgraph BRIDGE["BRIDGE MODEL (Hybrid) - Cost: $$ - Best for: Mixed customer base"]
+        direction LR
+        BA["Tenant A (Enterprise)<br/>Dedicated Index"]
+        BP["Shared Pool<br/>[B] [C] [D] [E] [F] [G]<br/>WHERE tenant_id = ?"]
+    end
 ```
 
 ### Security: Defense in Depth
@@ -1233,28 +1033,12 @@ class TenantIsolatedRetriever:
 
 Tenant context must be injected at every stage of the pipeline, from ingestion through to generation.
 
-```
-Document Upload (Tenant A)
-        |
-        v
-  +---------------------+
-  | Validate Ownership  |  Does this doc belong to Tenant A?
-  +---------------------+
-        |
-        v
-  +---------------------+
-  | Chunk + Embed       |  Attach tenant_id to every chunk
-  +---------------------+
-        |
-        v
-  +---------------------+
-  | Index with Metadata |  {"tenant_id": "A", "doc_id": "...", ...}
-  +---------------------+
-        |
-        v
-  +---------------------+
-  | Invalidate Cache    |  Clear Tenant A's cache entries
-  +---------------------+             for affected documents
+```mermaid
+flowchart TD
+    U["Document Upload (Tenant A)"] --> V["Validate Ownership<br/>Does this doc belong to Tenant A?"]
+    V --> C["Chunk + Embed<br/>Attach tenant_id to every chunk"]
+    C --> I["Index with Metadata<br/>{'tenant_id': 'A', 'doc_id': '...', ...}"]
+    I --> X["Invalidate Cache<br/>Clear Tenant A's cache entries for affected documents"]
 ```
 
 ### Noisy Neighbor Prevention
@@ -1300,141 +1084,61 @@ class TenantRateLimiter:
 
 ### Example 1: Customer Support RAG
 
+```mermaid
+flowchart TD
+    CQ["Customer Query"] --> QN["Query Normalizer"]
+    QN --> SC["Semantic Cache<br/>(hit -> skip)"]
+    SC --> IC["Intent Classifier"]
+    IC --> KB["Knowledge Base RAG<br/>(articles, FAQs)"]
+    IC --> DB["Order/Acct Database<br/>(SQL lookup)"]
+    KB --> RG["Response Gen<br/>(with citations + confidence)"]
+    DB --> RG
+    RG --> AR["confidence > 0.8<br/>Auto-respond"]
+    RG --> RH["confidence < 0.8<br/>Route to human"]
 ```
-+------------------------------------------------------------------+
-|                   Customer Support RAG System                     |
-+------------------------------------------------------------------+
-|                                                                    |
-|  Customer Query                                                    |
-|       |                                                            |
-|       v                                                            |
-|  +------------+    +---------+    +------------------+             |
-|  | Query      |--->| Semantic|--->| Intent           |             |
-|  | Normalizer |    | Cache   |    | Classifier       |             |
-|  +------------+    +---------+    +--------+---------+             |
-|                     (hit->skip)            |                       |
-|                                   +--------+---------+             |
-|                                   |                  |             |
-|                                   v                  v             |
-|                             +-----------+    +-------------+      |
-|                             | Knowledge |    | Order/Acct  |      |
-|                             | Base RAG  |    | Database    |      |
-|                             | (articles,|    | (SQL lookup)|      |
-|                             |  FAQs)    |    +-------------+      |
-|                             +-----------+           |              |
-|                                   |                 |              |
-|                                   +--------+--------+              |
-|                                            |                       |
-|                                            v                       |
-|                                   +------------------+             |
-|                                   | Response Gen     |             |
-|                                   | (with citations  |             |
-|                                   |  + confidence)   |             |
-|                                   +--------+---------+             |
-|                                            |                       |
-|                                   +--------+---------+             |
-|                                   |                  |             |
-|                                   v                  v             |
-|                            confidence > 0.8    confidence < 0.8   |
-|                            Auto-respond        Route to human      |
-|                                                                    |
-+------------------------------------------------------------------+
 
 Scale: 50K articles, 2M customer interactions/month
 Latency SLA: p95 < 3s
 Cache hit rate: ~45%
 Auto-resolution rate: ~60%
-```
 
 ### Example 2: Enterprise Knowledge Platform
 
+```mermaid
+flowchart TD
+    AT["Auth + Tenant Resolution"] --> QR["Query Router"]
+    subgraph IDX["Per-domain indexes (all tenant-filtered)"]
+        direction LR
+        DI["Docs Idx"]
+        WI["Wiki Idx"]
+        TI["Tickets Idx"]
+    end
+    QR --> DI
+    QR --> WI
+    QR --> TI
+    DI --> RR["Cross-Encoder Reranker"]
+    WI --> RR
+    TI --> RR
+    RR --> LLM["Tiered LLM Generation"]
+    LLM <--> PF["Permission Filter<br/>(doc-level ACLs)"]
+    LLM --> RA["Response + Audit Trail"]
 ```
-+------------------------------------------------------------------+
-|              Enterprise Multi-Tenant Knowledge Platform            |
-+------------------------------------------------------------------+
-|                                                                    |
-|  +------------------+                                              |
-|  | Auth + Tenant    |                                              |
-|  | Resolution       |                                              |
-|  +--------+---------+                                              |
-|           |                                                        |
-|           v                                                        |
-|  +------------------+                                              |
-|  | Query Router     |                                              |
-|  +--+----+----+-----+                                              |
-|     |    |    |                                                     |
-|     v    v    v                                                     |
-|  +----+ +----+ +--------+                                          |
-|  |Docs| |Wiki| |Tickets |  Per-domain indexes                     |
-|  |Idx | |Idx | |Idx     |  (all tenant-filtered)                   |
-|  +----+ +----+ +--------+                                          |
-|     |    |    |                                                     |
-|     +----+----+                                                     |
-|          |                                                          |
-|          v                                                          |
-|  +------------------+                                              |
-|  | Cross-Encoder    |                                              |
-|  | Reranker         |                                              |
-|  +--------+---------+                                              |
-|           |                                                        |
-|           v                                                        |
-|  +------------------+     +-------------------+                    |
-|  | Tiered LLM       |<--->| Permission Filter |                    |
-|  | Generation        |     | (doc-level ACLs)  |                    |
-|  +------------------+     +-------------------+                    |
-|           |                                                        |
-|           v                                                        |
-|  +------------------+                                              |
-|  | Response + Audit |                                              |
-|  | Trail            |                                              |
-|  +------------------+                                              |
-|                                                                    |
-+------------------------------------------------------------------+
 
 Scale: 200 tenants, 10M documents total, 500K queries/day
 Isolation: Bridge model (5 enterprise silos + shared pool)
 Ingestion: Async via Kafka, ~50K docs/day
-```
 
 ### Example 3: Legal Document Analysis
 
-```
-  User: "Summarize indemnification clauses across all vendor contracts"
-      |
-      v
-  +---------------------+
-  | Agentic RAG Planner |
-  +---------------------+
-      |
-      | Plan: 1. Find all vendor contracts
-      |        2. Extract indemnification clauses
-      |        3. Synthesize comparison
-      |
-      v
-  +---------------------+    +-------------------+
-  | Step 1: Metadata    |--->| Filter: doc_type  |
-  | Search              |    | = "vendor_contract"|
-  +---------------------+    +-------------------+
-      |                            |
-      | 47 contracts found         |
-      v                            v
-  +---------------------+    +-------------------+
-  | Step 2: Section     |--->| Filter: section   |
-  | Retrieval           |    | = "indemnification"|
-  +---------------------+    +-------------------+
-      |                            |
-      | 43 relevant sections       |
-      v                            |
-  +---------------------+         |
-  | Step 3: Long Context|<--------+
-  | Synthesis           |
-  | (load 43 sections   |
-  |  into 1M context)   |
-  +---------------------+
-      |
-      v
-  Comparative summary with
-  per-contract citations
+```mermaid
+flowchart TD
+    U["User: 'Summarize indemnification clauses across all vendor contracts'"] --> P["Agentic RAG Planner<br/>Plan: 1. Find all vendor contracts<br/>2. Extract indemnification clauses<br/>3. Synthesize comparison"]
+    P --> S1["Step 1: Metadata Search"]
+    S1 --> F1["Filter: doc_type = 'vendor_contract'"]
+    S1 -->|"47 contracts found"| S2["Step 2: Section Retrieval"]
+    S2 --> F2["Filter: section = 'indemnification'"]
+    S2 -->|"43 relevant sections"| S3["Step 3: Long Context Synthesis<br/>(load 43 sections into 1M context)"]
+    S3 --> R["Comparative summary with per-contract citations"]
 ```
 
 ---

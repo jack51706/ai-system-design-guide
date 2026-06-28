@@ -49,40 +49,13 @@ LLMs are probabilistic and can produce:
 
 ### Defense in Depth
 
-```
-User Input
-    |
-    v
-+--------------------+
-| INPUT GUARDRAILS   | <-- Block malicious input
-|  * Topic filtering |
-|  * PII detection   |
-|  * Jailbreak/      |
-|    injection detect |
-|  * Input validation |
-+--------+-----------+
-         |
-         v
-+--------------------+
-|  LLM Generation    |
-+--------+-----------+
-         |
-         v
-+--------------------+
-| OUTPUT GUARDRAILS  | <-- Block harmful output
-|  * Content filter  |
-|  * Factuality check|
-|  * Format valid.   |
-|  * Relevance check |
-+--------+-----------+
-         |
-         v
-+--------------------+
-| ACTION VALIDATION  | <-- Verify safe actions
-+--------+-----------+
-         |
-         v
-    Safe Response
+```mermaid
+flowchart TD
+    A["User Input"] --> B["INPUT GUARDRAILS<br/>* Topic filtering<br/>* PII detection<br/>* Jailbreak / injection detect<br/>* Input validation"]
+    B -->|"Block malicious input"| C["LLM Generation"]
+    C --> D["OUTPUT GUARDRAILS<br/>* Content filter<br/>* Factuality check<br/>* Format validation<br/>* Relevance check"]
+    D -->|"Block harmful output"| E["ACTION VALIDATION"]
+    E -->|"Verify safe actions"| F["Safe Response"]
 ```
 
 ---
@@ -1010,8 +983,11 @@ I would implement guardrails at input and output:
 - Disclosure: clearly identify as AI when appropriate
 
 **Fallback chain:**
-```
-Primary LLM -> Backup LLM -> Canned responses -> Human escalation
+```mermaid
+flowchart LR
+    A["Primary LLM"] --> B["Backup LLM"]
+    B --> C["Canned responses"]
+    C --> D["Human escalation"]
 ```
 
 **Monitoring:**

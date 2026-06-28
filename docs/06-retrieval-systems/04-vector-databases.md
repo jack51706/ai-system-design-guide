@@ -104,12 +104,21 @@ The most popular algorithm for production **in-memory** vector search.
 3. Multiple layers of abstraction (hierarchical)
 4. Search: navigate from top layer down, greedy nearest neighbor
 
-```
-Layer 2:   *--------*--------*
-           |        |        |
-Layer 1:   *--*--*--*--*--*--*
-           |  |  |  |  |  |  |
-Layer 0:   ********************  (all vectors)
+```mermaid
+flowchart TD
+    subgraph L2["Layer 2 (sparse, long jumps)"]
+        A2["node"] --- B2["node"] --- C2["node"]
+    end
+    subgraph L1["Layer 1 (intermediate)"]
+        A1["node"] --- B1["node"] --- C1["node"] --- D1["node"] --- E1["node"] --- F1["node"] --- G1["node"]
+    end
+    subgraph L0["Layer 0 (all vectors)"]
+        N0["dense graph of every vector"]
+    end
+    A2 --> A1
+    B2 --> D1
+    C2 --> G1
+    L1 --> L0
 ```
 
 **Pros:**
@@ -421,23 +430,17 @@ class VectorDBMaintenance:
 
 ### High Availability
 
-```
-+-------------------------------------------------------------+
-|                    Load Balancer                              |
-+----------------------------+--------------------------------+
-                             |
-            +----------------+----------------+
-            v                v                v
-     +--------------+ +--------------+ +--------------+
-     |  Replica 1   | |  Replica 2   | |  Replica 3   |
-     |   (Read)     | |   (Read)     | |   (Primary)  |
-     +--------------+ +--------------+ +--------------+
-                                             |
-                                       (Replication)
-                                             |
-                                       +-----v-----+
-                                       |  Storage   |
-                                       +-----------+
+```mermaid
+flowchart TD
+    LB["Load Balancer"]
+    R1["Replica 1<br/>(Read)"]
+    R2["Replica 2<br/>(Read)"]
+    R3["Replica 3<br/>(Primary)"]
+    S["Storage"]
+    LB --> R1
+    LB --> R2
+    LB --> R3
+    R3 -->|"Replication"| S
 ```
 
 **Key patterns:**
@@ -544,19 +547,17 @@ def estimate_self_hosted_cost(
 
 ### Decision Tree
 
-```
-Need < 100K vectors?
-+-- Yes -> pgvector (if already using PostgreSQL)
-|          +-- Chroma (for prototyping)
-|
-+-- No -> Need managed service?
-          +-- Yes -> Cloud-first?
-          |          +-- Yes -> Pinecone (easiest)
-          |          +-- No -> Qdrant Cloud or Zilliz
-          |
-          +-- No -> Need enterprise features?
-                    +-- Yes -> Milvus on Kubernetes
-                    +-- No -> Qdrant or Weaviate self-hosted
+```mermaid
+flowchart TD
+    Q1{"Need < 100K vectors?"}
+    Q1 -->|"Yes"| A1["pgvector<br/>(if already using PostgreSQL)<br/>or Chroma (for prototyping)"]
+    Q1 -->|"No"| Q2{"Need managed service?"}
+    Q2 -->|"Yes"| Q3{"Cloud-first?"}
+    Q3 -->|"Yes"| A2["Pinecone (easiest)"]
+    Q3 -->|"No"| A3["Qdrant Cloud or Zilliz"]
+    Q2 -->|"No"| Q4{"Need enterprise features?"}
+    Q4 -->|"Yes"| A4["Milvus on Kubernetes"]
+    Q4 -->|"No"| A5["Qdrant or Weaviate self-hosted"]
 ```
 
 ### Evaluation Criteria

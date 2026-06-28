@@ -24,30 +24,14 @@ The way AI agents interact with the outside world has undergone a dramatic shift
 
 The 2026 tool-use ecosystem has consolidated around four architectural patterns, each optimized for different levels of autonomy, safety, and integration depth:
 
-```
-+-----------------------------------------------------------------------+
-|                     2026 Tool-Use Ecosystem                           |
-+-----------------------------------------------------------------------+
-|                                                                       |
-|  +-------------------+  +-------------------+  +-------------------+  |
-|  |  LOCAL AGENTS     |  |  CLOUD AGENTS     |  |  IDE AGENTS       |  |
-|  |                   |  |                   |  |                   |  |
-|  |  OpenClaw         |  |  Claude Code      |  |  Cursor           |  |
-|  |  Open Interpreter |  |  OpenAI Codex     |  |  Windsurf         |  |
-|  |  OpenHands (local)|  |  OpenHands Cloud  |  |  Cline            |  |
-|  |  LM Studio Agent  |  |  Google Jules     |  |  GitHub Copilot   |  |
-|  +-------------------+  +-------------------+  +-------------------+  |
-|                                                                       |
-|  +-------------------+  +-------------------+  +-------------------+  |
-|  |  COMPUTER-USE     |  |  MCP SERVERS      |  |  MESSAGING AGENTS |  |
-|  |                   |  |                   |  |                   |  |
-|  |  Claude Computer  |  |  10,000+ servers  |  |  OpenClaw (multi) |  |
-|  |  Use API          |  |  97M monthly SDK  |  |  Custom bots      |  |
-|  |  Open Interpreter |  |  downloads        |  |  via MCP bridges  |  |
-|  |  (Computer API)   |  |                   |  |                   |  |
-|  +-------------------+  +-------------------+  +-------------------+  |
-+-----------------------------------------------------------------------+
-```
+| Category | Members |
+|----------|---------|
+| **Local Agents** | OpenClaw, Open Interpreter, OpenHands (local), LM Studio Agent |
+| **Cloud Agents** | Claude Code, OpenAI Codex, OpenHands Cloud, Google Jules |
+| **IDE Agents** | Cursor, Windsurf, Cline, GitHub Copilot |
+| **Computer-Use** | Claude Computer Use API, Open Interpreter (Computer API) |
+| **MCP Servers** | 10,000+ servers, 97M monthly SDK downloads |
+| **Messaging Agents** | OpenClaw (multi), Custom bots via MCP bridges |
 
 The key insight for 2026: these categories are converging. Claude Code is a cloud agent that runs locally. OpenClaw is a local agent that connects to cloud LLMs. Cursor is an IDE agent with cloud-side Background Agents. The lines are blurring, and what matters is the underlying **architecture pattern** (covered in the next chapter).
 
@@ -123,28 +107,14 @@ OpenClaw is a self-hosted, open-source personal AI assistant created by Austrian
 
 OpenClaw's architecture has six core components:
 
-```
-+-------------------------------------------------------------------+
-|                      OpenClaw Architecture                        |
-+-------------------------------------------------------------------+
-|                                                                   |
-|  +-----------+     +-----------+     +----------+                 |
-|  |  Gateway  |---->|  LLM      |---->| PI Agent |                 |
-|  |           |     |  (Brain)  |     | (Exec)   |                 |
-|  +-----------+     +-----------+     +----------+                 |
-|       ^                  |                |                       |
-|       |                  v                v                       |
-|  +-----------+     +-----------+     +----------+                 |
-|  | Channels  |     | SOUL.md   |     | Skills   |                 |
-|  | (24+)     |     | (Identity)|     | (44K+)   |                 |
-|  +-----------+     +-----------+     +----------+                 |
-|                          |                                        |
-|                          v                                        |
-|                    +-----------+                                  |
-|                    | Memories  |                                  |
-|                    | (Persist) |                                  |
-|                    +-----------+                                  |
-+-------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    Channels["Channels<br/>(24+)"] --> Gateway["Gateway"]
+    Gateway --> LLM["LLM<br/>(Brain)"]
+    LLM --> PIAgent["PI Agent<br/>(Exec)"]
+    LLM --> Soul["SOUL.md<br/>(Identity)"]
+    PIAgent --> Skills["Skills<br/>(44K+)"]
+    Soul --> Memories["Memories<br/>(Persist)"]
 ```
 
 **1. Gateway**: The message ingress/egress layer. Connects to WhatsApp (via Baileys), Telegram, Discord, Slack, Signal, iMessage, Microsoft Teams, Matrix, and 16+ other platforms. Supports both DMs and group conversations with mention-based activation.
@@ -182,41 +152,18 @@ OpenHands (formerly OpenDevin) is an open-source autonomous AI software engineer
 
 ### Architecture: Event-Stream + Sandboxed Runtime
 
-```
-+-------------------------------------------------------------------+
-|                     OpenHands Architecture                        |
-+-------------------------------------------------------------------+
-|                                                                   |
-|  +------------------+                                             |
-|  |   User / API     |                                             |
-|  +--------+---------+                                             |
-|           |                                                       |
-|           v                                                       |
-|  +--------+---------+     +------------------+                    |
-|  |  Agent Controller |<--->|  Event Stream    |                   |
-|  |  (CodeAct 1.0)   |     |  Hub             |                   |
-|  +--------+---------+     +--------+---------+                    |
-|           |                        |                              |
-|           v                        v                              |
-|  +--------+---------+     +--------+---------+                    |
-|  |  Action Dispatch  |     |  Observation     |                   |
-|  |                   |     |  Collector       |                   |
-|  |  - CmdRunAction   |     |                  |                   |
-|  |  - FileWriteAction|     |  - CmdOutput     |                   |
-|  |  - BrowseURLAction|     |  - FileContent   |                   |
-|  |  - CodeAction     |     |  - BrowserState  |                   |
-|  +--------+---------+     +------------------+                    |
-|           |                                                       |
-|           v                                                       |
-|  +--------+--------------------------------------------------+    |
-|  |              Docker Sandbox (Per Session)                 |    |
-|  |                                                           |    |
-|  |  +----------+  +----------+  +----------+                |    |
-|  |  | Terminal  |  |  Python  |  | Browser  |                |    |
-|  |  | (bash)   |  | (stateful)|  | (BrowserGym)             |    |
-|  |  +----------+  +----------+  +----------+                |    |
-|  +-----------------------------------------------------------+    |
-+-------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    User["User / API"] --> Controller["Agent Controller<br/>(CodeAct 1.0)"]
+    Controller <--> Hub["Event Stream Hub"]
+    Controller --> Dispatch["Action Dispatch<br/>- CmdRunAction<br/>- FileWriteAction<br/>- BrowseURLAction<br/>- CodeAction"]
+    Hub --> Collector["Observation Collector<br/>- CmdOutput<br/>- FileContent<br/>- BrowserState"]
+    Dispatch --> Sandbox
+    subgraph Sandbox["Docker Sandbox (Per Session)"]
+        Terminal["Terminal<br/>(bash)"]
+        Python["Python<br/>(stateful)"]
+        Browser["Browser<br/>(BrowserGym)"]
+    end
 ```
 
 **Key architectural decisions:**
@@ -241,45 +188,12 @@ Open Interpreter is a local code execution agent that provides a ChatGPT-like te
 
 ### Architecture
 
-```
-+-------------------------------------------------------------------+
-|                  Open Interpreter Architecture                    |
-+-------------------------------------------------------------------+
-|                                                                   |
-|  +------------------+                                             |
-|  |  Terminal UI      |                                            |
-|  |  (ChatGPT-like)  |                                            |
-|  +--------+---------+                                             |
-|           |                                                       |
-|           v                                                       |
-|  +--------+---------+     +------------------+                    |
-|  |  Core Engine      |<--->|  LLM Provider   |                   |
-|  |                   |     |  (100+ models)  |                    |
-|  |  - NL to Code     |     |  GPT, Claude,   |                   |
-|  |  - Permission     |     |  Ollama, LM     |                   |
-|  |    Gate            |     |  Studio, etc.   |                   |
-|  +--------+---------+     +------------------+                    |
-|           |                                                       |
-|           v                                                       |
-|  +--------+---------+                                             |
-|  |  Code Executor    |                                            |
-|  |                   |                                            |
-|  |  - Python         |                                            |
-|  |  - JavaScript     |                                            |
-|  |  - Shell/Bash     |                                            |
-|  |  - AppleScript    |                                            |
-|  +--------+---------+                                             |
-|           |                                                       |
-|           v                                                       |
-|  +--------+---------+                                             |
-|  |  Computer API     |                                            |
-|  |  (GUI Control)    |                                            |
-|  |                   |                                            |
-|  |  - Screen capture |                                            |
-|  |  - Mouse/Keyboard |                                            |
-|  |  - Icon detection |                                            |
-|  +-------------------+                                            |
-+-------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    UI["Terminal UI<br/>(ChatGPT-like)"] --> Core["Core Engine<br/>- NL to Code<br/>- Permission Gate"]
+    Core <--> LLM["LLM Provider<br/>(100+ models)<br/>GPT, Claude, Ollama, LM Studio, etc."]
+    Core --> Executor["Code Executor<br/>- Python<br/>- JavaScript<br/>- Shell/Bash<br/>- AppleScript"]
+    Executor --> Computer["Computer API<br/>(GUI Control)<br/>- Screen capture<br/>- Mouse/Keyboard<br/>- Icon detection"]
 ```
 
 **Key properties:**
@@ -302,29 +216,12 @@ Claude Computer Use is an Anthropic API feature that allows Claude to control a 
 
 ### The Vision-Action Loop
 
-```
-+-------------------------------------------------------------------+
-|              Claude Computer Use: Vision-Action Loop               |
-+-------------------------------------------------------------------+
-|                                                                   |
-|  Step 1: OBSERVE          Step 2: REASON          Step 3: ACT    |
-|  +----------------+       +----------------+      +------------+ |
-|  |  Take          |       |  Analyze       |      |  Execute   | |
-|  |  Screenshot    |------>|  Screenshot    |----->|  Action    | |
-|  |  (base64 PNG)  |       |  + Task Goal   |      |  (click,   | |
-|  |                |       |  + History      |      |  type,     | |
-|  +----------------+       +----------------+      |  scroll)   | |
-|                                                    +------+-----+ |
-|                                                           |       |
-|          +------------------------------------------------+       |
-|          |                                                        |
-|          v                                                        |
-|  +-------+--------+                                               |
-|  |  Wait + Take   |                                               |
-|  |  New Screenshot|-------> (Loop back to Step 1)                 |
-|  +----------------+                                               |
-|                                                                   |
-+-------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    Observe["Step 1: OBSERVE<br/>Take Screenshot<br/>(base64 PNG)"] --> Reason["Step 2: REASON<br/>Analyze Screenshot<br/>+ Task Goal + History"]
+    Reason --> Act["Step 3: ACT<br/>Execute Action<br/>(click, type, scroll)"]
+    Act --> Wait["Wait + Take<br/>New Screenshot"]
+    Wait -->|"Loop back to Step 1"| Observe
 ```
 
 ### Available Tools
@@ -361,35 +258,16 @@ Claude Code is Anthropic's agentic coding tool that lives in the terminal. It re
 
 Claude Code is a TypeScript terminal agent that loops through three phases:
 
+```mermaid
+flowchart TD
+    Gather["1. GATHER CONTEXT<br/>Read files, grep codebase, glob search,<br/>check git status, analyze structure"]
+    Action["2. TAKE ACTION<br/>Edit files, run bash, write new files,<br/>create commits, spawn subagents"]
+    Verify["3. VERIFY RESULTS<br/>Run tests, check build, review diffs,<br/>validate output"]
+    Gather --> Action --> Verify
+    Verify -->|"Loop back to Step 1 if not done"| Gather
 ```
-+-------------------------------------------------------------------+
-|                   Claude Code Agent Loop                          |
-+-------------------------------------------------------------------+
-|                                                                   |
-|  +------------------+                                             |
-|  |  1. GATHER       |  Read files, grep codebase, glob search,   |
-|  |     CONTEXT      |  check git status, analyze structure        |
-|  +--------+---------+                                             |
-|           |                                                       |
-|           v                                                       |
-|  +--------+---------+                                             |
-|  |  2. TAKE         |  Edit files, run bash, write new files,     |
-|  |     ACTION       |  create commits, spawn subagents            |
-|  +--------+---------+                                             |
-|           |                                                       |
-|           v                                                       |
-|  +--------+---------+                                             |
-|  |  3. VERIFY       |  Run tests, check build, review diffs,     |
-|  |     RESULTS      |  validate output                            |
-|  +--------+---------+                                             |
-|           |                                                       |
-|           +--------> (Loop back to Step 1 if not done)            |
-|                                                                   |
-+-------------------------------------------------------------------+
 
-Built-in Tools: bash, read, write, edit, glob, grep, browser,
-                subagent, notebook, web_search, web_fetch
-```
+Built-in Tools: `bash`, `read`, `write`, `edit`, `glob`, `grep`, `browser`, `subagent`, `notebook`, `web_search`, `web_fetch`
 
 **Key architectural properties:**
 - One agent loop with a rich tool palette
@@ -427,26 +305,34 @@ Cline is a VS Code extension that operates as a full agent rather than an autoco
 
 ### IDE Agent Architecture Comparison
 
-```
-+-------------------------------------------------------------------+
-|                 IDE Agent Architecture Patterns                   |
-+-------------------------------------------------------------------+
-|                                                                   |
-|  Cursor:                                                          |
-|  [Editor] --> [Agent Mode] --> [Multi-file RL] --> [Apply Diffs]  |
-|                    |                                               |
-|                    +--> [Background Agent] --> [Cloud VM] --> [PR] |
-|                                                                   |
-|  Windsurf:                                                        |
-|  [Editor] --> [Cascade Agent] --> [RAG Codebase] --> [Apply Edits]|
-|                    |                                               |
-|                    +--> [SWE-1.5 Model] --> [Fast Context]        |
-|                                                                   |
-|  Cline:                                                           |
-|  [Editor] --> [Agent Loop] --> [Evaluate] --> [Self-Fix] --> [Act]|
-|                    |                                               |
-|                    +--> [Any LLM Provider] --> [Tool Calls]       |
-+-------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph Cursor["Cursor"]
+        direction LR
+        CUEditor["Editor"] --> CUAgent["Agent Mode"]
+        CUAgent --> CURL["Multi-file RL"]
+        CURL --> CUDiffs["Apply Diffs"]
+        CUAgent --> CUBg["Background Agent"]
+        CUBg --> CUVM["Cloud VM"]
+        CUVM --> CUPR["PR"]
+    end
+    subgraph Windsurf["Windsurf"]
+        direction LR
+        WSEditor["Editor"] --> WSCascade["Cascade Agent"]
+        WSCascade --> WSRag["RAG Codebase"]
+        WSRag --> WSEdits["Apply Edits"]
+        WSCascade --> WSModel["SWE-1.5 Model"]
+        WSModel --> WSContext["Fast Context"]
+    end
+    subgraph Cline["Cline"]
+        direction LR
+        CLEditor["Editor"] --> CLLoop["Agent Loop"]
+        CLLoop --> CLEval["Evaluate"]
+        CLEval --> CLFix["Self-Fix"]
+        CLFix --> CLAct["Act"]
+        CLLoop --> CLLLM["Any LLM Provider"]
+        CLLLM --> CLTools["Tool Calls"]
+    end
 ```
 
 ---

@@ -114,29 +114,19 @@ def sparse_search(query: str, top_k: int = 10) -> list[Result]:
 
 ### Architecture 1: Parallel Retrieval with Fusion
 
-```
-                    +------------------+
-                    |      Query       |
-                    +--------+---------+
-                             |
-              +--------------+--------------+
-              v                             v
-    +-------------------+         +-------------------+
-    |  Dense Retrieval  |         |  Sparse Retrieval |
-    |   (Vector DB)     |         |    (BM25/ES)      |
-    +---------+---------+         +---------+---------+
-              |                             |
-              +--------------+--------------+
-                             v
-                    +-------------------+
-                    |      Fusion       |
-                    |  (RRF, weighted)  |
-                    +---------+---------+
-                              |
-                              v
-                    +-------------------+
-                    |  Final Results    |
-                    +-------------------+
+```mermaid
+flowchart TD
+    Q["Query"]
+    D["Dense Retrieval<br/>(Vector DB)"]
+    S["Sparse Retrieval<br/>(BM25/ES)"]
+    F["Fusion<br/>(RRF, weighted)"]
+    R["Final Results"]
+
+    Q --> D
+    Q --> S
+    D --> F
+    S --> F
+    F --> R
 ```
 
 **Pros:** Clear separation, can use best-in-class for each (e.g., Pinecone + Algolia), tune independently
@@ -166,14 +156,16 @@ results = client.search(
 
 ### Architecture 3: Staged Retrieval
 
-```
-Query --> Sparse (fast, broad) --> Top 1000
-                    |
-                    v
-          Dense reranking --> Top 100
-                    |
-                    v
-           Cross-encoder --> Top 10
+```mermaid
+flowchart TD
+    Q["Query"]
+    S["Sparse (fast, broad)<br/>Top 1000"]
+    D["Dense reranking<br/>Top 100"]
+    C["Cross-encoder<br/>Top 10"]
+
+    Q --> S
+    S --> D
+    D --> C
 ```
 
 **Pros:** Efficient, each stage refines
@@ -486,15 +478,15 @@ def hybrid_search(query: str, final_k: int = 10):
 
 ### Latency Budget
 
-```
 Typical hybrid search latency breakdown:
 
-Dense embedding:           30-50ms
-Dense retrieval:          30-50ms
-Sparse retrieval:         20-40ms  (parallel with dense)
-Fusion:                    1-5ms
-Total:                   60-100ms
-```
+| Stage | Latency | Notes |
+|-------|---------|-------|
+| Dense embedding | 30-50ms | |
+| Dense retrieval | 30-50ms | |
+| Sparse retrieval | 20-40ms | Parallel with dense |
+| Fusion | 1-5ms | |
+| Total | 60-100ms | |
 
 **Optimizations:**
 - Run dense and sparse in parallel
