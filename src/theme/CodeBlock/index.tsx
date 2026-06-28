@@ -3,9 +3,11 @@ import CodeBlock from '@theme-original/CodeBlock';
 import type CodeBlockType from '@theme/CodeBlock';
 import type {WrapperProps} from '@docusaurus/types';
 import Mermaid from '@site/src/components/Mermaid';
+import ScatterPlot from '@site/src/components/ScatterPlot';
 
-// Swizzle wrapper: ```mermaid fenced blocks become a React <Mermaid> diagram;
-// every other code block falls through to the original CodeBlock untouched.
+// Swizzle wrapper: ```mermaid becomes a React <Mermaid> diagram, ```scatter
+// becomes a recharts <ScatterPlot> from JSON, and every other code block falls
+// through to the original CodeBlock untouched.
 
 type Props = WrapperProps<typeof CodeBlockType>;
 
@@ -22,21 +24,26 @@ function toText(node: unknown): string {
   return '';
 }
 
-function isMermaid(className?: string): boolean {
+function hasLang(className: string | undefined, lang: string): boolean {
   return (
     typeof className === 'string' &&
-    className.split(' ').includes('language-mermaid')
+    className.split(' ').includes('language-' + lang)
   );
 }
 
 export default function CodeBlockWrapper(props: Props): ReactNode {
   const {className} = props as {className?: string};
-  if (isMermaid(className)) {
-    const code = toText((props as {children?: unknown}).children).replace(
-      /\n$/,
-      '',
-    );
-    return <Mermaid code={code} />;
+  const children = (props as {children?: unknown}).children;
+
+  if (hasLang(className, 'mermaid')) {
+    return <Mermaid code={toText(children).replace(/\n$/, '')} />;
+  }
+  if (hasLang(className, 'scatter')) {
+    try {
+      return <ScatterPlot data={JSON.parse(toText(children))} />;
+    } catch {
+      return <CodeBlock {...props} />;
+    }
   }
   return <CodeBlock {...props} />;
 }

@@ -218,19 +218,17 @@ flowchart TD
 
 ### When ColBERT Wins
 
-```
-                  ▲ Accuracy
-                  │
-             0.45 ┤                     ● Cross-Encoder
-                  │                   ●
-             0.40 ┤              ● ColBERT
-                  │         ●
-             0.35 ┤    ● Bi-Encoder
-                  │ ●
-             0.30 ┤ BM25
-                  │
-                  └────┬────┬────┬────┬────┬──► Throughput (QPS)
-                      10   100  1K   10K  100K
+```scatter
+{
+  "xLabel": "Throughput (QPS, log)", "yLabel": "Accuracy", "xScale": "log", "yDomain": [0.25, 0.5],
+  "note": "Higher accuracy trades off against throughput.",
+  "points": [
+    {"x": 100000, "y": 0.30, "label": "BM25"},
+    {"x": 10000, "y": 0.35, "label": "Bi-Encoder"},
+    {"x": 1000, "y": 0.40, "label": "ColBERT"},
+    {"x": 100, "y": 0.45, "label": "Cross-Encoder"}
+  ]
+}
 ```
 
 **ColBERT occupies the sweet spot**: it is 3-5x more accurate than bi-encoders on domain-specific benchmarks (up to +13.8% mAP on specialized datasets) while being 10-50x faster than cross-encoders.

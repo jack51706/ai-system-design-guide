@@ -75,17 +75,16 @@ Traditional databases can store vectors but lack optimized search:
 
 ### Recall vs Latency Tradeoff
 
-```
-                    ^ Recall
-                    |
-               100% | ------------------ Brute force
-                    |         *          Well-tuned ANN
-                    |      *
-                    |   *
-                95% |*                   Fast ANN
-                    |
-                    +-----+-------+------> Latency
-                       1ms      10ms
+```scatter
+{
+  "xLabel": "Latency (ms, log)", "yLabel": "Recall (%)", "xScale": "log", "yDomain": [90, 101],
+  "note": "Approximate nearest neighbor trades recall for latency.",
+  "points": [
+    {"x": 1, "y": 95, "label": "Fast ANN"},
+    {"x": 5, "y": 99, "label": "Well-tuned ANN"},
+    {"x": 50, "y": 100, "label": "Brute force"}
+  ]
+}
 ```
 
 ANN indices trade some accuracy for speed. Tune for your requirements.

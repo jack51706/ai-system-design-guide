@@ -218,19 +218,17 @@ flowchart TD
 
 ### ColBERT 何時勝出
 
-```
-                  ▲ Accuracy
-                  │
-             0.45 ┤                     ● Cross-Encoder
-                  │                   ●
-             0.40 ┤              ● ColBERT
-                  │         ●
-             0.35 ┤    ● Bi-Encoder
-                  │ ●
-             0.30 ┤ BM25
-                  │
-                  └────┬────┬────┬────┬────┬──► Throughput (QPS)
-                      10   100  1K   10K  100K
+```scatter
+{
+  "xLabel": "吞吐量（QPS，對數）", "yLabel": "準確度", "xScale": "log", "yDomain": [0.25, 0.5],
+  "note": "準確度越高，吞吐量越低，兩者需權衡。",
+  "points": [
+    {"x": 100000, "y": 0.30, "label": "BM25"},
+    {"x": 10000, "y": 0.35, "label": "Bi-Encoder"},
+    {"x": 1000, "y": 0.40, "label": "ColBERT"},
+    {"x": 100, "y": 0.45, "label": "Cross-Encoder"}
+  ]
+}
 ```
 
 **ColBERT 佔據了甜蜜點**：在領域特定基準測試上，它比 bi-encoder 準確 3 至 5 倍（在專業資料集上 mAP 最高可提升 +13.8%），同時又比 cross-encoder 快 10 至 50 倍。

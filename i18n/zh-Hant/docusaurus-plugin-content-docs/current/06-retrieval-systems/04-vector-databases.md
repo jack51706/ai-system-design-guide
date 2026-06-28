@@ -75,17 +75,16 @@ Vector DB:           SELECT * FROM docs ORDER BY similarity(embedding, query_emb
 
 ### 召回率 vs 延遲的權衡
 
-```
-                    ^ Recall
-                    |
-               100% | ------------------ Brute force
-                    |         *          Well-tuned ANN
-                    |      *
-                    |   *
-                95% |*                   Fast ANN
-                    |
-                    +-----+-------+------> Latency
-                       1ms      10ms
+```scatter
+{
+  "xLabel": "延遲（ms，對數）", "yLabel": "召回率（%）", "xScale": "log", "yDomain": [90, 101],
+  "note": "近似最近鄰以召回率換取延遲。",
+  "points": [
+    {"x": 1, "y": 95, "label": "Fast ANN"},
+    {"x": 5, "y": 99, "label": "Well-tuned ANN"},
+    {"x": 50, "y": 100, "label": "Brute force"}
+  ]
+}
 ```
 
 ANN 索引以部分準確度換取速度。請依你的需求進行調校。
