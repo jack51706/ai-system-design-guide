@@ -229,21 +229,15 @@ The O(n²) complexity limits context length. A 100K context window means 10 bill
 
 Instead of single attention, modern transformers use multiple "heads" that attend to different aspects in parallel.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Multi-Head Attention                      │
-│                                                              │
-│   ┌─────────┐  ┌─────────┐  ┌─────────┐       ┌─────────┐   │
-│   │ Head 1  │  │ Head 2  │  │ Head 3  │  ...  │ Head h  │   │
-│   │ d_k=64  │  │ d_k=64  │  │ d_k=64  │       │ d_k=64  │   │
-│   └────┬────┘  └────┬────┘  └────┬────┘       └────┬────┘   │
-│        │            │            │                  │        │
-│        └────────────┴────────────┴──────────────────┘        │
-│                              │                               │
-│                         Concatenate                          │
-│                              │                               │
-│                         W_O (project)                        │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph MHA["Multi-Head Attention"]
+        H1["Head 1<br/>d_k=64"] --> CAT["Concatenate"]
+        H2["Head 2<br/>d_k=64"] --> CAT
+        H3["Head 3<br/>d_k=64"] --> CAT
+        HH["Head h<br/>d_k=64"] --> CAT
+        CAT --> WO["W_O (project)"]
+    end
 ```
 
 **Why multiple heads?**
