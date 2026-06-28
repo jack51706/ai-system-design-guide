@@ -52,8 +52,7 @@
 
 ---
 
-<a name="chapter-1"></a>
-## Chapter 1: What Are AI Evals and Why You Need Them
+## Chapter 1: What Are AI Evals and Why You Need Them {#chapter-1}
 
 ### Simple Definition
 
@@ -235,8 +234,7 @@ The one genuinely new muscle is reasoning about *distributions* instead of singl
 
 ---
 
-<a name="chapter-2"></a>
-## Chapter 2: Setting Up Observability
+## Chapter 2: Setting Up Observability {#chapter-2}
 
 ### What is a Trace?
 
@@ -753,8 +751,7 @@ Net: pick the deployment model from your data and volume constraints, pick the e
 
 ---
 
-<a name="chapter-3"></a>
-## Chapter 3: Error Analysis: The Secret Sauce
+## Chapter 3: Error Analysis: The Secret Sauce {#chapter-3}
 
 ### What is Error Analysis?
 
@@ -1376,8 +1373,7 @@ Knowing the failure modes of the *method itself* is as valuable as knowing the s
 
 ---
 
-<a name="chapter-4"></a>
-## Chapter 4: Building LLM-as-a-Judge Evaluators
+## Chapter 4: Building LLM-as-a-Judge Evaluators {#chapter-4}
 
 ### What is LLM-as-a-Judge?
 
@@ -1999,8 +1995,7 @@ The structure is always the same: define the criterion, write PASS/FAIL definiti
 
 ---
 
-<a name="chapter-5"></a>
-## Chapter 5: Code-Based Evaluators
+## Chapter 5: Code-Based Evaluators {#chapter-5}
 
 ### What Are Code-Based Evals?
 
@@ -2650,8 +2645,7 @@ These tests run in milliseconds with no API calls, so there is no excuse not to 
 
 ---
 
-<a name="chapter-6"></a>
-## Chapter 6: RAG System Evaluation
+## Chapter 6: RAG System Evaluation {#chapter-6}
 
 ### What is RAG?
 
@@ -3119,8 +3113,7 @@ Offline scores on a synthetic set are a proxy. Two checks keep you honest: (1) s
 
 ---
 
-<a name="chapter-7"></a>
-## Chapter 7: Multi-Step Pipeline Evaluation
+## Chapter 7: Multi-Step Pipeline Evaluation {#chapter-7}
 
 ### What is a Multi-Step Pipeline?
 
@@ -3674,8 +3667,7 @@ The single most valuable habit for a non-coding PM or QA here is to **always ask
 
 ---
 
-<a name="chapter-8"></a>
-## Chapter 8: Multi-Turn Conversation Evaluation
+## Chapter 8: Multi-Turn Conversation Evaluation {#chapter-8}
 
 ### Why Multi-Turn Is Different
 
@@ -3894,8 +3886,7 @@ A team that nails single-turn quality and adds whole-conversation TCR is already
 
 ---
 
-<a name="chapter-9"></a>
-## Chapter 9: Production Evals: Safety, Guardrails & Monitoring
+## Chapter 9: Production Evals: Safety, Guardrails & Monitoring {#chapter-9}
 
 Offline evals (Chapters 3-8) tell you whether your system *was* good on a fixed set last week. Production safety is a different job: it has to decide, in the 200ms before a token reaches a user, whether *this* response is allowed to ship, and it has to keep deciding that for traffic you have never seen. This chapter is about the part of the eval stack that runs on the live request path, the adversarial suites that pressure-test it, and the dashboards and incident loop that catch the failures your offline set missed.
 
@@ -4334,8 +4325,7 @@ Two questions a PM should be able to answer about any shipped AI feature: "what 
 
 ---
 
-<a name="chapter-10"></a>
-## Chapter 10: Statistical Correction with judgy
+## Chapter 10: Statistical Correction with judgy {#chapter-10}
 
 ### The Problem: Your Judge Isn't Perfect
 
@@ -4583,8 +4573,7 @@ This is much more credible than "we tested it and it seems to work."
 
 ---
 
-<a name="chapter-11"></a>
-## Chapter 11: Closing the Loop: From Evals to Improvements
+## Chapter 11: Closing the Loop: From Evals to Improvements {#chapter-11}
 
 ### The Most Common Failure: Measuring Without Acting
 
@@ -4871,8 +4860,7 @@ Regressions detected: [None / List]
 
 ---
 
-<a name="chapter-12"></a>
-## Chapter 12: Human Annotation Best Practices
+## Chapter 12: Human Annotation Best Practices {#chapter-12}
 
 Human labels are the bedrock under every other eval method in this book. Your LLM judge (Chapter 11) is only as good as the human-labeled set you calibrated it against; your offline metrics are only as trustworthy as the ground truth behind them. Yet human annotation is also the most expensive, slowest, and most error-prone signal you have. This chapter is about getting the most truth per dollar: when to spend human attention versus an LLM call, who should annotate, how to write guidelines that two people read the same way, how to measure whether they actually did, and where to point your limited labeling budget. The recurring theme: a small set of careful labels, owned by someone with taste, beats a large set of cheap ones almost every time.
 
@@ -5118,8 +5106,7 @@ So the principal annotator (the benevolent dictator from earlier) should usually
 
 ---
 
-<a name="chapter-13"></a>
-## Chapter 13: Cost, Latency & Scaling Evals
+## Chapter 13: Cost, Latency & Scaling Evals {#chapter-13}
 
 Evaluation is not free. Once you move from "I ran 50 evals by hand" to "I score every production trace with an LLM judge," eval becomes a line item that shows up on your inference bill, and a tax on every user request if any of it runs inline. This chapter is about keeping both under control without going blind. The short version: most teams over-spend on eval by running their most expensive judge on 100% of traffic when a tiered, sampled, cached pipeline would give them the same signal for 5-20% of the cost.
 
@@ -5135,8 +5122,7 @@ Evaluation is not free. Once you move from "I ran 50 evals by hand" to "I score 
 
 ---
 
-<a name="the-cost-problem"></a>
-### The Cost Problem
+### The Cost Problem {#the-cost-problem}
 
 Running GPT-4o as a judge on 10,000 traces is expensive. Here's how to manage costs:
 
@@ -5180,8 +5166,7 @@ That spread is the whole chapter in one table: same coverage, **a 36x cost diffe
 - **Re-running the whole eval suite on every prompt change** during development. A 5,000-row golden set re-scored 30 times in a week is 150k evals nobody put on the spreadsheet.
 - **Human review time** is the most expensive judge of all. A labeler at $25/hr doing 40 traces/hr costs **$0.62/trace**, ~30x an Opus call and ~1,000x a Flash call. Reserve humans for calibration sets and disagreements, never for routine coverage.
 
-<a name="strategy-1-cheaper-judges"></a>
-### Strategy 1: Use Cheaper Models for Judges
+### Strategy 1: Use Cheaper Models for Judges {#strategy-1-cheaper-judges}
 
 Not every eval needs the best model:
 
@@ -5245,8 +5230,7 @@ judge_report("flash", flash_labels, human_labels)
 - **Re-validate after any prompt or model upgrade.** When you move the *system under test* from GPT-5.5 to GPT-5.6, its failure modes shift, and a judge tuned on the old failures can silently drift. Re-run the head-to-head quarterly or after major changes.
 - **Self-preference bias:** a judge tends to score outputs from its own family higher. If you generate with GPT-5.6, prefer a non-OpenAI judge (Gemini 3.1 or Claude) for unbiased grading, or at least be aware of the lean.
 
-<a name="strategy-2-sampling"></a>
-### Strategy 2: Sample Instead of Exhaustive
+### Strategy 2: Sample Instead of Exhaustive {#strategy-2-sampling}
 
 You don't need to eval every trace:
 
@@ -5326,8 +5310,7 @@ Sampling estimates a *rate*. It does **not** protect any *individual* user, beca
 
 The reconciling principle: **use 100% coverage for guardrails (per-trace protection) and sampling for quality metrics (population trends).** They are different jobs. Code-based and embedding checks are cheap enough to run on 100% regardless, so "full coverage" usually means tiers 1-2; reserve sampling for the expensive LLM tier (Strategy 3).
 
-<a name="strategy-3-tiered"></a>
-### Strategy 3: Tiered Evaluation
+### Strategy 3: Tiered Evaluation {#strategy-3-tiered}
 
 Run cheap evals on everything, expensive evals on a sample:
 
@@ -5383,8 +5366,7 @@ t4_results  = run_llm_eval(to_escalate, model="claude-opus-4-8")
 - **Calibrate the confidence threshold.** A cheap LLM's self-reported confidence is not well calibrated out of the box. Tune the escalation threshold against your gold set: pick the cutoff where escalating fewer cases would start missing T4-confirmed failures. Often this lands at "escalate the middle 15-25%."
 - **Order tiers by cost-per-unit ascending and reject-rate descending.** Put the cheapest, highest-yield filter first. Schema validation that rejects 10% for $0 should always precede a classifier that rejects 5% for $45.
 
-<a name="strategy-4-caching"></a>
-### Strategy 4: Cache Duplicate Evaluations
+### Strategy 4: Cache Duplicate Evaluations {#strategy-4-caching}
 
 If the same input appears multiple times, cache the eval result:
 
@@ -5441,8 +5423,7 @@ def cache_key(trace, judge_model):
 
 Rule of thumb: cache freely for deterministic code checks and for prompt prefixes; cache LLM verdicts only with a versioned key and a TTL; never long-cache a safety verdict.
 
-<a name="latency-guardrails"></a>
-### Latency Considerations for Real-Time Guardrails
+### Latency Considerations for Real-Time Guardrails {#latency-guardrails}
 
 | Check Type | Typical Latency | Suitable for Real-Time? |
 |---|---|---|
@@ -5501,8 +5482,7 @@ If you stream tokens to the user (almost everyone does now), output guardrails g
 
 For most assistants: input guardrail blocking (cheap, pre-generation), output guardrail as buffered-chunk or optimistic-retract, and the heavyweight frontier judge running fully async for the dashboard. Never let the async grading tier touch the user's latency path.
 
-<a name="summary-decision-table"></a>
-### Summary Decision Table
+### Summary Decision Table {#summary-decision-table}
 
 Putting the strategies together, here is how to decide *coverage* and *placement* per eval type. "Online" = inline in the request path (latency-budgeted); "Offline" = async/batch (cost-budgeted, no latency limit).
 
@@ -5521,8 +5501,7 @@ The meta-rule: **guardrails get full coverage and a latency budget (online); qua
 
 ---
 
-<a name="chapter-14"></a>
-## Chapter 14: Practical Implementation Guide
+## Chapter 14: Practical Implementation Guide {#chapter-14}
 
 Everything in this book is theory until a team runs it on a calendar. This chapter turns the two-week plan into something you can paste into a sprint board: checkbox deliverables, a definition-of-done per milestone, who owns what, and the failure modes that stall most teams. The opinion baked into the schedule: **build in dependency order, not difficulty order.** You cannot do error analysis without traces, calibrate a judge without labeled traces, or wire a CI gate without a calibrated judge. Skip a step and the next one collapses.
 
@@ -5539,8 +5518,7 @@ Everything in this book is theory until a team runs it on a calendar. This chapt
 
 ---
 
-<a name="setup-order"></a>
-### The Setup Order (Do Not Reorder)
+### The Setup Order (Do Not Reorder) {#setup-order}
 
 There is exactly one correct sequence for the first month, `tracing -> error analysis -> first evaluator -> CI gate -> monitoring`. Each stage produces the input the next stage consumes:
 
@@ -5554,8 +5532,7 @@ There is exactly one correct sequence for the first month, `tracing -> error ana
 
 The temptation is always to jump to stage 3 or 5 (writing clever judges, building dashboards) because they feel like "the eval work." Resist it. A dashboard with no calibrated metric is decoration, and a judge built without error analysis measures what you imagined, not what users hit.
 
-<a name="team-roles"></a>
-### Team Roles: Who Owns What
+### Team Roles: Who Owns What {#team-roles}
 
 Evals fail when "everyone" owns them, which means no one does. Assign each surface to a single accountable owner. A team of one wears all three hats, but the responsibilities do not disappear.
 
@@ -5567,8 +5544,7 @@ Evals fail when "everyone" owns them, which means no one does. Assign each surfa
 
 The handoff that matters most: **the PM defines the criteria, but QA proves the evaluator actually matches human judgment before eng wires it into the gate.** A judge enters CI only after QA signs off on >0.8 agreement. That single rule prevents the most common death spiral, an uncalibrated judge blocking good PRs until the team rips the gate out and never trusts evals again.
 
-<a name="starter-stack"></a>
-### Minimal Starter Stack
+### Minimal Starter Stack {#starter-stack}
 
 Do not evaluate ten platforms in week one. Pick one tracer, one notebook, one judge model, and start. You can migrate later; the traces and labels are portable, the indecision is not.
 
@@ -5582,8 +5558,7 @@ Do not evaluate ten platforms in week one. Pick one tracer, one notebook, one ju
 
 The whole stack should cost under an hour to stand up and (for development volumes) under $50/month to run. If your starter stack needs a procurement cycle, it is not a starter stack.
 
-<a name="week-1"></a>
-### Week 1: Foundation
+### Week 1: Foundation {#week-1}
 
 #### Day 1-2: Set Up Logging (4 hours)
 
@@ -5708,8 +5683,7 @@ def eval_no_markdown_sms(trace):
 
 **Definition of done:** You can run both evals on a fresh batch of traces and get a number you would defend in a meeting. For the judge specifically: QA has signed off that on held-out data it agrees with human labels >0.8 of the time. Below that, it is not ready for CI (it will block good PRs and pass bad ones), so keep iterating the rubric or fall back to the code eval only.
 
-<a name="week-2"></a>
-### Week 2: Automation and Monitoring
+### Week 2: Automation and Monitoring {#week-2}
 
 Week 1 proved the metrics are trustworthy. Week 2 makes them run without you: a one-command suite, a CI gate that defends against regressions, then alerting and a dashboard so production drift gets noticed. Order matters here too: automate the run before you gate on it, and gate before you build the dashboard.
 
@@ -5889,8 +5863,7 @@ Keep the dashboard boring and decision-oriented: failure rate per eval over time
 
 > **Week 2 done means the loop is closed:** evals run with one command, CI blocks regressions, alerts catch silent drift, and the dashboard makes trends visible. From here, the work is maintenance, not construction.
 
-<a name="ongoing"></a>
-### Ongoing Cadence
+### Ongoing Cadence {#ongoing}
 
 Once the loop exists, keeping it healthy is cheap, but it is not zero. Put these on a recurring calendar with a named owner, or they will quietly lapse and your gate will slowly drift out of alignment with reality.
 
@@ -5913,8 +5886,7 @@ Once the loop exists, keeping it healthy is cheap, but it is not zero. Put these
 
 **Quarterly (owner: QA):** audit coverage. List your top failure modes from the last quarter's error analysis and confirm each has an eval. Coverage gaps (a real, frequent failure with no evaluator) are the silent killer; the gate is green because nothing measures the thing that is breaking.
 
-<a name="stalls"></a>
-### Common Stalls and How to Get Unstuck
+### Common Stalls and How to Get Unstuck {#stalls}
 
 Almost every team hits one of these in the first month. The fix is usually to do *less*, not more.
 
@@ -5930,8 +5902,7 @@ This is error-analysis FOMO, and it produces a sprawling suite that is slow and 
 **"The eval suite is too slow."**
 Slow suites get skipped, which defeats the point. Fixes in order of leverage: (1) Split the suite, run only fast code evals on every PR (seconds), run the LLM-judged suite on a small fixed golden set, and run the full large-sample suite nightly. (2) Shrink the CI golden set to 100-300 well-chosen rows; you do not need 5,000 to catch a regression. (3) Parallelize judge calls (async/batched). (4) Use a cheaper, faster judge for the gate (Flash-class) and reserve the frontier model for offline deep dives. (5) Cache by input hash so unchanged rows are not re-judged. If CI eval takes longer than your test suite, people will route around it.
 
-<a name="first-30-days"></a>
-### The First 30 Days: Definition of Success
+### The First 30 Days: Definition of Success {#first-30-days}
 
 Do not measure month one by how sophisticated your eval platform is. Measure it by whether the loop is real and trusted. Concretely, by day 30 you should be able to check every box:
 
@@ -5954,8 +5925,7 @@ Hit those six boxes and you have what most teams shipping LLM features still lac
 
 ---
 
-<a name="chapter-15"></a>
-## Chapter 15: Common Mistakes to Avoid
+## Chapter 15: Common Mistakes to Avoid {#chapter-15}
 
 These are the twelve mistakes that show up in almost every eval post-mortem. None of them are exotic. Each one is the result of a reasonable-sounding shortcut that quietly destroys the trustworthiness of your evals. Treat this chapter as a checklist: for each item, a story of how it shows up, why smart people keep doing it, what it costs, and how to catch it before it costs you.
 
@@ -6131,8 +6101,7 @@ These twelve share one root cause: optimizing for the appearance of rigor (a gre
 
 ---
 
-<a name="chapter-16"></a>
-## Chapter 16: Tools and Resources
+## Chapter 16: Tools and Resources {#chapter-16}
 
 This chapter is a curated buyer's guide, not a catalog. For every tool below you get three things: when to reach for it, the niche where it actually wins, and one honest tradeoff. The landscape churns fast (these notes are current as of June 2026), so treat the decision logic as the durable part and re-check specific feature claims before you commit.
 
@@ -6255,8 +6224,7 @@ That is one platform, two or three libraries, and zero custom infrastructure. Ad
 
 ---
 
-<a name="appendix-a"></a>
-## Appendix A: Glossary for PMs & QAs
+## Appendix A: Glossary for PMs & QAs {#appendix-a}
 
 A plain-language glossary of the technical terms used throughout this guide. Share this with non-technical stakeholders.
 
@@ -6327,8 +6295,7 @@ A plain-language glossary of the technical terms used throughout this guide. Sha
 
 ---
 
-<a name="appendix-b"></a>
-## Appendix B: Quick Reference
+## Appendix B: Quick Reference {#appendix-b}
 
 ### When to Use What Type of Eval
 
@@ -6411,8 +6378,7 @@ client = OpenAI()
 
 ---
 
-<a name="appendix-c"></a>
-## Appendix C: Complete Judge Prompts from Production
+## Appendix C: Complete Judge Prompts from Production {#appendix-c}
 
 This is a production-quality judge prompt that achieved TPR=95.7% and TNR=100%:
 
@@ -6474,8 +6440,7 @@ RETURN YOUR EVALUATION IN JSON FORMAT:
 
 ---
 
-<a name="appendix-d"></a>
-## Appendix D: Pipeline State Evaluator Prompts
+## Appendix D: Pipeline State Evaluator Prompts {#appendix-d}
 
 Complete evaluator prompts for each pipeline state. Each follows the same structure:
 
@@ -6507,8 +6472,7 @@ Full evaluator prompts for each state follow the structure above, tailored to th
 
 ---
 
-<a name="appendix-e"></a>
-## Appendix E: Judge Prompt Engineering Tips
+## Appendix E: Judge Prompt Engineering Tips {#appendix-e}
 
 A collection of techniques that consistently improve LLM judge accuracy. Use this as a checklist when building or debugging a judge.
 
@@ -6665,8 +6629,7 @@ langfuse.create_prompt(
 
 ---
 
-<a name="appendix-f"></a>
-## Appendix F: Platform Methods Reference (Phoenix, LangWatch & Langfuse)
+## Appendix F: Platform Methods Reference (Phoenix, LangWatch & Langfuse) {#appendix-f}
 
 ### Phoenix
 
@@ -6999,8 +6962,7 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 
 ---
 
-<a name="appendix-g"></a>
-## Appendix G: 30-Day Learning Path
+## Appendix G: 30-Day Learning Path {#appendix-g}
 
 ### Week 1: Foundations (Engineer, PM, or QA)
 
