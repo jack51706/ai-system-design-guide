@@ -207,9 +207,8 @@ flowchart TD
 **Month 1: Error Analysis Foundation**
 - Set up Langfuse or Phoenix tracing on any LLM application (your own or open source)
 - Do 3 rounds of manual error analysis: review 50 traces, write notes, categorize
-- Read the repo's evals companion guides:
-  - [AI Evals: Comprehensive Study Guide](ai_evals_comprehensive_study_guide.md)
-  - [AI Evals: LangWatch + Langfuse Guide](ai_evals_complete_guide_langwatch_langfuse.md)
+- Read the repo's evals companion guide:
+  - [AI Evals: Comprehensive Study Guide (Phoenix, LangWatch & Langfuse)](ai_evals_comprehensive_study_guide.md)
 - Course chapter to read: *Error Analysis: The Secret Sauce* (inside evals guides, Chapter 3)
 
 **Month 2: Build Evaluators**
@@ -478,8 +477,7 @@ Use this when you're ready to go deep:
 | RAGAS, LangSmith, evals | [14-evaluation-and-observability](14-evaluation-and-observability/) | QA / PM / all roles |
 | Design patterns | [15-ai-design-patterns](15-ai-design-patterns/) | Senior level preparation |
 | Case studies | [16-case-studies](16-case-studies/) | Interview prep, reference designs |
-| Evals deep dive | [AI Evals Comprehensive Guide](ai_evals_comprehensive_study_guide.md) | QA / PM path |
-| AI Evals (LangWatch) | [AI Evals LangWatch Guide](ai_evals_complete_guide_langwatch_langfuse.md) | QA / Eval Eng path |
+| Evals deep dive | [AI Evals Comprehensive Guide (Phoenix, LangWatch & Langfuse)](ai_evals_comprehensive_study_guide.md) | QA / PM / Eval Eng path |
 | Interview prep | [00-interview-prep](00-interview-prep/) | All roles |
 | Courses | [COURSES.md](COURSES.md) | All roles |
 

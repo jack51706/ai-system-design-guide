@@ -1,6 +1,6 @@
 # AI Evals For Engineers, PMs & QAs: Complete Study Guide
 
-*Based on the Maven course by Hamel Husain & Shreya Shankar, enriched with hands-on examples, production-ready code, and platform-specific guides for Phoenix, Langfuse, and more*
+*Based on the Maven course by Hamel Husain & Shreya Shankar, enriched with hands-on examples, production-ready code, and platform-specific guides for Phoenix, LangWatch, and Langfuse*
 
 **Who is this guide for?**
 - **Engineers** building AI-powered products who need to systematically evaluate quality
@@ -16,9 +16,9 @@
 - How to run production evals: guardrails, safety, and real-time monitoring
 - How to use statistical correction to account for judge errors
 - How to close the loop: turn eval results into system improvements
-- How to do all of this with your observability platform of choice (Phoenix, Langfuse, Braintrust, LangSmith, or your own)
+- How to do all of this with your observability platform of choice (Phoenix, LangWatch, Langfuse, Braintrust, LangSmith, or your own)
 
-**Platform Examples:** This guide uses **Arize Phoenix** (open-source, self-hosted) and **Langfuse** (open-source, cloud or self-hosted) as primary examples. The methodology is platform-agnostic — adapt it to whichever tool you use.
+**Platform Examples:** This guide uses three open-source platforms as primary examples: **Arize Phoenix** (self-hosted), **LangWatch** (cloud or self-hosted), and **Langfuse** (cloud or self-hosted). The methodology is platform-agnostic, so adapt it to whichever tool you use. Where code differs by platform, this guide shows the Phoenix, LangWatch, and Langfuse variants side by side so you can pick one without reading three guides.
 
 ---
 
@@ -47,7 +47,7 @@
 - [C: Complete Judge Prompts from Production](#appendix-c)
 - [D: Pipeline State Evaluator Prompts](#appendix-d)
 - [E: Judge Prompt Engineering Tips](#appendix-e)
-- [F: Platform Methods Reference (Phoenix & Langfuse)](#appendix-f)
+- [F: Platform Methods Reference (Phoenix, LangWatch & Langfuse)](#appendix-f)
 - [G: 30-Day Learning Path](#appendix-g)
 
 ---
@@ -205,17 +205,23 @@ ASSISTANT RESPONSE:
 
 | Tool | Type | Best For | Cost |
 |------|------|----------|------|
-| **Arize Phoenix** | Open source, self-hosted | Full-featured, single Docker container | Free |
-| **Langfuse** | Open source, cloud or self-hosted | Polished UI, strong community | Free tier + paid |
+| **Arize Phoenix** | Open source, self-hosted | Single Docker container, full eval suite built-in | Free |
+| **LangWatch** | Open source, cloud or self-hosted | Simple setup, 40+ built-in evaluators, great analytics | Free tier + paid |
+| **Langfuse** | Open source, cloud or self-hosted | Custom pipelines, large community | Free tier + paid |
 | **Braintrust** | Cloud | Excellent UI, team collaboration | Paid |
 | **LangSmith** | Cloud | LangChain users | Paid |
 | **Build Your Own** | Custom | Learning, custom needs | Free |
 
 All of these support the same core concepts: traces, spans, datasets, evaluations, and experiments. The methodology in this guide works with any of them.
 
+**How the three open-source examples differ:**
+- **Phoenix:** self-hosted only, runs in a single Docker container, OpenTelemetry-native, completely free.
+- **LangWatch:** cloud or self-hosted, the fastest setup (a 3-line integration) and ships 40+ built-in evaluators.
+- **Langfuse:** cloud or self-hosted, the most flexible for custom pipelines, with the largest community and more integrations.
+
 ### Setting Up Phoenix (Open-Source, Self-Hosted)
 
-Phoenix is an open-source AI observability platform built on OpenTelemetry. It provides tracing, evaluation, datasets, experiments, and prompt management — all for free.
+Phoenix is an open-source AI observability platform built on OpenTelemetry. It provides tracing, evaluation, datasets, experiments, and prompt management, all for free.
 
 #### Install and Start
 
@@ -274,6 +280,83 @@ def execute_query(sql):
     return db.execute(sql)
 ```
 
+### Setting Up LangWatch (Open-Source, Cloud or Self-Hosted)
+
+LangWatch is an open-source LLM observability and analytics platform. It provides tracing, evaluation, datasets, experiments, and 40+ built-in evaluators.
+
+#### Install and Configure
+
+```bash
+pip install langwatch
+```
+
+```python
+# Set your API key (get one at langwatch.ai or self-host)
+import os
+os.environ["LANGWATCH_API_KEY"] = "lw_..."  # or set in .env file
+```
+
+**Cloud vs Self-Hosted:**
+- **Cloud:** Sign up at [langwatch.ai](https://langwatch.ai), get API key, done in 5 minutes
+- **Self-Hosted:** Run `docker-compose up` with their Docker setup, point to your own instance
+
+#### Instrument Your Application (Auto-Tracing)
+
+LangWatch supports auto-instrumentation for most frameworks:
+
+```python
+import langwatch
+
+# Initialize LangWatch
+langwatch.init()
+
+# Your existing OpenAI code now gets traced automatically!
+import openai
+client = openai.OpenAI()
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a recipe assistant."},
+        {"role": "user", "content": "How do I make pancakes?"}
+    ],
+    temperature=0.7
+)
+# This call is automatically captured by LangWatch!
+```
+
+**Framework Support:**
+- OpenAI (automatic)
+- LangChain (automatic)
+- LlamaIndex (automatic)
+- Anthropic Claude (automatic)
+- Any custom LLM (manual spans)
+
+#### Add Custom Spans with Decorators
+
+```python
+import langwatch
+
+@langwatch.span(type="chain")
+def my_pipeline(question):
+    """Parent span for the whole pipeline"""
+    sql = generate_sql(question)
+    results = execute_query(sql)
+    return synthesize_answer(question, results)
+
+@langwatch.span(type="llm")
+def generate_sql(question):
+    """Tracked as an LLM generation"""
+    return client.chat.completions.create(...)
+
+@langwatch.span(type="tool")
+def execute_query(sql):
+    """Tracked as a tool call"""
+    return db.execute(sql)
+```
+
+LangWatch automatically categorizes spans by the `type` you pass, so you do not need a separate generation/tool annotation step.
+
 ### Setting Up Langfuse (Open-Source, Cloud or Self-Hosted)
 
 Langfuse provides tracing, evaluation, datasets, experiments, and prompt management. It offers a managed cloud and a self-hosted option.
@@ -294,7 +377,7 @@ pip install langfuse openai
 #### Instrument Your Application (Drop-In Replacement)
 
 ```python
-# Just change your import — everything else stays the same!
+# Just change your import, everything else stays the same!
 from langfuse.openai import OpenAI
 
 client = OpenAI()
@@ -330,7 +413,7 @@ def generate_sql(question):
 
 ### Creating and Managing Prompts
 
-Both platforms support versioned prompt management:
+All three platforms support versioned prompt management:
 
 #### Phoenix
 
@@ -349,6 +432,30 @@ prompt = await px_client.prompts.create(
     ),
 )
 ```
+
+#### LangWatch
+
+```python
+import langwatch
+
+# Create a prompt template
+langwatch.prompts.create(
+    name="recipe-assistant-v1",
+    template=[
+        {"role": "system", "content": "You are a recipe assistant..."},
+        {"role": "user", "content": "{{question}}"}
+    ],
+    model="gpt-4o-mini",
+    temperature=0.7
+)
+
+# Use at runtime
+prompt = langwatch.prompts.get("recipe-assistant-v1")
+messages = prompt.render(question="How do I make pancakes?")
+response = client.chat.completions.create(messages=messages, **prompt.settings)
+```
+
+LangWatch stores model and temperature alongside the prompt, so the runtime settings travel with the template.
 
 #### Langfuse
 
@@ -371,6 +478,8 @@ langfuse.create_prompt(
 prompt = langfuse.get_prompt("recipe-assistant", type="chat")
 compiled = prompt.compile(query="How do I make pancakes?")
 ```
+
+Langfuse offers the most mature versioning UI and uses labels (for example `production`) to organize prompt versions.
 
 ### Uploading Test Datasets
 
@@ -397,6 +506,28 @@ dataset = await px_client.datasets.create_dataset(
 )
 ```
 
+#### LangWatch
+
+```python
+import langwatch
+import pandas as pd
+
+df = pd.DataFrame({
+    "query": [
+        "Suggest a quick vegan breakfast recipe",
+        "I have chicken and rice. What can I cook?",
+        "Give me a dessert recipe with chocolate",
+    ]
+})
+
+dataset = langwatch.datasets.create(
+    name="recipe-queries",
+    dataframe=df,
+)
+```
+
+LangWatch takes a pandas DataFrame directly, which is the quickest path when your data already lives in a DataFrame.
+
 #### Langfuse
 
 ```python
@@ -415,11 +546,18 @@ for query in ["Suggest a quick vegan breakfast recipe",
     )
 ```
 
+Langfuse adds items one at a time, which is convenient for incremental additions.
+
 ### Key Principle
 
 **Without traces, you can't do evals.** This is your foundation. Set this up first before anything else.
 
-**For PMs/QAs:** You don't need to write the instrumentation code. Ask your engineers to set up tracing, then use the web UI to review traces visually. Both Phoenix (`localhost:6006`) and Langfuse (`cloud.langfuse.com` or your self-hosted URL) provide UIs that let you browse, search, and annotate traces without writing any code.
+**For PMs/QAs:** You don't need to write the instrumentation code. Ask your engineers to set up tracing, then use the web UI to review traces visually. All three platforms provide UIs that let you browse, search, and annotate traces without writing any code: Phoenix (`localhost:6006`), LangWatch (`langwatch.ai` or your self-hosted URL), and Langfuse (`cloud.langfuse.com` or your self-hosted URL).
+
+**Platform Choice Guidance:**
+- Choose **Phoenix** if you want a fully self-hosted, single-container setup that is free and OpenTelemetry-native
+- Choose **LangWatch** if you want the fastest setup, built-in evaluators, and zero-config analytics
+- Choose **Langfuse** if you need maximum flexibility, have complex custom workflows, or want the largest community
 
 ---
 
@@ -501,7 +639,7 @@ for i in range(25):  # Generate 25 diverse tuples
 
 #### Convert Tuples to Natural Language Queries Using an LLM
 
-You can use any LLM to convert dimension tuples into realistic queries. Here's a platform-agnostic approach, plus a Phoenix-specific batch approach:
+You can use any LLM to convert dimension tuples into realistic queries. Here's a platform-agnostic approach, plus platform-specific variants for Phoenix, LangWatch, and Langfuse:
 
 **With any LLM (platform-agnostic):**
 
@@ -547,6 +685,47 @@ queries_result = llm_generate(
 )
 ```
 
+**With LangWatch (built-in generation):**
+
+```python
+import langwatch
+
+QUERY_GEN_PROMPT = """Convert this dimension tuple into a realistic user query
+for a Recipe Bot. Be creative and vary your style.
+
+Dimension tuple: {tuple_description}
+
+Generate 1 unique, realistic query:"""
+
+queries = []
+for t in dimension_tuples:
+    result = langwatch.completion(
+        prompt=QUERY_GEN_PROMPT.format(tuple_description=str(t)),
+        model="gpt-4o-mini",
+        temperature=0.9
+    )
+    queries.append(result.text)
+```
+
+**With Langfuse (auto-traced generation):**
+
+```python
+from langfuse.openai import OpenAI
+
+client = OpenAI()  # Auto-traced
+
+queries = []
+for t in dimension_tuples:
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": QUERY_GEN_PROMPT.format(
+            tuple_description=str(t)
+        )}],
+        temperature=0.9
+    )
+    queries.append(response.choices[0].message.content)
+```
+
 **Example conversions:**
 
 | Dimension Tuple | Generated Query |
@@ -561,7 +740,7 @@ queries_result = llm_generate(
 
 **The process (30 seconds per trace):**
 
-1. Open your trace viewer (Phoenix UI, Langfuse dashboard, or any tool)
+1. Open your trace viewer (Phoenix UI, LangWatch dashboard, Langfuse dashboard, or any tool)
 2. Look at the first trace
 3. Scan through it:
    - Read the user message
@@ -602,6 +781,11 @@ Policy violation."
 - After 10 traces: 25 seconds each
 - After 50 traces: 20 seconds each
 - **Total time for 100 traces: ~45 minutes**
+
+**Platform-Specific Note:**
+- **Phoenix:** Add notes directly to traces via span annotations in the UI
+- **LangWatch:** Use the "Annotations" feature to add notes directly to traces in the UI
+- **Langfuse:** Use the "Comments" feature to add notes to traces
 
 ### Step 3: Categorize Errors Using Axial Coding
 
@@ -740,7 +924,7 @@ You don't need to review 1000 traces if you're not finding new patterns after 10
 
 ### For PMs/QAs: Your Error Analysis Checklist
 
-1. Ask engineering to set up tracing (Phoenix, Langfuse, or any tool)
+1. Ask engineering to set up tracing (Phoenix, LangWatch, Langfuse, or any tool)
 2. Open the trace viewer UI
 3. Browse 100 traces, taking quick notes on problems
 4. Use an LLM to help categorize your notes into 4-6 failure modes
@@ -816,7 +1000,7 @@ DIETARY RESTRICTION DEFINITIONS:
 - Vegetarian: No meat or fish, but dairy and eggs are allowed
 - Gluten-free: No wheat, barley, rye, or other gluten-containing grains
 - Keto: Very low carb (<20g net carbs), high fat, moderate protein
-[... full definitions — see Appendix C for the full list ...]
+[... full definitions, see Appendix C for the full list ...]
 
 EVALUATION CRITERIA:
 - PASS: Recipe clearly adheres to the dietary preferences
@@ -828,6 +1012,54 @@ Response: {response}
 
 Return JSON: {"label": "PASS" or "FAIL", "explanation": "..."}
 ```
+
+**Platform-Specific Labeling:**
+
+**With LangWatch (built-in evaluators):**
+
+```python
+import langwatch
+
+# LangWatch has 40+ built-in evaluators including dietary compliance
+results = langwatch.evaluate.batch(
+    dataset=traces_df,
+    evaluators=["dietary_compliance"],  # Built-in evaluator
+    model="gpt-4o"
+)
+
+# Or create custom evaluator
+custom_evaluator = langwatch.evaluators.create(
+    name="dietary_adherence",
+    prompt=LABELING_PROMPT,
+    model="gpt-4o"
+)
+
+results = langwatch.evaluate.batch(
+    dataset=traces_df,
+    evaluators=[custom_evaluator]
+)
+```
+
+LangWatch's 40+ built-in evaluators cover many common labeling tasks out of the box.
+
+**With Langfuse (custom implementation):**
+
+```python
+from langfuse.openai import OpenAI
+
+client = OpenAI()
+
+labels = []
+for trace in traces:
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": LABELING_PROMPT.format(**trace)}],
+        temperature=0
+    )
+    labels.append(parse_json(response.choices[0].message.content))
+```
+
+Langfuse gives you complete control over custom labeling logic.
 
 ### Step 3: Split Data (Train / Dev / Test)
 
@@ -875,7 +1107,7 @@ DIETARY RESTRICTION DEFINITIONS:
 - Dairy-free: No milk, cheese, butter, yogurt, or other dairy products
 - Keto: Very low carb (typically <20g net carbs), high fat
 - Paleo: No grains, legumes, dairy, refined sugar, or processed foods
-[... all 16 definitions — see Appendix C for the full list ...]
+[... all 16 definitions, see Appendix C for the full list ...]
 ```
 
 #### Part 2: Clear Evaluation Criteria
@@ -991,6 +1223,33 @@ experiment = run_experiment(
 )
 ```
 
+**With LangWatch:**
+
+```python
+import langwatch
+
+# Create custom evaluator with your judge prompt
+judge_evaluator = langwatch.evaluators.create(
+    name="dietary-judge-v1",
+    prompt=judge_prompt_template,
+    model="gpt-4o",
+    temperature=0
+)
+
+# Run on dev set
+results = langwatch.evaluate.batch(
+    dataset=dev_dataset,
+    evaluators=[judge_evaluator],
+    metrics=["tp", "tn", "fp", "fn", "tpr", "tnr"]
+)
+
+# LangWatch automatically calculates TPR and TNR
+print(f"TPR: {results.metrics['tpr']:.1%}")
+print(f"TNR: {results.metrics['tnr']:.1%}")
+```
+
+LangWatch can compute the confusion matrix and TPR/TNR for you, so you do not have to derive them by hand.
+
 **With Langfuse:**
 
 ```python
@@ -1010,6 +1269,18 @@ result = langfuse.run_experiment(
 )
 
 print(result.format())
+
+# Calculate TPR/TNR manually from results
+tp = sum(1 for r in results if r["judge"] == "PASS" and r["truth"] == "PASS")
+tn = sum(1 for r in results if r["judge"] == "FAIL" and r["truth"] == "FAIL")
+fp = sum(1 for r in results if r["judge"] == "PASS" and r["truth"] == "FAIL")
+fn = sum(1 for r in results if r["judge"] == "FAIL" and r["truth"] == "PASS")
+
+tpr = tp / (tp + fn) if (tp + fn) > 0 else 0
+tnr = tn / (tn + fp) if (tn + fp) > 0 else 0
+
+print(f"TPR: {tpr:.1%}")
+print(f"TNR: {tnr:.1%}")
 ```
 
 ### The Metrics That Actually Matter
@@ -1066,7 +1337,7 @@ Test Set Performance:
   Accuracy: 84.0%
 ```
 
-Notice the first attempt had a TNR of only 22.2% — meaning when a recipe actually violated dietary restrictions, the judge only caught it 22% of the time! This is dangerous (imagine telling a diabetic a recipe is safe when it isn't). After careful prompt iteration, the judge achieved 100% TNR.
+Notice the first attempt had a TNR of only 22.2%, meaning when a recipe actually violated dietary restrictions, the judge only caught it 22% of the time! This is dangerous (imagine telling a diabetic a recipe is safe when it isn't). After careful prompt iteration, the judge achieved 100% TNR.
 
 ### Target Metrics
 
@@ -1133,6 +1404,26 @@ results = llm_generate(
     concurrency=20,
 )
 ```
+
+**With LangWatch (batch evaluation with built-in concurrency):**
+
+```python
+import langwatch
+
+# Run judge on all production traces
+results = langwatch.evaluate.batch(
+    dataset=all_traces_df,
+    evaluators=[judge_evaluator],
+    concurrency=20,  # Parallel processing
+    cache=True  # Cache results for duplicate traces
+)
+
+# Get summary statistics
+pass_rate = results.metrics["pass_rate"]
+print(f"Raw pass rate: {pass_rate:.1%}")
+```
+
+LangWatch handles concurrency, caching, and progress tracking automatically.
 
 **With Langfuse (experiment on dataset):**
 
@@ -1253,6 +1544,63 @@ def eval_no_markdown_in_sms(trace) -> dict:
     return {'passed': True, 'reason': 'No markdown found'}
 ```
 
+**Platform Integration:**
+
+**With Phoenix:**
+
+```python
+# Code-based evals run as evaluators inside a Phoenix experiment
+from phoenix.client.experiments import run_experiment
+
+def no_markdown_evaluator(output, **kwargs):
+    result = eval_no_markdown_in_sms(output)
+    return 1.0 if result['passed'] else 0.0
+
+experiment = run_experiment(
+    dataset=traces_dataset,
+    task=lambda example: example["input"],
+    evaluators=[no_markdown_evaluator],
+)
+```
+
+**With LangWatch:**
+
+```python
+import langwatch
+
+# Register as custom evaluator
+@langwatch.evaluator(name="no_markdown_sms")
+def eval_no_markdown_in_sms(trace):
+    # ... implementation above ...
+    return {'passed': result['passed'], 'score': 1.0 if result['passed'] else 0.0}
+
+# Run on dataset
+results = langwatch.evaluate.batch(
+    dataset=traces_df,
+    evaluators=["no_markdown_sms"]
+)
+```
+
+**With Langfuse:**
+
+```python
+from langfuse import get_client
+
+langfuse = get_client()
+
+# Run on each trace and log scores
+for trace in traces:
+    result = eval_no_markdown_in_sms(trace)
+
+    langfuse.create_score(
+        trace_id=trace.id,
+        name="no_markdown_sms",
+        value=1 if result['passed'] else 0,
+        data_type="BOOLEAN",
+        comment=result['reason']
+    )
+```
+
 ### Example 2: Validate Tool Calls
 
 ```python
@@ -1346,6 +1694,43 @@ A complete eval suite typically has:
 4. evaluate_dietary_adherence()
 5. evaluate_response_helpfulness()
 ```
+
+**Platform Comparison for Mixed Eval Suites:**
+
+**LangWatch approach (unified):**
+```python
+import langwatch
+
+# All evaluators registered in one place
+langwatch.evaluate.batch(
+    dataset=traces_df,
+    evaluators=[
+        "no_markdown_sms",    # Code-based (custom)
+        "tool_validation",    # Code-based (custom)
+        "dietary_compliance", # LLM-based (built-in)
+        "helpfulness"         # LLM-based (built-in)
+    ]
+)
+```
+
+**Langfuse approach (flexible but manual):**
+```python
+# Run code-based evals
+for trace in traces:
+    markdown_result = eval_no_markdown_in_sms(trace)
+    tool_result = eval_correct_tool_called(trace)
+
+    # Log code-based scores
+    langfuse.create_score(trace_id=trace.id, name="markdown", ...)
+    langfuse.create_score(trace_id=trace.id, name="tools", ...)
+
+# Run LLM-based evals separately
+llm_results = run_llm_judges(traces)
+for result in llm_results:
+    langfuse.create_score(trace_id=result.trace_id, ...)
+```
+
+With Phoenix, you mix code-based and LLM-based evaluators in a single `run_experiment` call by passing both kinds of functions in the `evaluators` list.
 
 ### Testing Your Code-Based Evals
 
@@ -1514,6 +1899,31 @@ experiment = run_experiment(
     evaluators=[RecallAt1, RecallAt3, RecallAt5, MRR],
 )
 ```
+
+#### With LangWatch
+
+```python
+import langwatch
+
+def bm25_task(example):
+    query = example["input"]["input"]
+    hits = retrieve_bm25(query, corpus, bm25, tokenized_corpus, top_n=5)
+    return {"top_ids": [h["id"] for h in hits], "top_titles": [h["title"] for h in hits]}
+
+# Register custom metrics
+@langwatch.metric(name="recall_at_1")
+def recall_at_1_metric(output, expected):
+    return recall_at_k(1, output, expected)
+
+# Run experiment
+results = langwatch.evaluate.batch(
+    dataset=synthetic_queries_dataset,
+    task=bm25_task,
+    metrics=["recall_at_1", "recall_at_3", "recall_at_5", "mrr"]
+)
+```
+
+LangWatch ships RAG metrics and visualizes retrieval performance automatically.
 
 #### With Langfuse
 
@@ -1743,6 +2153,45 @@ for state_name in STATES:
     )
 ```
 
+#### With LangWatch
+
+```python
+import langwatch
+
+STATES = [
+    "ParseRequest", "PlanToolCalls", "GenRecipeArgs",
+    "GetRecipes", "GenWebArgs", "GetWebInfo", "ComposeResponse"
+]
+
+for state_name in STATES:
+    # Get all spans for this state
+    spans_df = langwatch.get_spans(
+        filters={"name": state_name}
+    )
+
+    # Load evaluator for this state
+    with open(f"evaluators/{state_name.lower()}_eval.txt") as f:
+        eval_prompt = f.read()
+
+    # Create custom evaluator
+    evaluator = langwatch.evaluators.create(
+        name=f"{state_name}_eval",
+        prompt=eval_prompt,
+        model="gpt-4o"
+    )
+
+    # Run evaluation
+    results = langwatch.evaluate.batch(
+        dataset=spans_df,
+        evaluators=[evaluator]
+    )
+
+    # Results automatically logged to LangWatch
+    print(f"{state_name}: {results.metrics['pass_rate']:.1%} pass rate")
+```
+
+LangWatch queries spans and aggregates results by state automatically.
+
 #### With Langfuse
 
 ```python
@@ -1794,6 +2243,11 @@ Summary:
 
 **Key insight:** GetWebInfo is the biggest bottleneck. Focus optimization there first.
 
+**Platform Comparison for Analytics:**
+- **Phoenix:** Filter and group span annotations in the UI, or aggregate the results dataframe yourself
+- **LangWatch:** Built-in analytics dashboard shows failure distribution by state with no manual aggregation
+- **Langfuse:** More flexible custom queries, but requires manual aggregation to produce these statistics
+
 ### Using LLM to Synthesize Improvement Strategies
 
 ```python
@@ -1829,7 +2283,7 @@ def synthesize_fixes(state_name, failed_traces):
 
 Even without writing code, you can:
 
-1. **Open your observability UI** and look at traces by pipeline state
+1. **Open your observability UI** (Phoenix, LangWatch, or Langfuse) and look at traces by pipeline state
 2. **Filter for failed states** using the annotation/score filters
 3. **Read the failure explanations** generated by the LLM evaluators
 4. **Identify patterns** (e.g., "GetWebInfo fails whenever the query is about cooking techniques")
@@ -1842,13 +2296,13 @@ Even without writing code, you can:
 
 ### Why Multi-Turn Is Different
 
-Most eval examples show single-turn Q&A: user asks, AI answers, done. But real applications have **conversations** — and new failure modes emerge across turns:
+Most eval examples show single-turn Q&A: user asks, AI answers, done. But real applications have **conversations**, and new failure modes emerge across turns:
 
-1. **Context loss** — AI forgets what the user said 3 messages ago
-2. **Contradiction** — AI says one thing in turn 2, contradicts it in turn 5
-3. **Instruction drift** — AI gradually stops following the original system prompt
-4. **Repetition** — AI repeats the same information or suggestion
-5. **Escalation failure** — AI doesn't know when to hand off to a human
+1. **Context loss**: AI forgets what the user said 3 messages ago
+2. **Contradiction**: AI says one thing in turn 2, contradicts it in turn 5
+3. **Instruction drift**: AI gradually stops following the original system prompt
+4. **Repetition**: AI repeats the same information or suggestion
+5. **Escalation failure**: AI doesn't know when to hand off to a human
 
 ### Strategies for Multi-Turn Evaluation
 
@@ -1903,7 +2357,7 @@ SCENARIOS = [
     {
         "turns": [
             "I'm looking for a vegan restaurant",
-            "Actually, make that vegetarian — I eat eggs",
+            "Actually, make that vegetarian, I eat eggs",
             "What about that first place you mentioned?"  # Tests context retention
         ],
         "failure_mode": "context_retention"
@@ -1933,7 +2387,7 @@ SCENARIOS = [
 
 ### Offline vs. Online Evals
 
-Everything in Chapters 3-8 is **offline evaluation** — you run evals after the fact on collected traces. But production systems also need **online evaluation**:
+Everything in Chapters 3-8 is **offline evaluation** (you run evals after the fact on collected traces). But production systems also need **online evaluation**:
 
 | | Offline Evals | Online Evals |
 |---|---|---|
@@ -2015,6 +2469,51 @@ Response to evaluate: {response}
 Return JSON: {"safe": true/false, "category": "...", "explanation": "..."}
 ```
 
+**Platform Integration for Safety Evals:**
+
+**With LangWatch (built-in safety evaluators):**
+
+```python
+import langwatch
+
+# LangWatch has 40+ built-in evaluators including safety checks
+results = langwatch.evaluate.realtime(
+    trace=current_trace,
+    evaluators=[
+        "prompt_injection",  # Built-in
+        "pii_detection",     # Built-in
+        "toxicity",          # Built-in
+        "off_topic",         # Built-in
+    ],
+    blocking=True  # Block response if fails
+)
+
+if not results.all_passed:
+    return "I'm sorry, I can't help with that."
+```
+
+LangWatch's built-in safety evaluators let you skip writing and maintaining your own injection, PII, and toxicity checks.
+
+**With Langfuse (custom implementation):**
+
+```python
+# Run safety checks
+injection_result = eval_prompt_injection(trace)
+pii_result = eval_no_pii_in_response(trace)
+
+if not injection_result['passed'] or not pii_result['passed']:
+    # Block and log
+    langfuse.create_score(
+        trace_id=trace.id,
+        name="safety_block",
+        value=0,
+        comment=f"Blocked: {injection_result['reason']} / {pii_result['reason']}"
+    )
+    return "I'm sorry, I can't help with that."
+```
+
+With Phoenix, run the same code-based safety functions as evaluators and log the results as span annotations.
+
 ### Real-Time Guardrails
 
 Guardrails run **before** the response reaches the user:
@@ -2061,6 +2560,11 @@ def daily_eval_report(traces_df):
 
     return results
 ```
+
+**Platform Monitoring Dashboards:**
+- **Phoenix:** Use the built-in dashboards and project views to track failures over time
+- **LangWatch:** Built-in monitoring dashboard with automatic alerts for safety violations, cost spikes, and latency increases
+- **Langfuse:** Custom dashboards via API; more setup, but flexible for complex alerting logic
 
 ### For PMs: Safety Eval Checklist
 
@@ -2131,6 +2635,43 @@ Interpretation:
 
 **Why the correction matters:** The raw rate (84.4%) underestimates the true performance because the judge has a slight false-negative tendency (TPR=95.7%, not 100%). The corrected rate (88.2%) accounts for this bias.
 
+### Platform Integration
+
+**Platform-agnostic:** `judgy` works with results from any platform. Export your test set results and production predictions, then run the correction. The only platform-specific part is how you pull the labels and predictions out.
+
+```python
+# With Phoenix results (export experiment + evaluation dataframes)
+test_labels = test_results_df["expected_label"].map({"PASS": 1, "FAIL": 0}).tolist()
+test_preds = test_results_df["judge_label"].map({"PASS": 1, "FAIL": 0}).tolist()
+unlabeled_preds = production_results_df["judge_label"].map({"PASS": 1, "FAIL": 0}).tolist()
+
+# Run judgy correction
+corrected = estimate_success_rate(test_labels, test_preds, unlabeled_preds)
+```
+
+```python
+# With LangWatch results
+test_results = langwatch.get_experiment_results(experiment_id="test-eval")
+test_labels = test_results["ground_truth"]
+test_preds = test_results["judge_predictions"]
+
+production_results = langwatch.get_evaluation_results(eval_id="production-run")
+unlabeled_preds = production_results["predictions"]
+
+# Run judgy correction
+corrected = estimate_success_rate(test_labels, test_preds, unlabeled_preds)
+```
+
+```python
+# With Langfuse results (manual export)
+test_labels = [score.value for score in test_scores if score.name == "ground_truth"]
+test_preds = [score.value for score in test_scores if score.name == "judge"]
+unlabeled_preds = [score.value for score in production_scores if score.name == "judge"]
+
+# Run judgy correction
+corrected = estimate_success_rate(test_labels, test_preds, unlabeled_preds)
+```
+
 ### For PMs: How to Report These Results
 
 When presenting to stakeholders:
@@ -2149,7 +2690,7 @@ This is much more credible than "we tested it and it seems to work."
 ---
 
 <a name="chapter-11"></a>
-## Chapter 11: Closing the Loop — From Evals to Improvements
+## Chapter 11: Closing the Loop: From Evals to Improvements
 
 ### The Most Common Failure: Measuring Without Acting
 
@@ -2232,12 +2773,12 @@ for model in MODELS:
 After every eval cycle, create a simple report:
 
 ```
-EVAL REPORT — Week of [date]
+EVAL REPORT: Week of [date]
 
 Top 3 failure modes this week:
-1. [Failure mode] — [X]% of traces — [Root cause] — [Action item]
-2. [Failure mode] — [X]% of traces — [Root cause] — [Action item]
-3. [Failure mode] — [X]% of traces — [Root cause] — [Action item]
+1. [Failure mode], [X]% of traces, [Root cause], [Action item]
+2. [Failure mode], [X]% of traces, [Root cause], [Action item]
+3. [Failure mode], [X]% of traces, [Root cause], [Action item]
 
 Improvements from last week:
 - [Previous fix]: Failure rate went from X% to Y% ✅
@@ -2252,10 +2793,10 @@ Regressions detected: [None / List]
 
 ### When Manual Labels Beat LLM Labels
 
-- **Ambiguous cases** where even experts disagree — you need to capture that disagreement
+- **Ambiguous cases** where even experts disagree, so you need to capture that disagreement
 - **High-stakes domains** (medical, legal, financial) where errors have real consequences
 - **New failure modes** that your LLM judge hasn't been trained to detect
-- **Ground truth calibration** — even if you use LLM labeling at scale, validate a sample manually
+- **Ground truth calibration**: even if you use LLM labeling at scale, validate a sample manually
 
 ### Inter-Annotator Agreement
 
@@ -2401,10 +2942,26 @@ pip install arize-phoenix openai openinference-instrumentation-openai
 phoenix serve
 ```
 
+**LangWatch:**
+```bash
+pip install langwatch
+# Sign up at langwatch.ai or run self-hosted Docker
+```
+
+```python
+import langwatch
+langwatch.init()  # That's it! Auto-instrumentation enabled
+```
+
 **Langfuse:**
 ```bash
 pip install langfuse openai
 # Sign up at cloud.langfuse.com or self-host
+```
+
+```python
+from langfuse.openai import OpenAI  # Drop-in replacement
+client = OpenAI()  # Auto-traced
 ```
 
 Then instrument your app (see Chapter 2 for full examples).
@@ -2474,17 +3031,69 @@ class EvalSuite:
         return results
 ```
 
+If you prefer to lean on your platform instead of a hand-rolled suite:
+
+**With LangWatch:**
+```python
+import langwatch
+
+# All evaluators (code + LLM) in one place
+results = langwatch.evaluate.batch(
+    dataset=daily_traces,
+    evaluators=[
+        "no_markdown_sms",      # Code-based (custom)
+        "dietary_compliance",   # LLM-based (built-in)
+    ]
+)
+
+print(f"Pass rate: {results.metrics['pass_rate']:.1%}")
+```
+
+**With Langfuse:**
+```python
+# Run evaluators separately
+for trace in daily_traces:
+    # Code-based
+    markdown_result = eval_no_markdown(trace)
+    langfuse.create_score(trace_id=trace.id, name="markdown", ...)
+
+    # LLM-based
+    dietary_result = run_dietary_judge(trace)
+    langfuse.create_score(trace_id=trace.id, name="dietary", ...)
+```
+
 #### Day 10-11: Set Up Alerts
 
 ```python
 def check_for_degradation(current_rate, historical_avg, threshold=1.5):
     """Alert if failure rate spikes"""
     return current_rate > historical_avg * threshold
+
+# Example alert
+if check_for_degradation(today_failure_rate, avg_failure_rate):
+    send_slack_alert("Eval failure rate spiked!")
 ```
+
+- **Phoenix:** Pair the check above with your own notifier (email, Slack, webhook)
+- **LangWatch:** Built-in alerting via email, Slack, or webhook when metrics cross thresholds
+- **Langfuse:** Custom alerting via integration with your monitoring system
 
 #### Day 12-14: Dashboard
 
-Use your platform's built-in UI (Phoenix or Langfuse both have dashboards), or build a simple dashboard with the eval results.
+Use your platform's built-in UI (Phoenix, LangWatch, and Langfuse all have dashboards), or build a simple dashboard with the eval results.
+
+- **Phoenix:** Built-in project dashboards, no setup needed
+- **LangWatch:** Built-in analytics dashboard, no setup needed
+- **Langfuse:** Create a custom dashboard using their API:
+
+```python
+# Fetch recent scores
+scores = langfuse.api.score.list(limit=1000, from_timestamp=last_week)
+
+# Aggregate and visualize
+failure_rates = aggregate_by_day(scores)
+plot_dashboard(failure_rates)
+```
 
 ### Ongoing: 30 Minutes Per Week
 
@@ -2563,7 +3172,7 @@ Use your platform's built-in UI (Phoenix or Langfuse both have dashboards), or b
 ### Mistake #10: Not Versioning System Prompts
 
 **What people do:** Edit system prompt directly in production.
-**Fix:** Use your platform's prompt management (Phoenix, Langfuse, etc.) to version prompts. Log which version was used with each trace.
+**Fix:** Use your platform's prompt management (Phoenix, LangWatch, Langfuse, etc.) to version prompts. Log which version was used with each trace.
 
 ### Mistake #11: Not Correcting for Judge Bias
 
@@ -2585,7 +3194,8 @@ Use your platform's built-in UI (Phoenix or Langfuse both have dashboards), or b
 | Tool | Type | Best For | Cost |
 |------|------|----------|------|
 | **Arize Phoenix** | Open source, self-hosted | Single Docker container, full eval suite built-in | Free |
-| **Langfuse** | Open source, cloud or self-hosted | Polished UI, strong community, major company adoption | Free tier + paid |
+| **LangWatch** | Open source, cloud or self-hosted | Simple setup, 40+ built-in evaluators, great analytics | Free tier + paid |
+| **Langfuse** | Open source, cloud or self-hosted | Custom pipelines, large community, major company adoption | Free tier + paid |
 | **Braintrust** | Cloud | Excellent UI, team collaboration | Paid |
 | **LangSmith** | Cloud | LangChain users | Paid |
 | **Build Your Own** | Custom | Learning, custom needs | Free |
@@ -2593,6 +3203,7 @@ Use your platform's built-in UI (Phoenix or Langfuse both have dashboards), or b
 ### Eval Frameworks
 
 - **Phoenix Evals** (`arize-phoenix-evals`) - Built into Phoenix, `llm_generate` and `llm_classify`
+- **LangWatch Evaluators** - 40+ built-in evaluators covering safety, quality, RAG, and custom domains
 - **Langfuse Evals** - Built-in LLM-as-Judge, custom evaluators via SDK
 - **Simple Evals** (OpenAI) - Lightweight model-graded evals
 - **Ragas** - Specialized for RAG evaluation
@@ -2603,6 +3214,25 @@ Use your platform's built-in UI (Phoenix or Langfuse both have dashboards), or b
 - **judgy** - Statistical bias correction for LLM judges: [github.com/ai-evals-course/judgy](https://github.com/ai-evals-course/judgy)
 - **rank_bm25** - BM25 retrieval for RAG systems
 - **litellm** - Unified LLM API interface
+
+### Choosing Among the Three Open-Source Platforms
+
+All three (Phoenix, LangWatch, Langfuse) are open source and cover the same core workflow. Pick based on what matters most to you:
+
+| Factor | Phoenix | LangWatch | Langfuse |
+|--------|---------|-----------|----------|
+| **Hosting** | Self-hosted only | Cloud or self-hosted | Cloud or self-hosted |
+| **Setup** | Single Docker container | Fastest (3-line `langwatch.init()`) | Drop-in OpenAI import |
+| **Built-in evaluators** | Phoenix Evals (`llm_generate`/`llm_classify`) | 40+ ready-made | Custom via SDK |
+| **Analytics dashboard** | Built-in | Built-in, zero-config | Build your own (flexible) |
+| **Community / integrations** | OTel ecosystem | Growing | Largest, most integrations |
+| **License** | ELv2 | Apache 2.0 | MIT |
+
+- Choose **Phoenix** for a free, fully self-hosted, OpenTelemetry-native setup.
+- Choose **LangWatch** for the fastest start and the most built-in evaluators.
+- Choose **Langfuse** for maximum flexibility, data sovereignty, and the largest community.
+
+Many teams happily use more than one (for example LangWatch for quick built-in evals plus Langfuse for deep custom workflows). They are complementary, not mutually exclusive.
 
 ### Key Principles (Revisited)
 
@@ -2633,11 +3263,11 @@ A plain-language glossary of the technical terms used throughout this guide. Sha
 | **Ground Truth** | Human-verified labels that represent the "correct" answer; used to measure judge accuracy |
 | **True Positive Rate (TPR)** | The percentage of actual positives (e.g., good responses) that the judge correctly identifies. Also called *recall* or *sensitivity*. Formula: TP / (TP + FN) |
 | **True Negative Rate (TNR)** | The percentage of actual negatives (e.g., bad responses) that the judge correctly catches. Also called *specificity*. Formula: TN / (TN + FP) |
-| **False Positive (FP)** | When the judge says "Pass" but the real answer is "Fail" — a missed defect |
-| **False Negative (FN)** | When the judge says "Fail" but the real answer is "Pass" — a false alarm |
+| **False Positive (FP)** | When the judge says "Pass" but the real answer is "Fail" (a missed defect) |
+| **False Negative (FN)** | When the judge says "Fail" but the real answer is "Pass" (a false alarm) |
 | **Precision** | Of all items the judge labeled positive, how many were actually positive. Formula: TP / (TP + FP) |
-| **F1 Score** | The harmonic mean of precision and recall — a single number balancing both. Formula: 2 * (Precision * Recall) / (Precision + Recall) |
-| **Confusion Matrix** | A 2x2 table showing TP, FP, FN, TN counts — the foundation of all classification metrics |
+| **F1 Score** | The harmonic mean of precision and recall, a single number balancing both. Formula: 2 * (Precision * Recall) / (Precision + Recall) |
+| **Confusion Matrix** | A 2x2 table showing TP, FP, FN, TN counts, the foundation of all classification metrics |
 | **Confidence Interval (CI)** | A range of values (e.g., 72%–81%) within which the true metric likely falls, given sampling uncertainty |
 | **Bias Correction** | Adjusting raw judge scores to account for systematic over- or under-counting of passes/fails |
 | **Cohen's Kappa** | A statistic measuring agreement between two raters (or a rater and ground truth), adjusting for chance agreement. Values: <0.2 poor, 0.4–0.6 moderate, 0.6–0.8 substantial, >0.8 almost perfect |
@@ -2649,7 +3279,7 @@ A plain-language glossary of the technical terms used throughout this guide. Sha
 | **Train/Dev/Test Split** | Dividing labeled data into three sets: Train (for building the judge prompt), Dev (for iterating), Test (for final unbiased measurement) |
 | **Stratified Split** | Splitting data so each subset has the same proportion of Pass/Fail labels as the original |
 | **Few-Shot Examples** | Example input-output pairs included in a prompt to show the model what good evaluation looks like |
-| **Open Coding** | Reading traces and writing freeform notes about what's going wrong — no categories yet |
+| **Open Coding** | Reading traces and writing freeform notes about what's going wrong, no categories yet |
 | **Axial Coding** | Grouping your open-coded notes into categories (error types) and counting frequency |
 | **Dimensional Sampling** | Systematically creating test inputs that cover all important dimensions (topics, edge cases, user types) |
 | **Failure Mode** | A specific, named way the AI system can fail (e.g., "dietary violation," "hallucinated citation") |
@@ -2659,12 +3289,12 @@ A plain-language glossary of the technical terms used throughout this guide. Sha
 
 | Term | Definition |
 |------|-----------|
-| **Trace** | A complete record of one AI interaction — from user input through all processing steps to final output |
+| **Trace** | A complete record of one AI interaction, from user input through all processing steps to final output |
 | **Span** | A single unit of work within a trace (e.g., one LLM call, one database lookup, one tool invocation) |
 | **Instrumentation** | Adding code to your application so that traces and spans are automatically captured |
 | **Dataset** | A stored collection of examples (inputs + expected outputs) used for running experiments |
 | **Experiment** | Running your AI system (or judge) against a dataset and recording all results |
-| **Annotation** | A label or score attached to a trace or span — can be human-generated or from an automated eval |
+| **Annotation** | A label or score attached to a trace or span (can be human-generated or from an automated eval) |
 | **Prompt Version** | A saved snapshot of a prompt template, allowing you to track changes and compare performance |
 
 ### RAG-Specific Terms
@@ -2674,7 +3304,7 @@ A plain-language glossary of the technical terms used throughout this guide. Sha
 | **RAG (Retrieval-Augmented Generation)** | An AI architecture that retrieves relevant documents before generating a response |
 | **BM25** | A classic keyword-based search algorithm used as a baseline for retrieval quality |
 | **Recall@K** | Of all relevant documents, what fraction appear in the top K retrieved results |
-| **MRR (Mean Reciprocal Rank)** | Average of 1/rank for the first relevant document — higher means relevant docs appear sooner |
+| **MRR (Mean Reciprocal Rank)** | Average of 1/rank for the first relevant document; higher means relevant docs appear sooner |
 | **Chunking** | Splitting large documents into smaller pieces for retrieval |
 | **Context Window** | The maximum amount of text an LLM can process in a single call |
 | **Hallucination** | When an LLM generates information not supported by the retrieved context |
@@ -2686,7 +3316,7 @@ A plain-language glossary of the technical terms used throughout this guide. Sha
 | **p_obs (Observed Rate)** | The raw pass rate from the judge, before any correction |
 | **θ̂ (Theta-hat)** | The corrected true success rate after accounting for judge errors |
 | **judgy** | A Python library that computes corrected success rates and confidence intervals given TPR and TNR |
-| **Sampling** | Evaluating a random subset of traces instead of all traces — used to manage cost |
+| **Sampling** | Evaluating a random subset of traces instead of all traces, used to manage cost |
 | **Statistical Significance** | Whether an observed difference is likely real or could be due to random chance |
 
 ---
@@ -2738,12 +3368,40 @@ Test:  ~45%  (final, unbiased evaluation - use ONCE)
 
 | Activity | Time | Frequency |
 |----------|------|-----------|
-| Initial setup (any platform) | 2 hours | Once |
+| Initial setup (Phoenix) | 1 hour | Once |
+| Initial setup (LangWatch) | 30 min | Once |
+| Initial setup (Langfuse) | 1 hour | Once |
 | Error analysis (100 traces) | 1 hour | Monthly |
 | Build code-based eval | 1 hour | As needed |
 | Build LLM judge (full pipeline) | 4-6 hours | As needed |
 | Validate eval on dev set | 1 hour | Per iteration |
 | Weekly maintenance | 30 min | Weekly |
+
+### Platform Quick Start
+
+**Phoenix (self-hosted):**
+```bash
+pip install arize-phoenix openai openinference-instrumentation-openai
+phoenix serve
+```
+```python
+from phoenix.otel import register
+register(project_name="my-app", auto_instrument=True)  # Auto-traces OpenAI
+```
+
+**LangWatch (fastest):**
+```python
+import langwatch
+langwatch.init()
+# Done! Auto-tracing enabled
+```
+
+**Langfuse (drop-in import):**
+```python
+from langfuse.openai import OpenAI
+client = OpenAI()
+# Set LANGFUSE_* environment variables first
+```
 
 ---
 
@@ -2958,7 +3616,7 @@ Return your evaluation as JSON:
 | GPT-4o-mini / Claude Haiku | Cost-sensitive, high-volume evals | 75–90% |
 | Open-source (Llama, Mistral) | Self-hosted, privacy-sensitive | 70–85% |
 
-**Tip:** Start with the most capable model to establish a performance ceiling. Then test whether a cheaper model can match it for your specific use case. Often it can — especially with good few-shot examples.
+**Tip:** Start with the most capable model to establish a performance ceiling. Then test whether a cheaper model can match it for your specific use case. Often it can, especially with good few-shot examples.
 
 ### 10. Prompt Versioning
 
@@ -2969,7 +3627,7 @@ Always version your judge prompts. Track:
 - Dev set metrics (TPR, TNR) at that version
 - Date and reason for the change
 
-Both Phoenix and Langfuse have built-in prompt versioning. Use it.
+Phoenix, LangWatch, and Langfuse all have built-in prompt versioning. Use it.
 
 ```python
 # Phoenix
@@ -2979,6 +3637,16 @@ prompt = px.prompts.create(
     name="dietary-judge-v3",
     prompt_description="Added edge cases for keto",
     template=judge_prompt_text,
+)
+
+# LangWatch
+import langwatch
+langwatch.prompts.create(
+    name="dietary-judge-v3",
+    description="Added edge cases for keto",
+    template=judge_prompt_text,
+    model="gpt-4o",
+    temperature=0,
 )
 
 # Langfuse
@@ -2992,7 +3660,7 @@ langfuse.create_prompt(
 ---
 
 <a name="appendix-f"></a>
-## Appendix F: Platform Methods Reference (Phoenix & Langfuse)
+## Appendix F: Platform Methods Reference (Phoenix, LangWatch & Langfuse)
 
 ### Phoenix
 
@@ -3084,6 +3752,144 @@ prompt = await px_client.prompts.create(
          {"role": "user", "content": "{{question}}"}],
         model_name="gpt-4o",
     ),
+)
+```
+
+### LangWatch
+
+#### Tracing
+
+```python
+import langwatch
+
+# Initialize (auto-instruments OpenAI, LangChain, LlamaIndex, etc.)
+langwatch.init()
+
+# Add custom spans
+@langwatch.span(type="chain")
+def my_pipeline(question):
+    """Parent span for the whole pipeline"""
+    sql = generate_sql(question)
+    results = execute_query(sql)
+    return synthesize_answer(question, results)
+
+@langwatch.span(type="llm")
+def generate_sql(question):
+    """Tracked as an LLM generation"""
+    return client.chat.completions.create(...)
+
+@langwatch.span(type="tool")
+def execute_query(sql):
+    """Tracked as a tool call"""
+    return db.execute(sql)
+```
+
+#### Querying Spans
+
+```python
+import langwatch
+
+# Get all spans for a specific name
+spans_df = langwatch.get_spans(
+    filters={"name": "ParseRequest"}
+)
+
+# Get spans within a time range
+spans_df = langwatch.get_spans(
+    filters={
+        "timestamp_gte": "2025-02-01",
+        "timestamp_lte": "2025-02-09"
+    }
+)
+```
+
+#### Datasets
+
+```python
+import pandas as pd
+import langwatch
+
+df = pd.DataFrame({
+    "query": ["Query 1", "Query 2"],
+    "expected_answer": ["Answer 1", "Answer 2"]
+})
+
+dataset = langwatch.datasets.create(
+    name="my-dataset",
+    dataframe=df
+)
+```
+
+#### Evaluators
+
+```python
+import langwatch
+
+# Use built-in evaluators (40+ available)
+results = langwatch.evaluate.batch(
+    dataset=traces_df,
+    evaluators=[
+        "dietary_compliance",   # Built-in
+        "toxicity",             # Built-in
+        "prompt_injection",     # Built-in
+    ]
+)
+
+# Create custom evaluator
+@langwatch.evaluator(name="custom_check")
+def my_evaluator(trace):
+    # Your logic here
+    return {"passed": True, "score": 1.0}
+
+# Run custom evaluator
+results = langwatch.evaluate.batch(
+    dataset=traces_df,
+    evaluators=["custom_check"]
+)
+```
+
+#### Experiments
+
+```python
+import langwatch
+
+def my_task(example):
+    query = example["input"]["query"]
+    return {"answer": my_pipeline(query)}
+
+# Run experiment with automatic metrics
+results = langwatch.evaluate.batch(
+    dataset=dataset,
+    task=my_task,
+    evaluators=["accuracy", "latency", "cost"]
+)
+
+# View results
+print(results.metrics)
+```
+
+#### Prompt Management
+
+```python
+import langwatch
+
+# Create prompt
+prompt = langwatch.prompts.create(
+    name="recipe-assistant-v1",
+    template=[
+        {"role": "system", "content": "You are a recipe assistant..."},
+        {"role": "user", "content": "{{question}}"}
+    ],
+    model="gpt-4o-mini",
+    temperature=0.7
+)
+
+# Use at runtime
+messages = prompt.render(question="How do I make pancakes?")
+response = client.chat.completions.create(
+    messages=messages,
+    model=prompt.model,
+    temperature=prompt.temperature
 )
 ```
 
@@ -3229,13 +4035,13 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 
 | Day | Activity | Time | Role Focus |
 |-----|----------|------|------------|
-| 22 | RAG evaluation — retrieval metrics + answer quality (Ch. 6) | 2h | Engineer |
+| 22 | RAG evaluation: retrieval metrics + answer quality (Ch. 6) | 2h | Engineer |
 | 23 | Multi-step pipeline evaluation (Ch. 7) | 2h | Engineer |
 | 24 | Multi-turn conversation evaluation (Ch. 8) | 2h | Engineer |
-| 25 | Safety evals — prompt injection, PII leakage (Ch. 9) | 2h | All |
+| 25 | Safety evals: prompt injection, PII leakage (Ch. 9) | 2h | All |
 | 26 | Set up regression test suite (Ch. 11) | 2h | Engineer |
-| 27 | Human annotation calibration — measure inter-annotator agreement (Ch. 12) | 1h | All |
-| 28 | Optimize for cost — tiered evaluation, sampling strategy (Ch. 13) | 1h | All |
+| 27 | Human annotation calibration: measure inter-annotator agreement (Ch. 12) | 1h | All |
+| 28 | Optimize for cost: tiered evaluation, sampling strategy (Ch. 13) | 1h | All |
 | 29 | Create monitoring dashboard + automated eval runs | 2h | Engineer |
 | 30 | Document eval suite, present to stakeholders, plan maintenance | 2h | All |
 
@@ -3249,7 +4055,7 @@ Real lessons from implementing complete eval pipelines in production:
 
 1. **LLM-as-Judge is powerful but needs guardrails** - Without proper validation, a judge can confidently give wrong answers. Always validate against ground truth.
 
-2. **You must test evaluators against ground truth** - A judge that seems reasonable but has TNR=22% is actively harmful — it misses most real failures.
+2. **You must test evaluators against ground truth** - A judge that seems reasonable but has TNR=22% is actively harmful because it misses most real failures.
 
 3. **Train/Dev/Test splits enable confidence** - Without them, you're fooling yourself about your judge's quality. This is non-negotiable.
 
@@ -3273,34 +4079,46 @@ Real lessons from implementing complete eval pipelines in production:
 
 11. **Sampling beats exhaustive evaluation** - Evaluating 10% of traces with statistical rigor gives you a better answer than evaluating 100% with a bad judge.
 
-12. **Good observability tools make the workflow 10x faster** - Integrated tracing, evaluation, datasets, and experiments in one platform (Phoenix, Langfuse, etc.) saves enormous time vs. stitching together custom scripts.
+12. **Good observability tools make the workflow 10x faster** - Integrated tracing, evaluation, datasets, and experiments in one platform (Phoenix, LangWatch, Langfuse, etc.) saves enormous time vs. stitching together custom scripts.
+
+**On Platform Choice**
+
+13. **Match the platform to your constraints, not the hype** - Phoenix wins on free self-hosting, LangWatch wins on speed and built-in evaluators, Langfuse wins on flexibility and community. All three run the same methodology in this guide.
+
+14. **Built-in evaluators save real dev time** - If a platform already ships a safety check or RAG metric you need (LangWatch ships 40+), use it instead of reinventing it.
 
 ---
 
 ## Conclusion
 
-AI evals are not just "testing" — they're a product development methodology that touches engineering, product management, and quality assurance.
+AI evals are not just "testing"; they're a product development methodology that touches engineering, product management, and quality assurance.
 
 **Key takeaways:**
 
-1. **Everyone needs evals** — Not just big companies. If your AI app touches users, you need systematic evaluation.
-2. **Start with error analysis** — Sit down and look at your failures before building anything automated (Chapter 3).
-3. **PMs and QAs must lead** — Error analysis and criteria definition are product/quality work, not just engineering tasks.
-4. **Build incrementally** — Start with code-based evals, then add LLM judges, then add safety evals. Don't try to do everything at once.
-5. **Measure what matters** — Application-specific criteria, not generic "helpfulness" scores.
-6. **Both TPR and TNR** — A judge that catches failures but also false-alarms is harmful. Measure both.
-7. **Split your data** — Train/Dev/Test is mandatory. Without it, you're overfitting your judge.
-8. **Correct for bias** — Use statistical correction (Chapter 10) for honest metrics.
-9. **Close the loop** — Evals that don't lead to improvements are wasted effort (Chapter 11).
-10. **Plan for scale** — Start with the best model, then optimize for cost (Chapter 13).
+1. **Everyone needs evals**: Not just big companies. If your AI app touches users, you need systematic evaluation.
+2. **Start with error analysis**: Sit down and look at your failures before building anything automated (Chapter 3).
+3. **PMs and QAs must lead**: Error analysis and criteria definition are product/quality work, not just engineering tasks.
+4. **Build incrementally**: Start with code-based evals, then add LLM judges, then add safety evals. Don't try to do everything at once.
+5. **Measure what matters**: Application-specific criteria, not generic "helpfulness" scores.
+6. **Both TPR and TNR**: A judge that catches failures but also false-alarms is harmful. Measure both.
+7. **Split your data**: Train/Dev/Test is mandatory. Without it, you're overfitting your judge.
+8. **Correct for bias**: Use statistical correction (Chapter 10) for honest metrics.
+9. **Close the loop**: Evals that don't lead to improvements are wasted effort (Chapter 11).
+10. **Plan for scale**: Start with the best model, then optimize for cost (Chapter 13).
 
 **Your action plan (see Appendix G for details):**
 
-1. Week 1: Set up observability (Phoenix, Langfuse, or your tool of choice), do error analysis
+1. Week 1: Set up observability (Phoenix, LangWatch, Langfuse, or your tool of choice), do error analysis
 2. Week 2: Build 2-3 core code-based evals
 3. Week 3: Build and validate an LLM judge with proper train/dev/test splits
-4. Week 4: Advanced topics — RAG evals, multi-turn evals, safety evals, automation
+4. Week 4: Advanced topics, including RAG evals, multi-turn evals, safety evals, and automation
 5. Ongoing: 30 minutes per week maintenance + regression testing
+
+**Platform decision:**
+- Choose **Phoenix** for a free, fully self-hosted, single-container setup
+- Choose **LangWatch** to start fast (under 30 min) and use built-in evaluators
+- Choose **Langfuse** for maximum flexibility and complex custom workflows
+- Use **more than one** if you want the best of each (many teams do)
 
 **Remember:** The teams shipping the best AI products are the ones with the best evals. Not the fanciest models. Not the biggest teams. The ones who systematically measure and improve.
 
@@ -3314,6 +4132,8 @@ Start today. Your future self will thank you.
 
 - **Phoenix Docs**: [docs.arize.com/phoenix](https://docs.arize.com/phoenix)
 - **Arize Blog & Learning Hub**: [arize.com/blog](https://arize.com/blog/)
+- **LangWatch Docs**: [docs.langwatch.ai](https://docs.langwatch.ai)
+- **LangWatch GitHub**: [github.com/langwatch/langwatch](https://github.com/langwatch/langwatch)
 - **Langfuse Docs**: [langfuse.com/docs](https://langfuse.com/docs)
 - **Maven Course (AI Evals for Engineers & PMs)**: [maven.com/parlance-labs/evals](https://maven.com/parlance-labs/evals)
 - **HuggingFace Evaluation Guidebook**: [github.com/huggingface/evaluation-guidebook](https://github.com/huggingface/evaluation-guidebook)
@@ -3330,15 +4150,16 @@ Start today. Your future self will thank you.
 
 ### Blogs That Shaped This Guide
 
-- **Hamel Husain's Blog**: [hamel.dev](https://hamel.dev/) — Applied AI engineering, LLM evals deep-dives
-- **Shreya Shankar's Site**: [sh-reya.com](https://www.sh-reya.com/) — LLM data systems research, eval methodology
-- **Maxim AI Articles**: [getmaxim.ai/articles](https://www.getmaxim.ai/articles) — Agentic evaluation patterns
+- **Hamel Husain's Blog**: [hamel.dev](https://hamel.dev/), Applied AI engineering, LLM evals deep-dives
+- **Shreya Shankar's Site**: [sh-reya.com](https://www.sh-reya.com/), LLM data systems research, eval methodology
+- **Maxim AI Articles**: [getmaxim.ai/articles](https://www.getmaxim.ai/articles), Agentic evaluation patterns
 
 ### Open-Source Tools & Libraries
 
 | Tool | Focus | License | Links |
 |------|-------|---------|-------|
 | **Arize Phoenix** | Observability & evals | ELv2 | [GitHub](https://github.com/Arize-ai/phoenix) · [Docs](https://docs.arize.com/phoenix) |
+| **LangWatch** | Observability & built-in evals | Apache 2.0 | [GitHub](https://github.com/langwatch/langwatch) · [Docs](https://docs.langwatch.ai) |
 | **Langfuse** | Custom pipelines & tracing | MIT | [GitHub](https://github.com/langfuse/langfuse) · [Docs](https://langfuse.com/docs) |
 | **RAGAS** | RAG-specific evaluation | Apache 2.0 | [GitHub](https://github.com/explodinggradients/ragas) · [Docs](https://docs.ragas.io/) |
 | **Comet Opik** | LLM tracing & evaluation | Apache 2.0 | [GitHub](https://github.com/comet-ml/opik) · [Site](https://www.comet.com/site/products/opik/) |
@@ -3351,6 +4172,7 @@ Start today. Your future self will thank you.
 
 | Company | Focus | Open Source | Best For | Unique Strength |
 |---------|-------|-------------|----------|-----------------|
+| **LangWatch** | Observability + Built-in Evals | Yes (Apache 2.0) | Fast setup, analytics | 40+ built-in evaluators, auto-analytics |
 | **Anthropic** | Safety / Red Teaming | Partial | Frontier risks | Constitutional classifiers, multi-attempt adversarial testing |
 | **OpenAI** | Preparedness / Business | Evals toolkit | Enterprise context | SME probing, contextual evals |
 | **Arize** | Observability | Phoenix (ELv2) | Production scale | OTel-native, data lake integration |
@@ -3367,12 +4189,12 @@ Start today. Your future self will thank you.
 
 ### Reference Work Credits
 This guide was built on the foundation of the following people's work and ideas. Their courses, blogs, and open-source contributions made this guide possible:
-- Hamel Husain: [@HamelHusain](https://x.com/HamelHusain) — [hamel.dev](https://hamel.dev/)
-- Shreya Shankar: [@sh_reya](https://x.com/sh_reya) — [sh-reya.com](https://www.sh-reya.com/)
-- Eugene Yan: [@eugeneyan](https://x.com/eugeneyan) — [eugeneyan.com](https://eugeneyan.com/)
+- Hamel Husain: [@HamelHusain](https://x.com/HamelHusain), [hamel.dev](https://hamel.dev/)
+- Shreya Shankar: [@sh_reya](https://x.com/sh_reya), [sh-reya.com](https://www.sh-reya.com/)
+- Eugene Yan: [@eugeneyan](https://x.com/eugeneyan), [eugeneyan.com](https://eugeneyan.com/)
 
 ---
 
-*This guide was inspired by and builds upon the AI Evals for Engineers & PMs course by Hamel Husain and Shreya Shankar, extended with additional research, production-ready code examples, and multi-platform guides covering Phoenix, Langfuse, and the broader eval tooling ecosystem.*
+*This guide was inspired by and builds upon the AI Evals for Engineers & PMs course by Hamel Husain and Shreya Shankar, extended with additional research, production-ready code examples, and multi-platform guides covering Phoenix, LangWatch, Langfuse, and the broader eval tooling ecosystem.*
 
 *Author: Om Bharatiya | Created: February 2026*

@@ -83,7 +83,6 @@
 
 > 📖 另請參閱本儲存庫的配套指南：
 > - [AI 評估：完整學習指南（Phoenix + Langfuse）](ai_evals_comprehensive_study_guide.md)
-> - [AI 評估：LangWatch + Langfuse 指南](ai_evals_complete_guide_langwatch_langfuse.md)
 
 ---
 

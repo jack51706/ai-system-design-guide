@@ -44,7 +44,7 @@ Files follow a consistent shape. When creating or editing, preserve it:
 
 - Sections are zero-padded folders `00-interview-prep/` … `19-multimodal-generation/`; chapters inside are `NN-topic-name.md` (the `NN` sets reading order).
 - Only `00-interview-prep/` and `07-agentic-systems/` have a section `README.md`; the rest are indexed solely from the root `README.md`.
-- Standalone root docs: `GLOSSARY.md`, `PATTERNS.md`, `COURSES.md`, `TRANSITION_GUIDE.md`, `RESEARCH-RADAR.md`, and two deep-dives `ai_evals_comprehensive_study_guide.md` (Phoenix+Langfuse) and `ai_evals_complete_guide_langwatch_langfuse.md` (LangWatch+Langfuse).
+- Standalone root docs: `GLOSSARY.md`, `PATTERNS.md`, `COURSES.md`, `TRANSITION_GUIDE.md`, `RESEARCH-RADAR.md`, and one unified deep-dive `ai_evals_comprehensive_study_guide.md` (Phoenix, LangWatch & Langfuse).
 
 ## When adding or renaming a chapter, update all of these
 

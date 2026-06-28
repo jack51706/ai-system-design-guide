@@ -209,7 +209,6 @@ flowchart TD
 - 做 3 輪手動錯誤分析：審查 50 條追蹤、寫筆記、分類
 - 閱讀本儲存庫的評估配套指南：
   - [AI Evals: Comprehensive Study Guide](ai_evals_comprehensive_study_guide.md)
-  - [AI Evals: LangWatch + Langfuse Guide](ai_evals_complete_guide_langwatch_langfuse.md)
 - 要閱讀的課程章節：*Error Analysis: The Secret Sauce*（評估指南內，第 3 章）
 
 **第 2 個月：建立評估器**
@@ -479,7 +478,6 @@ flowchart TD
 | 設計模式 | [15-ai-design-patterns](15-ai-design-patterns/) | 資深層級的準備 |
 | 案例研究 | [16-case-studies](16-case-studies/) | 面試準備、參考設計 |
 | 評估深入探討 | [AI Evals Comprehensive Guide](ai_evals_comprehensive_study_guide.md) | QA / PM 路徑 |
-| AI Evals（LangWatch） | [AI Evals LangWatch Guide](ai_evals_complete_guide_langwatch_langfuse.md) | QA / 評估工程路徑 |
 | 面試準備 | [00-interview-prep](00-interview-prep/) | 所有角色 |
 | 課程 | [COURSES.md](COURSES.md) | 所有角色 |
 

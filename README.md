@@ -50,7 +50,7 @@ A practical, continuously updated guide to AI system design, RAG architectures, 
 | **Autonomous coding agents** | [Claude Code](09-frameworks-and-tools/09-claude-code.md) → [OpenCoder Landscape](09-frameworks-and-tools/10-opencoderguide.md) |
 | **Survive framework version churn** | [Navigating Framework Churn](09-frameworks-and-tools/12-navigating-framework-churn.md) (stale tutorials, version pinning, what to actually learn) |
 | **Pick the right model (2026)** | [Model Taxonomy](02-model-landscape/01-model-taxonomy.md) → [Pricing](02-model-landscape/03-pricing-and-costs.md) |
-| **Evaluate AI in production** | [AI Evals Guide (Phoenix/Langfuse)](ai_evals_comprehensive_study_guide.md) → [AI Evals Guide (LangWatch/Langfuse)](ai_evals_complete_guide_langwatch_langfuse.md) |
+| **Evaluate AI in production** | [AI Evals Guide (Phoenix, LangWatch & Langfuse)](docs/ai_evals_comprehensive_study_guide.md) |
 | **Read benchmarks the right way** | [Benchmarks & Leaderboards](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md) (saturation, contamination, harness variance) |
 | **Track frontier research (2026)** | [Research Radar](RESEARCH-RADAR.md) (trending papers and what to learn next) |
 | **Build a voice agent** | [Real-Time Voice Agents](18-voice-and-audio-agents/01-realtime-voice-agents.md) (cascade vs speech-to-speech, latency budgets, the stack) |
@@ -144,8 +144,7 @@ flowchart TD
 ├── 19-multimodal-generation/    # Image/video/audio generation: pipelines, provenance, evaluation
 ├── GLOSSARY.md                  # Every term defined
 │
-├── ai_evals_comprehensive_study_guide.md      # 🔬 Deep-dive: AI Evals (Phoenix + Langfuse)
-└── ai_evals_complete_guide_langwatch_langfuse.md  # 🔬 Deep-dive: AI Evals (LangWatch + Langfuse)
+├── ai_evals_comprehensive_study_guide.md      # 🔬 Deep-dive: AI Evals (Phoenix, LangWatch & Langfuse)
 └── COURSES.md                   # 🎓 Recommended courses & learning paths
 └── TRANSITION_GUIDE.md          # 🔄 Transition from Backend/QA/PM/EM to AI roles
 └── RESEARCH-RADAR.md            # 🛰️ Frontier research radar: trending papers and what to learn next
@@ -214,8 +213,7 @@ Two companion guides (3,000+ lines each) covering AI evaluation end-to-end - for
 
 | Guide | Platforms Covered | What's Inside |
 |-------|------------------|---------------|
-| [AI Evals: Comprehensive Study Guide](ai_evals_comprehensive_study_guide.md) | Arize Phoenix + Langfuse | LLM-as-a-Judge, RAG eval, multi-turn eval, production safety, statistical correction with `judgy`, 30-day learning path |
-| [AI Evals: LangWatch + Langfuse Guide](ai_evals_complete_guide_langwatch_langfuse.md) | LangWatch + Langfuse | Same syllabus with LangWatch's 40+ built-in evaluators, side-by-side platform comparisons, platform choice guidance |
+| [AI Evals: Comprehensive Study Guide](docs/ai_evals_comprehensive_study_guide.md) | Phoenix, LangWatch & Langfuse | LLM-as-a-Judge, RAG eval, multi-turn eval, production safety, statistical correction with `judgy`, 40+ LangWatch built-in evaluators, side-by-side platform comparisons, 30-day learning path |
 
 **Topics covered across both guides:**
 - Tracing and observability setup (Phoenix, LangWatch, Langfuse)
@@ -266,7 +264,7 @@ MCP is an open protocol that lets LLMs discover and call external tools and data
 It depends on latency budget, context length, cost per million tokens, tool-use quality, and data residency. The [Model Taxonomy](02-model-landscape/01-model-taxonomy.md) and [Pricing](02-model-landscape/03-pricing-and-costs.md) chapters give a head-to-head for Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro, DeepSeek V4, Llama 4, and others as of June 2026.
 
 ### How do I evaluate an LLM or RAG system in production?
-Combine offline evals (LLM-as-a-judge with ground-truth calibration), online metrics (faithfulness, context recall, answer relevance), and continuous tracing. The companion deep-dives [AI Evals: Phoenix + Langfuse](ai_evals_comprehensive_study_guide.md) and [AI Evals: LangWatch + Langfuse](ai_evals_complete_guide_langwatch_langfuse.md) walk through this end-to-end.
+Combine offline evals (LLM-as-a-judge with ground-truth calibration), online metrics (faithfulness, context recall, answer relevance), and continuous tracing. The companion deep-dive [AI Evals: Phoenix, LangWatch & Langfuse](docs/ai_evals_comprehensive_study_guide.md) walks through this end-to-end.
 
 ### How do I build a multi-tenant RAG system safely?
 Use defense-in-depth: per-tenant indexes or namespaces, query-time access checks, and prompt-layer guards. The [Access Control](12-security-and-access/02-access-control.md) chapter and [Multi-Tenant SaaS Case Study](16-case-studies/08-multi-tenant-saas.md) cover the patterns that hold up in interviews and production.

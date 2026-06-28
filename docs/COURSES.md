@@ -81,9 +81,8 @@ A curated list of **reliable, trusted, and up-to-date** online courses for AI en
 | **[LangSmith Evaluation Tutorials](https://docs.smith.langchain.com/evaluation)** | LangChain | Free | Official LangSmith docs are the best hands-on eval reference if you use the LangChain ecosystem. |
 | **[Phoenix + Langfuse official docs](https://docs.arize.com/phoenix)** | Arize Phoenix | Free | Hands-on tutorials for open-source evals using Phoenix. |
 
-> 📖 Also see this repo's companion guides:
-> - [AI Evals: Comprehensive Study Guide (Phoenix + Langfuse)](ai_evals_comprehensive_study_guide.md)
-> - [AI Evals: LangWatch + Langfuse Guide](ai_evals_complete_guide_langwatch_langfuse.md)
+> 📖 Also see this repo's companion guide:
+> - [AI Evals: Comprehensive Study Guide (Phoenix, LangWatch & Langfuse)](ai_evals_comprehensive_study_guide.md)
 
 ---
 
