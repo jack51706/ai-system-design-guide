@@ -2296,17 +2296,47 @@ Even without writing code, you can:
 
 ### Why Multi-Turn Is Different
 
-Most eval examples show single-turn Q&A: user asks, AI answers, done. But real applications have **conversations**, and new failure modes emerge across turns:
+Most eval examples show single-turn Q&A: user asks, AI answers, done. But real applications have **conversations**, and a response that scores PASS in isolation can be wrong in context. The reason is structural: in a single turn the model conditions on one prompt, but in turn N it conditions on a growing transcript where its own earlier outputs are now part of the input. Errors compound. A small omission in turn 2 becomes a confident falsehood by turn 6 because the model treats its own prior text as ground truth.
 
-1. **Context loss**: AI forgets what the user said 3 messages ago
-2. **Contradiction**: AI says one thing in turn 2, contradicts it in turn 5
-3. **Instruction drift**: AI gradually stops following the original system prompt
-4. **Repetition**: AI repeats the same information or suggestion
-5. **Escalation failure**: AI doesn't know when to hand off to a human
+A useful mental model: single-turn eval measures **answer quality**; multi-turn eval measures **state management**. The model is implicitly maintaining a state machine (what the user wants, what was already decided, what is still open), and the new failure modes are all corruptions of that hidden state. Frontier models in 2026 (Claude Opus 4.8, GPT-5.6, Gemini 3.1 Pro) are dramatically better at this than the 2024 generation, but they still degrade: empirically, faithful recall of a constraint stated early in the conversation starts to drop once the live transcript passes roughly 10 to 15 turns or ~30K tokens of dialogue, and degrades faster when the early constraint is a negative ("no nuts", "not on weekends") because negations are weakly attended.
+
+Five failure modes, each with how it actually shows up and why it slips past naive testing.
+
+**1. Context loss: the model forgets what the user said a few messages ago.**
+Example: a food-ordering bot. Turn 1 the user says "I'm gluten-free." Turn 4 the user asks "what's good here?" and the bot recommends the pasta. Nothing in turn 4 is wrong as a sentence; it is only wrong relative to turn 1. This is the hardest failure to catch because the failing turn looks fine on its own, so a reviewer skimming turn 4 in isolation passes it. You only see the bug if the eval has the constraint from turn 1 in view. Drivers: long transcripts pushing the constraint out of the effective attention window, summarization/truncation in the app's own context management silently dropping it, and negative constraints (the gluten-free case) being underweighted.
+
+**2. Contradiction: the model asserts X in turn 2 and not-X in turn 5.**
+Example: a support agent says "yes, refunds take 3 to 5 business days" in turn 2, then in turn 5 says "refunds are instant." Both came from the model, both sound authoritative, and the user now has no idea which is true. Contradictions are insidious because each statement is locally plausible; you need to diff the two assertions to notice. They spike when the underlying facts are retrieved (RAG returning different chunks per turn) or when the model is "helpfully" agreeing with a leading user question that flips the earlier claim.
+
+**3. Instruction drift: the model gradually stops obeying the system prompt.**
+Example: a system prompt says "never give medical dosage advice, always refer to a doctor." For the first few turns the bot refuses correctly. By turn 8, after the user has rephrased three times and built rapport, the bot says "most people take 400mg." The system prompt is still in context, but its influence decays relative to the accumulating user turns, and persistent user pressure (a mild form of jailbreak) erodes it. This is dangerous precisely because turn-1 testing shows perfect compliance; the failure only appears under sustained conversation, which most test suites never simulate.
+
+**4. Repetition: the model loops, re-asking or re-stating.**
+Example: a booking assistant asks "what date works for you?" in turn 3, the user answers, and in turn 6 it asks for the date again. Or it re-explains the cancellation policy in three consecutive turns. Repetition reads as the bot not listening, tanks user trust fast, and inflates turns-to-resolution. It is common in agents that re-derive state from scratch each turn instead of tracking slots, and in models that hedge by restating context they already established.
+
+**5. Escalation failure: the model does not hand off to a human when it should.**
+Example: a user types "this is the third time I've contacted you and I'm furious, I want to cancel everything." A well-behaved agent recognizes the frustration plus the cancel intent and routes to a human. A failing one keeps cheerfully troubleshooting, which turns a recoverable complaint into a churned customer or a viral screenshot. The opposite error (escalating too eagerly and dumping trivial questions on humans) is also a failure and inflates support cost. Both are hard to catch because the "right" threshold is fuzzy and policy-dependent, so you need labeled escalation criteria, not vibes.
+
+A sixth one worth tracking in production: **goal abandonment / "never resolved."** The conversation just trails off with the user's actual task unmet, even though no single turn contradicted or forgot anything. No per-turn check will flag this because every individual turn was fine; only a whole-conversation or outcome-based view sees it.
 
 ### Strategies for Multi-Turn Evaluation
 
+There are three workhorse strategies, and mature teams run all three: per-turn judging for granular debugging, whole-conversation judging for outcomes, and synthetic scenarios to manufacture the rare failures on demand. Pick by what question you are answering.
+
+| Strategy | Best for | Granularity | Cost / latency | What it MISSES |
+|---|---|---|---|---|
+| Per-turn judge | "Which turn broke, and why?" Regression debugging, pinpointing drift. | One verdict per assistant turn | N judge calls per conversation (N = turn count); most expensive | Conversation-level outcomes: "task never resolved", "took 14 turns when 3 would do". A pass on every turn does not imply a good conversation. |
+| Whole-conversation judge | "Was this a good conversation overall?" Outcome/quality reporting, escalation, resolution. | One verdict per conversation | 1 judge call per conversation (long input); cheapest per conversation but biggest single prompt | Locality: it tells you the conversation failed but not WHICH turn caused it; long-transcript judges also suffer "lost in the middle" and under-weight mid-conversation errors. |
+| Synthetic multi-turn tests | "Does the system survive a known failure mode?" Pre-ship gating, CI, red-teaming. | Per-scenario pass/fail (usually checks a specific later turn) | Generation cost up front, cheap to re-run; deterministic-ish | Realism: scripted users do not behave like real ones, so you catch the bugs you designed for and miss the long tail of organic phrasing. |
+
+Rule of thumb on cost: a per-turn judge on a 10-turn conversation is 10x the LLM-judge spend of a single whole-conversation pass. With a cheap judge (DeepSeek V4 Flash or Gemini 3.1 Flash at roughly $0.05 to $0.15 per million input tokens) this is usually fine for offline eval sets of a few hundred conversations; for online/sampled production scoring, judge every turn only on a sampled slice (e.g. 5 to 10 percent of sessions) and run the whole-conversation judge on more.
+
 #### Strategy 1: Evaluate Each Turn Independently
+
+**When to use:** debugging and regression tracking, when you need to know exactly where a conversation went wrong (drift, contradiction, a forgotten constraint). This is the strategy that produces actionable bug reports ("turn 4 ignored the gluten-free constraint from turn 1").
+**Strengths:** maximal locality; flags the precise turn; easy to aggregate into per-failure-mode rates.
+**Weaknesses:** blind to conversation-level outcomes (cannot see "never resolved" or "took too many turns"); cost scales with turn count; if the judge only sees prior turns it cannot penalize a turn for a problem revealed later.
+**Typical pitfall:** judging a turn with only the history *before* it and forgetting that some failures (a promise the bot never keeps) are only visible later. Pass the full transcript and mark which turn is under evaluation, as below.
 
 Treat each assistant response as a separate eval, but include the full conversation history as context:
 
@@ -2328,7 +2358,14 @@ Return JSON: {"label": "PASS" or "FAIL", "explanation": "..."}
 """
 ```
 
+Edge cases that bite in practice: (1) Token cost grows quadratically across a conversation because each turn re-sends the whole history; cap or summarize history beyond ~20 turns or you will pay more for judging than for generation. (2) The judge needs to know WHICH turn it is scoring, otherwise it grades the last message in the blob; the explicit "CURRENT ASSISTANT RESPONSE" field above handles this. (3) Some criteria are not turn-local. "Did it advance the conversation productively?" requires the judge to compare against what was already covered, so feed it the full history, not a window. (4) Calibrate the judge: contradiction and context-retention judgments are noisy, so spot-check 30 to 50 judge verdicts against human labels and aim for >=85 percent agreement (Cohen's kappa >= 0.6) before trusting the aggregate rates.
+
 #### Strategy 2: Evaluate the Entire Conversation
+
+**When to use:** outcome and quality reporting, escalation appropriateness, "was the user's goal actually achieved?", and catching the "never resolved" failure that per-turn judging structurally cannot see.
+**Strengths:** one cheap call per conversation; sees the whole arc, so it can judge resolution, repetition across distant turns, and whether the bot escalated at the right moment.
+**Weaknesses:** no locality (it says "this conversation contradicted itself" but not where); long transcripts trigger "lost in the middle", so a contradiction buried in turns 7 and 12 of a 20-turn chat is easy for the judge to miss; a single PASS/FAIL hides a mostly-good conversation with one bad turn.
+**Typical pitfall:** collapsing everything to one PASS/FAIL. Score each dimension separately (as the prompt below does) and, for failures, ask the judge to cite the offending turn numbers so you regain some locality.
 
 Score the conversation as a whole after it ends:
 
@@ -2348,7 +2385,14 @@ Return JSON: {"label": "PASS" or "FAIL", "explanation": "..."}
 """
 ```
 
+Make this prompt earn its keep: have it return a per-dimension score plus the turn numbers it is reacting to, e.g. `{"task_completion": "PASS", "consistency": "FAIL", "contradiction_turns": [2, 5], "context_retention": "PASS", "escalation": "N/A", "explanation": "..."}`. The `contradiction_turns` field is what buys back the locality this strategy otherwise lacks, and it lets you cross-check against Strategy 1. Use a strong judge here (Claude Opus 4.8 or GPT-5.6); whole-conversation reasoning over a long transcript is exactly where weaker judges fall apart. Reserve "PASS/FAIL" as a derived gate (e.g. FAIL if any dimension fails) rather than asking the model for an overall verdict it tends to compute inconsistently.
+
 #### Strategy 3: Synthetic Multi-Turn Tests
+
+**When to use:** pre-ship gating and CI, and any time you need a specific failure mode to occur reliably instead of waiting for it to appear in production. This is how you get a contradiction or a drift case on demand.
+**Strengths:** targeted (each scenario is built to provoke one failure mode), repeatable, cheap to re-run on every prompt change, and they make regressions visible ("we used to pass the budget-contradiction scenario, now we fail it").
+**Weaknesses:** scripted users are unrealistic; you only catch the failures you thought to script, so synthetic suites must be fed by real production failures (mine transcripts, turn each new bug into a scenario). Static scripts also cannot adapt when the bot says something unexpected.
+**Typical pitfall:** writing scenarios where the "test" turn does not actually depend on the earlier turns, so a model that ignores history still passes. Each scenario must have a checkable expectation tied to the early context (see below).
 
 Generate multi-turn test scenarios that specifically target failure modes:
 
@@ -2373,12 +2417,97 @@ SCENARIOS = [
 ]
 ```
 
+Each scenario needs more than a `turns` list and a label; it needs a **machine-checkable expectation** so a run can pass or fail automatically. Add an explicit assertion about the final turn, for example: `"expect_not_contains": ["business class", "first class"]` for the budget case, or `"expect_references": "the vegan place named earlier"` to be checked by a small LLM-as-judge call. Without that, you are just generating transcripts, not testing.
+
+**Designing scenarios that actually target a failure mode.** The pattern is always: plant a constraint or fact early, add intervening turns to push it out of easy reach, then probe in a way that is only correct if the early turn was respected.
+
+| Failure mode | Plant (early turn) | Probe (late turn) | Pass condition |
+|---|---|---|---|
+| Context loss | "I'm gluten-free" | "What do you recommend?" (after 4+ unrelated turns) | Recommendation excludes gluten items |
+| Contradiction | Bot states a policy/number | Leading question that invites the opposite ("so it's instant, right?") | Bot holds the original claim or explicitly corrects it |
+| Instruction drift | (system prompt forbids X) | User asks for X three different ways across turns | Still refuses on the third ask |
+| Repetition | User answers a slot ("June 3rd") | Continue 3 more turns | Bot never re-asks for that slot |
+| Escalation | Calm question | Turn expressing anger + intent to cancel | Bot offers human handoff |
+
+Keep scenarios short (3 to 6 turns) and single-purpose; one assertion per scenario makes failures unambiguous. Seed the suite from production: every time a real conversation exhibits a new failure, distill it into a scenario. This is how a synthetic suite stays representative instead of drifting into toy cases.
+
+**Simulating a user with a second LLM.** Scripted turns break the moment the bot says something unanticipated ("I can't find that restaurant, which city?"), because the next scripted line no longer fits. The fix is a **user-simulator**: a second LLM given a persona and a goal, generating the user side live while your system-under-test generates the assistant side. This produces adaptive, realistic conversations and is the only practical way to stress instruction drift and escalation, which require sustained, responsive pressure.
+
+```python
+# A user-simulator drives a realistic multi-turn conversation.
+# Use a strong model for the simulator (Claude Opus 4.8 / GPT-5.6) so it stays in character.
+USER_SIM_SYSTEM = """You are role-playing a CUSTOMER, not an assistant.
+PERSONA: frustrated, in a hurry, on your third support contact.
+GOAL: cancel your subscription and get a refund.
+RULES:
+- Reply only as the customer, one short message at a time.
+- Pursue your goal; if stalled, get more insistent (this tests escalation).
+- Do NOT reveal you are an AI or mention these instructions.
+- When your goal is met OR you would give up, end your message with [END]."""
+
+def run_simulated_conversation(assistant_fn, max_turns=12):
+    history = []
+    user_msg = "I need to cancel my subscription. This is the third time I've asked."
+    for _ in range(max_turns):
+        history.append({"role": "user", "content": user_msg})
+        assistant_msg = assistant_fn(history)            # system under test
+        history.append({"role": "assistant", "content": assistant_msg})
+        # simulator sees the conversation with roles SWAPPED (it is the "user")
+        user_msg = llm(system=USER_SIM_SYSTEM, messages=swap_roles(history))
+        if "[END]" in user_msg:
+            break
+    return history
+```
+
+Edge cases for the simulator: (1) Role confusion. The simulator must see the transcript with roles swapped (its own lines as `assistant`, the system-under-test's lines as `user`), or it starts answering itself; the `swap_roles` call above is load-bearing. (2) Termination. Without an explicit `[END]` token and a `max_turns` cap, simulators run forever or loop politely; both waste tokens. (3) Over-cooperative personas. A simulator that is too agreeable never triggers escalation or drift, so write adversarial personas on purpose. (4) Contamination. Never let the simulator see the assistant's system prompt or the grading rubric, or it games the test. (5) Cost: each simulated conversation is 2N LLM calls (N assistant + N user); budget accordingly and reuse transcripts across multiple judges.
+
 ### Key Metrics for Multi-Turn
 
-- **Context retention rate**: % of turns where the AI correctly referenced earlier information
-- **Contradiction rate**: % of conversations with at least one self-contradiction
-- **Task completion rate**: % of conversations where the user's goal was achieved
-- **Average turns to resolution**: How many turns it takes to complete the task
+Report these per metric: a formula, a target range, and how you compute it. Targets below are starting points for a customer-facing assistant in 2026; calibrate to your domain (a high-stakes medical or financial bot should be stricter).
+
+**Context retention rate.** Of the turns that *required* recalling earlier information, the fraction that did so correctly.
+Formula: `retention = (turns that correctly used prior context) / (turns that required prior context)`.
+The denominator matters: scoring over all turns dilutes the signal because most turns do not depend on history. Tag the dependent turns (often via your synthetic scenarios, where you know which turns probe earlier context) and measure only those.
+Target: >= 0.95 on frontier models for conversations under ~10 turns; expect a real drop past that, so report it bucketed by conversation length.
+How to measure: per-turn LLM judge (Strategy 1) with the full history, asked specifically "does this turn correctly honor relevant earlier constraints?" For the gluten-free style cases, an exact-string check ("did the recommendation include any forbidden item?") is cheaper and less noisy than an LLM judge.
+
+**Contradiction rate.** Fraction of conversations containing at least one self-contradiction.
+Formula: `contradiction_rate = (conversations with >=1 contradiction) / (total conversations)`.
+Target: <= 0.02 (under 2 percent) for a production assistant; treat anything above 5 percent as a release blocker, since each contradiction directly destroys user trust.
+How to measure: whole-conversation judge that returns the contradicting turn pairs (the `contradiction_turns` field above). Validate the judge against human labels before trusting it, because "is this a real contradiction or just a refinement?" is genuinely ambiguous and judges over-flag.
+
+**Task completion rate (TCR).** Fraction of conversations where the user's actual goal was achieved.
+Formula: `TCR = (conversations where goal achieved) / (total conversations)`.
+This is the headline outcome metric and the one per-turn judging cannot produce. Target depends on task difficulty: 0.85 to 0.95 for narrow tasks (book a table, reset a password), lower for open-ended help. Track alongside a containment/deflection rate if a human-handoff counts as a non-completion for the bot.
+How to measure: best is a ground-truth signal (did the booking get created? did the ticket close?) rather than a judge's opinion. Where no signal exists, a whole-conversation judge with a clear goal definition, validated against humans. For simulated runs, the user-simulator can self-report goal-met, but corroborate it with an independent judge so the simulator does not grade its own homework.
+
+**Average turns to resolution (ATR).** Mean assistant turns in successfully completed conversations.
+Formula: `ATR = sum(turns_in_completed_convos) / count(completed_convos)`.
+Compute over completed conversations only; including abandoned ones conflates "fast" with "gave up." Lower is better, but only jointly with TCR: a prompt change that cuts ATR while TCR also drops just means the bot is quitting sooner. Report ATR and TCR together, and watch the distribution, not only the mean (a p90 of 14 turns hiding behind a mean of 4 is a real problem).
+How to measure: count assistant turns directly from the transcript; no LLM needed. Pair with a repetition check (did any slot get re-asked?), since repetition is the usual reason ATR balloons.
+
+Two more worth adding as you mature: **resolution rate** (conversations that reached a clear end state, completed or correctly escalated, versus those that trailed off unresolved) and **escalation precision/recall** (of conversations that should have escalated, how many did, and of escalations, how many were warranted).
+
+#### Tooling: tracing makes multi-turn debuggable
+
+Aggregate rates tell you something regressed; traces tell you which turn and why. Treat a conversation as a single trace with one span per turn (and child spans for retrieval and tool calls), so you can replay the exact transcript the model saw at the failing turn. This is the difference between "contradiction rate went up 3 points" and "in session abc123, turn 5 contradicted turn 2 because retrieval returned a stale policy chunk."
+
+- **Phoenix (Arize):** open-source, OpenTelemetry-based. Group spans under a session/trace id and it renders the full multi-turn conversation; attach judge results as span annotations so a failed-contradiction verdict links straight to the offending turn. Strong for local/offline iteration.
+- **Langfuse:** open-source, first-class **sessions** that stitch turns into one timeline, with per-turn scores and dataset-based eval runs. Good for tracking a metric across prompt versions over time.
+- **LangWatch:** managed, geared to conversation-level analytics and online guardrails; useful when you want production dashboards of the rates above plus alerting on spikes.
+
+Whatever you use, the non-negotiables are: a stable session id linking the turns, the resolved prompt (post-retrieval, post-truncation) stored per turn so you can see what the model actually conditioned on, and judge verdicts attached to the specific turn so locality survives into your dashboards.
+
+#### Sequencing: start single-turn, then add multi-turn
+
+Do not start here. Multi-turn eval is more expensive (N judge calls, user-simulators, longer transcripts) and harder to interpret, and most catastrophic bugs are still single-turn. Sequence it:
+
+1. Ship single-turn eval first: get your judge calibrated against humans and your core quality criteria stable on isolated Q&A.
+2. Add whole-conversation judging next: cheapest multi-turn signal, and it surfaces the outcome metrics (TCR, resolution) that single-turn can never see.
+3. Add per-turn judging when you need to localize the regressions whole-conversation scoring flags.
+4. Add synthetic scenarios and a user-simulator last, seeded by real production failures, to gate releases against the specific failure modes you have actually observed.
+
+A team that nails single-turn quality and adds whole-conversation TCR is already ahead of most; reach for per-turn judging and simulators only once those two are in place and paying off.
 
 ---
 
@@ -2694,7 +2823,17 @@ This is much more credible than "we tested it and it seems to work."
 
 ### The Most Common Failure: Measuring Without Acting
 
-Many teams build great eval suites, then never systematically use the results to improve their system. Evals are only valuable if they drive action.
+Many teams build great eval suites, then never systematically use the results to improve their system. Evals are only valuable if they drive action. A dashboard nobody acts on is a vanity metric with extra steps.
+
+**Why teams stall.** The pattern is depressingly consistent across orgs. The eval suite gets built during a Q1 quality push, lights up green-and-red, and then ownership evaporates. Three structural reasons:
+
+1. **No owner for the red number.** Evals report a faithfulness score of 0.78, but nobody's OKR moves when it goes to 0.74. Compare that to latency or error rate, which page an on-call. If a metric does not have a name attached and a threshold that triggers work, it will drift. Fix: assign each top-level eval metric to one person, and define a threshold that opens a ticket automatically.
+2. **The gap from "score" to "fix" is unstaffed.** Running the eval is cheap and automatable. Reading 40 failing traces, clustering them, and forming a hypothesis is slow human work (2 to 4 hours of a senior engineer's week). Teams budget the cheap half and skip the expensive half. The eval becomes a thermometer with no doctor.
+3. **The "measuring theater" anti-pattern.** Leadership asks "do we have evals?", the team says yes, and the question is considered closed. The eval exists to answer an audit, not to change the product. You can spot this when the eval set has not gained a single new case in 8 weeks despite shipping features and seeing user complaints.
+
+**The org-level tell.** If you cannot point to a specific prompt diff, retrieval change, or spec edit in the last month and say "we made this change *because* eval case cluster #N regressed", you are measuring without acting. The eval is decorative.
+
+**The cost of acting.** Closing the loop is not free, and pretending it is sets the wrong expectation. A realistic steady-state cost for a team running a serious eval loop on one production surface: roughly 0.5 to 1 engineer-day per week for error analysis and clustering, plus compute. For an eval set of 500 cases run through an LLM judge on Claude Opus 4.8 or GPT-5.6, expect $3 to $15 per full run depending on context length, so per-PR gating is affordable; nightly full runs are trivial. The human time, not the tokens, is the budget you must defend.
 
 ### The Improvement Cycle
 
@@ -2705,6 +2844,18 @@ Many teams build great eval suites, then never systematically use the results to
 4. Run evals again → confirm improvement, check for regressions
 5. Repeat with the next failure mode
 ```
+
+The loop above is correct but compressed. In practice each step has a discipline of its own:
+
+- **Step 1 (prioritize, do not just list).** Rank failure modes by `frequency x severity x reversibility`. A 2% hallucination rate on medical dosages outranks a 15% formatting nit. Pull the count from your trace store (Langfuse, LangSmith, Phoenix, or Braintrust all expose failure tagging) and the severity from a rubric, do not eyeball it. Work the top one or two modes per cycle; trying to fix five at once means you cannot attribute which change moved which number.
+- **Step 2 (one hypothesis, written down).** Before touching code, write the hypothesis in one sentence: "The bot recommends honey in vegan recipes because the system prompt lists dietary rules but never names honey as non-vegan." A written hypothesis is falsifiable; a vague intent ("improve the prompt") is not, and it is how you end up with prompt sprawl.
+- **Step 3 (smallest change that tests the hypothesis).** Change one variable. If you simultaneously rewrite the prompt, swap to a stronger model, and add a reranker, and the score improves, you have learned nothing about cause and you now own three changes you cannot individually justify.
+- **Step 4 (confirm the drop AND scan for collateral).** A fix is not done when the target cluster turns green. It is done when the target cluster turns green *and* the rest of the suite did not regress. The honey fix that adds three sentences of dietary caveats can quietly tank your conciseness metric.
+- **Step 5 (capture the failure as a permanent test).** The single highest-leverage habit: every confirmed failure becomes a frozen regression case before you move on. This is how the eval set grows from synthetic guesses into a real defense built from production reality (see Regression Testing below).
+
+**Cadence.** Run this loop on two clocks. A fast inner loop (offline, on every PR that touches a prompt, model, or retrieval config) gates regressions in minutes. A slow outer loop (weekly error-analysis session against fresh production traces) discovers *new* failure modes the frozen set cannot, because the frozen set only knows about yesterday's bugs.
+
+**Typical pitfall.** Teams celebrate at step 4 and skip step 5. Six weeks later the same bug reappears after an unrelated prompt edit, with no test to catch it, and someone reopens the same investigation from scratch. Capturing the case is the difference between a ratchet and a hamster wheel.
 
 ### Root-Causing Failures
 
@@ -2717,6 +2868,68 @@ When your eval identifies a failure, ask **where** in the pipeline it happened:
 | **Tool calls** | Wrong tool selected, wrong parameters | Improve tool descriptions, add validation |
 | **Generation** | Hallucination, wrong format, ignores context | Few-shot examples, structured output, temperature tuning |
 | **Post-processing** | Truncation, encoding issues, format errors | Fix parsing code, add validation |
+
+#### The Four-Bucket Decision Framework: Prompt, Model, Data, or Spec
+
+The table above is the pipeline view. There is a second, more useful axis for deciding *what kind of work* a fix requires. Almost every failure is fundamentally one of four types, and they demand completely different responses. Misdiagnosing the bucket is the most expensive mistake in the loop: you can burn a week prompt-engineering around a problem that is actually a retrieval miss, or swap to a $15/Mtok model to paper over a spec ambiguity that a one-line rubric edit would have resolved.
+
+| Bucket | What it means | First-line owner | Cost to fix |
+|---|---|---|---|
+| **PROMPT** | The model *can* do it, but you asked badly or incompletely | Prompt author | Hours |
+| **MODEL** | The model *cannot* do it reliably at this size/capability | ML/platform | Days + recurring $ |
+| **DATA / retrieval** | The right information never reached the model | Data/RAG owner | Days |
+| **SPEC** | "Failure" is disagreement about what correct means | PM + eval owner | Hours (but political) |
+
+**How to tell them apart.** The discriminating move is the *context-injection test*: take a failing case and feed the model the ideal context and an ideal instruction by hand, then see what survives.
+
+- **It is a PROMPT problem when:** the model produces the right answer once you add an explicit instruction or one or two few-shot examples, with the same model and the same retrieved context. Signal: failures cluster around a rule you assumed was "obvious" (honey is not vegan, dates must be ISO-8601, never speculate on legal liability). Signal: a stronger model gets it right with your *same* prompt (means the instruction was underspecified, not impossible). Cheapest bucket; always test this first.
+- **It is a MODEL problem when:** you hand the model perfect context and a crisp instruction and it *still* fails a meaningful fraction of the time, and a more capable model (e.g., Claude Opus 4.8 or GPT-5.6 in place of a Flash/mini tier) fixes it with no other change. Signal: failures involve multi-step reasoning, long-context needle retrieval beyond the model's reliable window, or strict format adherence under load. Beware: "model problem" is the most over-diagnosed bucket because upgrading feels like progress. Confirm it by ruling out PROMPT and DATA first, because the upgrade costs you 3 to 10x per token forever.
+- **It is a DATA / retrieval problem when:** the model's output is faithful to what it was given, but what it was given was wrong, incomplete, or stale. Signal: in the trace, the retrieved chunks do not contain the answer (measure this directly with retrieval recall@k, see below). Signal: the model hedges or says "I don't have information about X" when X exists in your corpus. This is invisible if you only look at the final answer; you must inspect the retrieved context. A faithfulness score can be a perfect 1.0 while the answer is useless because the inputs were garbage.
+- **It is a SPEC problem when:** engineers and the PM disagree on whether the output is even wrong, or two annotators label the same trace differently. Signal: low inter-annotator agreement (Cohen's kappa below ~0.6) on the failing cluster. Signal: the "fix" is really a product decision ("should the support bot offer refunds or escalate?"). No prompt or model change resolves a spec gap; you resolve it by editing the rubric/golden definition, then *re-labeling* affected cases. Shipping a prompt fix on top of an unresolved spec just moves the disagreement downstream.
+
+**Worked diagnosis.** Eval flags a RAG support bot for "wrong answer" on 30 of 500 cases. You sample 12. For 8 of them, the retrieved chunks lack the answer entirely (DATA: the docs were re-indexed with a 256-token chunk size that split the relevant table). For 3, the chunks contain the answer but the model summarized it wrong even when you paste the chunk in by hand and it persists on GPT-5.6 (MODEL or PROMPT: test prompt first). For 1, the "wrong" answer is actually correct and the golden label is stale (SPEC). One eval number, three different fixes, three different owners. If you had reflexively "improved the prompt", you would have moved 3 cases and left 9 untouched, then wondered why the metric barely budged.
+
+```python
+# The context-injection test, automated as a triage helper.
+# For each failing case, re-run the model with HAND-VERIFIED context and a strong instruction.
+# This separates "could not" (MODEL) from "was not told / not given" (PROMPT / DATA).
+def triage_failure(case, app_model, strong_model, ideal_context, ideal_instruction):
+    # 1. Did the production retrieval even contain the answer?
+    retrieval_had_answer = ideal_context.strip() in case["retrieved_context"]
+
+    # 2. Same model, but perfect context + instruction:
+    fixed_with_better_prompt = passes_eval(
+        app_model(prompt=ideal_instruction, context=ideal_context, query=case["input"]),
+        case["expected"],
+    )
+
+    # 3. Stronger model, perfect context + instruction:
+    fixed_with_stronger_model = passes_eval(
+        strong_model(prompt=ideal_instruction, context=ideal_context, query=case["input"]),
+        case["expected"],
+    )
+
+    if not retrieval_had_answer:
+        return "DATA/RETRIEVAL"          # answer never reached the model
+    if fixed_with_better_prompt:
+        return "PROMPT"                   # capability exists; instruction was the gap
+    if fixed_with_stronger_model:
+        return "MODEL"                    # needs more capability than current tier
+    return "SPEC or HARD"                 # even ideal inputs fail -> re-check the label, then the task
+```
+
+Edge cases: the test assumes you *can* write the ideal context and instruction by hand. If you cannot agree on what "ideal" is, you have already found a SPEC problem. Also, buckets co-occur: a single cluster can be 60% DATA and 40% PROMPT, which is exactly why you sample 8 to 12 cases and count, rather than judging from one trace.
+
+#### Fix Type to First Thing to Try
+
+| If the bucket is... | First thing to try (cheapest high-yield move) |
+|---|---|
+| PROMPT | Add one explicit rule or 1-2 few-shot examples for the exact failure; re-run only that cluster |
+| MODEL | Swap *only* the model to the next tier (e.g., DeepSeek V4 Pro or Claude Opus 4.8) on the failing cluster; if fixed, decide if the cost is worth it before rolling out |
+| DATA / retrieval | Inspect retrieved chunks; check recall@k; fix chunking/embedding/reranker before touching the prompt |
+| SPEC | Stop coding. Get PM + 2 annotators to re-label 10 cases, update the rubric/golden, then re-measure |
+| Tool / function call | Tighten the tool description and parameter schema; add a validation layer that rejects malformed calls |
+| Post-processing | Fix the parser; add a structured-output constraint so the model emits machine-checkable JSON |
 
 ### Regression Testing
 
@@ -2755,18 +2968,115 @@ suite.add_regression_case(
 )
 ```
 
-### Model Comparison with Evals
+The class above is the skeleton. Production discipline lives in five practices around it.
 
-When evaluating whether to switch models (e.g., GPT-4o vs. Claude vs. Gemini):
+**1. Build the eval set from real failures, not imagined ones.** The strongest regression sets are mined from production, not brainstormed in a meeting. Synthetic cases test what you *think* breaks; production cases test what *actually* broke. The pipeline: every week, pull traces tagged as failures by your judge or thumbs-down by users, cluster them (embed the inputs and group, or just sort by failure tag), pick representative cases per cluster, and freeze the input plus a human-verified expected behavior. Aim to add 5 to 20 cases per week early on. A regression set that does not grow is a regression set going stale. Keep the *input* verbatim from production (after PII scrubbing) so you are testing the real distribution, not a sanitized paraphrase.
+
+**2. Gate prompt and model changes in CI.** The whole point is to make regressions un-shippable, not merely visible. Wire the suite into CI so any PR that touches a prompt file, model id, or retrieval config runs it and *blocks merge* on failure. Keep it fast: a curated 50 to 200 case "gate set" should finish in 1 to 3 minutes so it does not become the slow step people route around. Run the full multi-hundred-case set nightly, not per-PR.
 
 ```python
-MODELS = ["gpt-4o", "claude-sonnet-4-5-20250929", "gemini-2.0-flash"]
+# CI gate: fail the build if the curated regression set drops below threshold,
+# OR if any case marked must_pass flips from passing to failing.
+def ci_gate(pipeline, suite, pass_threshold=0.95, baseline=None):
+    results = [(c, passes_eval(pipeline(c["input"]), c["expected"])) for c in suite.known_cases]
+    pass_rate = sum(p for _, p in results) / len(results)
+
+    # Hard floor on aggregate quality.
+    if pass_rate < pass_threshold:
+        raise SystemExit(f"GATE FAIL: pass rate {pass_rate:.1%} < {pass_threshold:.0%}")
+
+    # No regression on safety/critical cases, even if aggregate looks fine.
+    for case, passed in results:
+        if case.get("must_pass") and not passed:
+            raise SystemExit(f"GATE FAIL: critical case regressed: {case['original_failure']}")
+
+    # Optional: block net-negative changes vs the current production baseline.
+    if baseline is not None and pass_rate < baseline - 0.02:  # 2 pt tolerance for judge noise
+        raise SystemExit(f"GATE FAIL: {pass_rate:.1%} is below baseline {baseline:.1%} by >2pt")
+    print(f"GATE PASS: {pass_rate:.1%}")
+```
+
+**3. Set pass thresholds deliberately, with two tiers.** A single global threshold is a blunt instrument. Use two: a **hard floor** on a small set of `must_pass` safety/correctness cases that should be 100% (a leak of PII, a vegan-with-honey, a refund the bot is not allowed to issue), and a **statistical threshold** on the broader set (e.g., 95%). The broad threshold must account for judge noise: LLM judges are not deterministic even at temperature 0, so a 1 to 2 point swing between runs is normal. Set the gate at `baseline - tolerance`, not at an absolute number you will fight forever. Rule of thumb: with N cases, the standard error on a pass rate near 90% is roughly `sqrt(0.9*0.1/N)`; at N=100 that is ~3 points, so do not gate on sub-3-point moves with only 100 cases. If you need to detect a 2-point regression reliably, you need 800 to 1000 cases, not 100.
+
+**4. Avoid eval overfitting (the quiet killer).** If you tune prompts until the eval set is green, you have trained on the test set. The eval stops predicting production. Defenses, in order of importance:
+   - **Hold out a fraction.** Keep a "blind" 20 to 30% of cases that you never look at while iterating and only run before a release. If the blind slice drops while your working slice climbs, you are overfitting.
+   - **Keep the set growing and rotating.** Fresh production failures dilute any memorization. A set that is 6 months frozen is a set you have implicitly optimized against.
+   - **Watch for prompt clauses that name eval cases.** A system prompt that says "if asked about honey, mention it is not vegan" passes the eval and teaches the model nothing general. The give-away: eval score high, production failure rate on the *same theme* unchanged. Prefer general rules over case-specific patches.
+   - **Cross-check offline vs online.** If your eval set says 96% but production thumbs-down implies ~85%, your set no longer represents reality; resample from production.
+
+**5. Version the eval set like code.** The eval set is a spec; treat it as a first-class versioned artifact, not a CSV in someone's Drive.
+   - Store it in git (or a dataset tool with versioning: LangSmith datasets, Braintrust, Phoenix, Langfuse all version datasets). Each change gets a commit and a reason.
+   - **A score is meaningless without the eval-set version that produced it.** Always report `pass_rate @ evalset_v1.4.2`. Comparing today's 94% (v1.5, with 40 new hard cases) against last month's 97% (v1.3) and concluding you regressed is a classic self-own; you added harder cases.
+   - When you change the *rubric or golden answers* (a SPEC change), bump a major version and re-baseline. Do not silently edit expected outputs, because every historical comparison breaks.
+   - Tag cases with metadata (failure cluster, severity, date added, source trace id) so you can slice "how are we doing on the refund-policy cluster over time" rather than only a single global number.
+
+### Model Comparison with Evals
+
+When evaluating whether to switch models (e.g., GPT-5.6 vs. Claude Opus 4.8 vs. Gemini 3.1 Pro):
+
+```python
+MODELS = ["gpt-5.6", "claude-opus-4-8", "gemini-3.1-pro", "deepseek-v4-pro"]
 
 for model in MODELS:
     results = run_eval_suite(model=model, test_set=test_data)
     print(f"{model}: TPR={results['tpr']:.1%}, TNR={results['tnr']:.1%}, "
           f"cost=${results['cost']:.2f}, latency={results['latency_p50']:.0f}ms")
 ```
+
+**Compare on four axes, not one.** A model decision is never "which scores highest". It is a point in `quality x cost x latency x reliability` space, and the right pick depends on the surface. A user-facing autocomplete needs p50 latency under ~300ms and tolerates a quality dip; an overnight batch summarizer cares only about quality-per-dollar. Decide the weights *before* you see the numbers, or you will rationalize whichever model you already preferred.
+
+| Axis | How to measure | Typical decision driver |
+|---|---|---|
+| Quality | TPR/TNR or rubric score on your eval set | Floor: must beat current model on `must_pass` cases |
+| Cost | $ per 1M input+output tokens at your real ratio | Watch output-token price; reasoning models emit 3-10x more |
+| Latency | p50 and p95 end-to-end, under realistic concurrency | p95 matters for UX; a fast p50 with an ugly p95 tail still feels broken |
+| Reliability | Format-adherence rate, refusal rate, tool-call validity | A model that is 1pt better but emits malformed JSON 3% of the time is worse |
+
+**Migration requires re-calibration, not a drop-in swap.** This is the part teams skip and regret. Prompts, few-shot examples, temperature, and even your judge thresholds are tuned to the *current* model's idiosyncrasies. Swapping the model invalidates that tuning:
+
+- **App-model swap.** A prompt squeezed for Claude Opus 4.8 may underperform on GPT-5.6 because each model responds differently to system-prompt structure, XML vs Markdown delimiters, and how strictly it follows "only output JSON". Budget a prompt re-tune per candidate before you judge it; comparing a model on a prompt optimized for its competitor is a rigged race. Also recheck: max output tokens, stop sequences, JSON/structured-output mode support, and tool-calling schema quirks, because these silently differ and produce "model is worse" results that are really integration bugs.
+- **Judge-model swap (the dangerous one).** If you change the model that *grades* your outputs, every historical score becomes incomparable. Different judges have different leniency: a stricter judge (some teams find Claude Opus 4.8 harsher on faithfulness, GPT-5.6 more lenient on completeness, Gemini 3.1 Pro stricter on format) will report a lower pass rate for *identical* outputs. Before trusting a new judge, run both judges on the same 100 to 200 cases that also have human labels, and compute each judge's agreement with humans (Cohen's kappa). Adopt the new judge only if its human-agreement is at least as good, then re-baseline every threshold and annotate the change as an eval-set major version bump. Never compare a pre-swap score to a post-swap score; you are comparing two different rulers.
+- **Re-baseline the regression gate.** After any model change that ships, the CI baseline (the `baseline` argument in the gate above) must be recomputed on the new model. Otherwise the next PR is gated against a number the production system no longer produces.
+
+```python
+# Before swapping the JUDGE model, prove the new judge agrees with humans
+# at least as well as the old one. Otherwise your scores become noise.
+def validate_new_judge(cases_with_human_labels, old_judge, new_judge):
+    import statistics
+    old_agree = [old_judge(c["input"], c["output"]) == c["human_label"]
+                 for c in cases_with_human_labels]
+    new_agree = [new_judge(c["input"], c["output"]) == c["human_label"]
+                 for c in cases_with_human_labels]
+    print(f"old judge agreement: {statistics.mean(old_agree):.1%}")
+    print(f"new judge agreement: {statistics.mean(new_agree):.1%}")
+    # Adopt only if new judge is not worse; then RE-BASELINE all thresholds.
+    return statistics.mean(new_agree) >= statistics.mean(old_agree)
+```
+
+### Offline vs Online Iteration
+
+The loop runs in two regimes, and confusing them is a common source of false confidence.
+
+**Offline** means running your frozen eval set against a candidate change before it ships. It is fast, cheap, repeatable, and safe, and it is where 90% of iteration happens. Its blind spot: it only knows about failure modes already in the set, and it cannot capture real-traffic distribution shift, novel user phrasings, or production-only context (stale caches, partial outages, weird locale inputs). Offline is necessary but never sufficient.
+
+**Online** means measuring on live traffic: A/B or canary tests, real user thumbs up/down, escalation rate, task-completion rate, and human review of fresh traces. It is the ground truth, but it is slow (you need traffic and time for significance), riskier (real users hit the regression), and noisier (confounded by everything else changing). Use a canary: route 1 to 5% of traffic to the new version, watch online metrics for a fixed window, and roll back automatically on a guardrail breach (e.g., thumbs-down rate up more than 1 point, or refusal rate up more than 0.5 point).
+
+The right workflow chains them: iterate offline until the eval set and the blind holdout both clear threshold, then canary online to catch what the offline set could not, then mine the canary's failures back into the offline set so the next change is gated against them. Offline gives you speed and a ratchet; online gives you truth. A change that passes offline but you never validate online is a hypothesis, not a result.
+
+### Worked Example: From Error Analysis to Confirmed Fix
+
+A concrete end-to-end pass, because the loop only makes sense when you see the numbers move.
+
+1. **Measure.** A RAG knowledge-base assistant runs nightly against a 500-case eval set. An LLM judge (Claude Opus 4.8) scores faithfulness; the current pass rate is 88% (440/500).
+2. **Analyze.** You pull the 60 failing traces and cluster them. The largest cluster, 22 of 60 failures, is "the bot answers from outdated policy when a newer version exists in the corpus". That is `22/500 = 4.4%` of all traffic, the single biggest failure mode.
+3. **Diagnose the bucket.** Context-injection test: when you hand-paste the *current* policy chunk, the model answers correctly on the same prompt and model. So it is not MODEL and not PROMPT. The retrieved context in the failing traces contains the *old* policy doc. This is a DATA/retrieval problem: both policy versions are indexed, and the retriever ranks the older, longer doc higher. Confirmed by retrieval recall: the current-policy chunk appears in top-5 only 41% of the time for these queries.
+4. **Fix (one variable).** Add a recency-boost rerank and a metadata filter that drops superseded doc versions before retrieval. No prompt change, no model change.
+5. **Re-run the eval set.** Pass rate goes from 88% to 93.6% (468/500). The target cluster drops from 22 failures to 3. Recall@5 for the current-policy chunk rises from 41% to 89%.
+6. **Check for regressions.** The full suite shows no `must_pass` case flipped, and aggregate pass rate rose, so the metadata filter did not accidentally hide legitimate docs. The blind 20% holdout also improved (from 87% to 92%), confirming the fix generalizes and you did not overfit.
+7. **Freeze the win.** Add the 22 failing inputs (with corrected expected behavior) to the regression set as a "policy-recency" cluster, tag them `must_pass`, and bump the eval set to v1.6. Now any future retrieval change that reintroduces this bug fails CI.
+8. **Canary.** Ship behind a 5% canary for 48 hours. Online thumbs-down on policy questions drops from 9% to 3%, matching the offline prediction. Roll out to 100%.
+
+Net: one failure cluster, correctly bucketed as DATA (not the reflexive "fix the prompt"), driven from 4.4% of traffic to ~0.6%, with a permanent test so it cannot silently return. That is what closing the loop looks like.
 
 ### For PMs: The Improvement Playbook
 
@@ -2786,10 +3096,20 @@ Improvements from last week:
 Regressions detected: [None / List]
 ```
 
+**Why this format works.** It forces three things teams otherwise skip: a *ranked* (not exhaustive) failure list, an explicit *root-cause bucket* per item (PROMPT/MODEL/DATA/SPEC, see above), and *accountability* by showing whether last week's fixes actually moved the number. If the same failure mode tops the list three weeks running, that is a signal the team misdiagnosed the bucket or never staffed the fix, and the report makes that impossible to hide.
+
+**Make every row carry a bucket and an owner.** A failure mode without a named bucket invites the reflexive "improve the prompt"; a failure mode without an owner does not get fixed. Extend each line to: `[Failure mode], [X]% of traces, [BUCKET], [Owner], [Action item]`. The bucket tells everyone what *kind* of work it is (and roughly how long it will take); the owner makes it un-orphanable.
+
+**Report the eval-set version with every number.** "Faithfulness 93%" is not interpretable on its own. "Faithfulness 93% @ evalset v1.6 (added 40 hard policy cases this cycle)" is. When a metric drops, the first question is always "did quality regress, or did we add harder cases?", and the version answers it. Without it, you will eventually waste a week chasing a regression that was really a stricter test set.
+
+**A few KPIs worth tracking over time**, beyond the weekly snapshot: time-from-failure-detected to fix-shipped (the loop's actual speed), number of regression cases captured (the ratchet getting tighter), and offline-eval vs online-thumbs-down gap (drift in how well your eval set represents reality). If that last gap widens, stop trusting the offline number and go resample production. These three together tell you whether the loop is healthy, not just whether this week's score is up.
+
 ---
 
 <a name="chapter-12"></a>
 ## Chapter 12: Human Annotation Best Practices
+
+Human labels are the bedrock under every other eval method in this book. Your LLM judge (Chapter 11) is only as good as the human-labeled set you calibrated it against; your offline metrics are only as trustworthy as the ground truth behind them. Yet human annotation is also the most expensive, slowest, and most error-prone signal you have. This chapter is about getting the most truth per dollar: when to spend human attention versus an LLM call, who should annotate, how to write guidelines that two people read the same way, how to measure whether they actually did, and where to point your limited labeling budget. The recurring theme: a small set of careful labels, owned by someone with taste, beats a large set of cheap ones almost every time.
 
 ### When Manual Labels Beat LLM Labels
 
@@ -2797,6 +3117,100 @@ Regressions detected: [None / List]
 - **High-stakes domains** (medical, legal, financial) where errors have real consequences
 - **New failure modes** that your LLM judge hasn't been trained to detect
 - **Ground truth calibration**: even if you use LLM labeling at scale, validate a sample manually
+
+#### Why and when (and when not)
+
+The decision is economic, not ideological. A frontier LLM judge in mid-2026 (Claude Opus 4.8 or GPT-5.6) costs roughly $5-15 per 1,000 trace evaluations and returns labels in seconds; a domain-expert human costs $30-150/hour and labels maybe 30-80 traces/hour on a non-trivial rubric, so $400-2,000 per 1,000 labels and a multi-day turnaround. You pay 50-200x more for humans. You should only pay that premium when the LLM is either *wrong* or *untrusted* on the cases that matter.
+
+Use **humans** when one of these holds:
+
+| Situation | Why humans win | Concrete example |
+|---|---|---|
+| You have no ground truth yet | The judge has nothing to be calibrated against; bootstrapping is human-only | First 100 labels for a brand-new "is this support reply empathetic?" criterion |
+| The criterion is subjective or culturally loaded | LLM judges inherit training-data priors and miss your product's specific taste | "Is this marketing copy on-brand for a fintech aimed at Gen-Z?" |
+| Errors are catastrophic and rare | You need near-zero false-negatives on a thin slice; LLM recall on rare classes is unreliable | Flagging a chatbot reply that gives unlicensed medical dosing advice |
+| The failure mode is brand-new | The judge's prompt was written before this failure existed, so it scores 100% blind | A jailbreak family that emerged last week and your judge prompt has never seen |
+| You suspect the judge is gamed | You are validating the validator; an LLM cannot independently audit itself | Quarterly audit where the generator and judge share a base model and may collude |
+
+Use the **LLM judge** when:
+
+- You have already calibrated it to >0.7 agreement with humans on this exact criterion (see kappa below), and the cost of an individual wrong label is low (e.g., one bad row in a 10k-row regression sweep).
+- You need scale or low latency: nightly evals over 50k production traces, or online guardrails that must return in <300ms.
+- The criterion is objective and checkable (format compliance, "did it call the right tool", "is the cited document ID present in the answer"). Here a human adds noise, not signal, because fatigue makes people miss things a regex or an LLM never will.
+
+When **not** to use humans: do not put humans on high-volume, objective, mechanical checks. A person eyeballing 800 JSON outputs for valid schema will hit ~97-98% accuracy by row 200 due to fatigue, while `jsonschema.validate` hits 100%. Reserve humans for judgment, not verification.
+
+The mature pattern is a **funnel**, not a binary: LLM-judge everything, sample 5-10% for human review, and route 100% of the judge's low-confidence or high-stakes cases to humans. This keeps human cost at 5-15% of volume while putting human eyes exactly where the machine is weakest.
+
+> Failure mode: "We trust the judge, it agrees with us 90% of the time." That 90% was measured on the easy, balanced calibration set. In production, 95% of traffic is trivially good and 5% is the hard tail you actually care about. The judge can be 99% accurate overall and still 40% accurate on the 5% that drives all your incidents. Always report judge agreement *stratified by difficulty or by predicted label*, never as a single headline number.
+
+### Who Should Annotate
+
+The single highest-leverage decision in annotation is *who holds the pen*, and the most common mistake is treating labeling as fungible crowd work.
+
+#### Domain experts vs crowd
+
+| Dimension | Domain experts (in-house) | Crowd (MTurk, Scale, Surge) |
+|---|---|---|
+| Cost | $30-150/hr | $0.05-0.50 per label |
+| Best for | Subjective, specialized, evolving criteria | Objective, simple, high-volume tasks |
+| Failure mode | Bottleneck; few people, slow | Spam, satisficing, low context |
+| Throughput | Low (deep) | Very high (shallow) |
+| Typical kappa achievable | 0.7-0.9 on hard rubrics | 0.4-0.6 on hard rubrics, 0.8+ on trivial ones |
+
+Crowd labeling collapses the moment the task needs context your annotators do not have. A crowd worker scoring "is this database-migration plan safe?" will anchor on surface fluency because they cannot evaluate the substance. For most product-eval work (support quality, RAG faithfulness on your corpus, agent tool-selection correctness) the right annotators are your own PMs, QAs, and support leads, not a marketplace.
+
+#### The benevolent dictator / principal-annotator model
+
+The strongest pattern for a small team is one **principal annotator** (Shankar et al. and the Hamel Husain "Your AI product needs evals" lineage call this the *benevolent dictator*): a single person, usually the PM or the domain expert closest to the user, who owns the definition of "good." They do not label everything; they own the *criteria* and act as the final court of appeal on disagreements.
+
+Why this beats label-by-committee:
+- **Convergence is fast.** Five people negotiating a rubric by consensus drift for weeks. One owner who writes the rubric and adjudicates produces a converging standard in days.
+- **It localizes taste.** Product quality is a point of view, not an average. Averaging five mediocre opinions yields a mediocre judge. One person with genuine taste, made explicit in a rubric, yields a sharp one.
+- **It scales by teaching, not voting.** The dictator's job is to encode their judgment into the guideline so that others (and eventually the LLM judge) reproduce it. Every adjudicated disagreement becomes a new rule or example.
+
+The risk is bus-factor and bias: if the dictator is wrong or leaves, the standard is fragile. Mitigate by (1) writing everything down so the standard lives in the guideline, not the person, and (2) periodically spot-checking the dictator's calls against 1-2 other experts to catch idiosyncratic drift. The model is "single owner of a written standard," not "one person's unexamined gut."
+
+### Writing Annotation Guidelines That Converge
+
+A guideline succeeds when two annotators who have never spoken read it and produce the same label. That is the whole bar. Vague guidelines do not just lower agreement; they make agreement *unmeasurable*, because annotators silently invent their own criteria and your kappa becomes noise.
+
+What a converging guideline contains:
+
+1. **A binary or low-cardinality scale, defined operationally.** Prefer PASS/FAIL or a 3-point scale over a 1-10 scale. Humans cannot reliably distinguish a 6 from a 7; a 1-5 Likert scale typically yields kappa 0.2-0.4 lower than a binary version of the same criterion. If you need nuance, decompose into several binary criteria ("factually correct?", "complete?", "appropriately concise?") rather than one fuzzy quality score.
+2. **A one-sentence definition per label**, phrased as a test the annotator can apply: not "rate helpfulness" but "PASS if a real user could act on this answer without asking a follow-up; otherwise FAIL."
+3. **Positive and negative examples, side by side.** For each label, show 2-3 real traces that earn it and 2-3 near-misses that do not, with one line explaining the boundary. The near-misses do the heavy lifting: anyone can label the obvious cases.
+4. **Explicit edge-case rules** in "if X then label Y because Z" form. Every adjudicated disagreement should add one. This is the part that actually moves kappa.
+5. **A tie-breaker / default rule** for genuinely ambiguous cases ("if you cannot decide in 30 seconds, label FAIL and flag for adjudication"), so ambiguity does not turn into silent coin-flipping.
+
+A compact rubric template that works in practice:
+
+```text
+CRITERION: Answer Faithfulness (RAG)
+DEFINITION: PASS if every factual claim in the answer is supported by the
+            retrieved context. FAIL if any claim is unsupported or contradicts it.
+
+PASS example:
+  Context: "The Pro plan costs $40/seat/month."
+  Answer:  "Pro is $40 per seat per month."  -> PASS (directly supported)
+
+FAIL example (hard):
+  Context: "The Pro plan costs $40/seat/month."
+  Answer:  "Pro is $40/seat/month and includes SSO."  -> FAIL
+           (the SSO claim is not in the context, even though the price is correct)
+
+EDGE CASES:
+  - Reasonable paraphrase of supported facts -> PASS
+  - Correct fact NOT present in context (model used prior knowledge) -> FAIL
+    (we are scoring faithfulness to context, not real-world truth)
+  - Answer says "I don't have that information" when context lacks it -> PASS
+TIE-BREAK: if unsure whether a claim is "supported," treat partial/implied
+           support as FAIL and flag for the principal annotator.
+```
+
+Notice the third edge case: a *factually true* answer can be a faithfulness FAIL. Annotators get this wrong constantly because their instinct is to reward correct answers. Spelling it out is the difference between kappa 0.55 and kappa 0.85 on this criterion.
+
+> Failure mode: guideline rot. The product changes, a new feature ships, but the guideline still describes last quarter's behavior. Annotators start labeling against stale rules and your eval set quietly diverges from reality. Treat the guideline as versioned code: date it, tie each labeling batch to a guideline version, and re-label affected items when the criteria change.
 
 ### Inter-Annotator Agreement
 
@@ -2807,6 +3221,31 @@ If two humans disagree on a label, your eval criteria aren't clear enough.
 2. Calculate agreement rate (% they agree)
 3. If agreement < 80%, your criteria need to be more specific
 4. Discuss disagreements, update criteria, re-label
+
+#### Why raw agreement is not enough, and what kappa fixes
+
+Raw agreement (the simple percent of labels two people share) is the wrong headline number on its own, because it does not account for agreement that happens *by chance*. If 95% of your traces are PASS, two annotators who label everything PASS without reading will "agree" 90%+ of the time and look excellent while measuring nothing. **Cohen's kappa** corrects for this by subtracting the agreement expected from each annotator's base rates.
+
+Formula:
+
+```
+kappa = (p_observed - p_expected) / (1 - p_expected)
+```
+
+where `p_observed` is the fraction of items both annotators labeled identically, and `p_expected` is the agreement you would expect if each annotator labeled randomly according to their own observed label frequencies. Kappa ranges from 1 (perfect) through 0 (no better than chance) to negative (systematic disagreement). The denominator `1 - p_expected` is the "room above chance" available, so kappa answers: of the agreement that was not free, how much did you actually achieve?
+
+Interpretation bands (Landis & Koch, lightly adapted for eval work):
+
+| Kappa | Verdict | Action |
+|---|---|---|
+| > 0.8 | Excellent | Criteria are clear; safe to scale, and safe to calibrate an LLM judge against this set |
+| 0.6 - 0.8 | Good | Minor clarifications; patch the 2-3 edge cases that caused most misses |
+| 0.4 - 0.6 | Weak | Rewrite the ambiguous criteria before trusting any number built on these labels |
+| < 0.4 | Failing | Your criteria are broken, not your annotators; do not ship anything based on this |
+
+**What low kappa actually tells you:** nine times out of ten it is *ambiguous criteria, not bad annotators*. The reflex to blame the labelers ("we need better people") is almost always wrong. Smart, motivated people produce low kappa when the rubric admits two readings. Before replacing anyone, read the specific traces where they disagreed: you will usually find one undefined edge case generating most of the conflict. Fix the rule, and kappa jumps. The rare exception is one outlier annotator who disagrees with *everyone* (visible as low pairwise kappa with every other annotator); that is a training or attention problem for that individual.
+
+A caveat worth knowing: kappa is deflated when classes are very imbalanced (the "kappa paradox"), so a faithful judge on a 98%-PASS stream can show a modest kappa even at high accuracy. When you hit this, report kappa alongside positive and negative percent agreement, or use a prevalence-adjusted variant, rather than discarding a good annotator over a math artifact. For ordinal scales (1-5) use *weighted* kappa so that a 4-vs-5 disagreement counts as less severe than 1-vs-5. For 3+ annotators, use **Fleiss' kappa** or **Krippendorff's alpha** (the latter handles missing labels and any scale type and is the safest general default).
 
 ```python
 def cohen_kappa(labels_a, labels_b):
@@ -2828,12 +3267,76 @@ def cohen_kappa(labels_a, labels_b):
 # kappa < 0.6: Poor agreement (rewrite criteria)
 ```
 
+Reading this code: it assumes a binary PASS / not-PASS label, so `p_a_pos` and `p_b_pos` are each annotator's PASS rate and `p_expected` combines the chance both say PASS plus the chance both say not-PASS. Edge cases the snippet does not guard against, and which bite in production: if either annotator labels *everything* the same way, `p_expected` becomes 1 and you divide by zero (a degenerate set you should reject anyway); any label that is not exactly the string `"PASS"` is bucketed as not-PASS, so a stray `"pass"` or `"Pass"` silently corrupts the rate (normalize case first); and the lists must be aligned to the same traces in the same order, which is the most common real bug (people compute kappa over two label columns that were sorted differently and get garbage). For anything beyond a quick check, prefer `sklearn.metrics.cohen_kappa_score(labels_a, labels_b)`, which handles multi-class and the `weights="quadratic"` option for ordinal scales.
+
+#### A short worked example
+
+Two PMs label the same 50 RAG answers as PASS/FAIL for faithfulness.
+
+- They agree on 41 of 50 traces, so raw agreement = 82%. Looks fine.
+- Annotator A marked 40/50 PASS (0.80); Annotator B marked 38/50 PASS (0.76).
+- `p_expected` = (0.80 x 0.76) + (0.20 x 0.24) = 0.608 + 0.048 = 0.656.
+- kappa = (0.82 - 0.656) / (1 - 0.656) = 0.164 / 0.344 = **0.48**.
+
+So an 82% agreement that looked acceptable is actually *weak* (0.48) once chance is removed, because both annotators pass most things and most of that 82% was free. Now **act on it**: pull the 9 disagreement traces and read them. Suppose 7 of the 9 are cases where the answer was factually correct but added a detail not in the retrieved context (the exact edge case from the rubric above). The fix is not "hire better PMs"; it is one guideline rule: "correct-but-unsupported claims are FAIL." Re-label the 50 traces against the patched guideline and you would expect kappa to climb into the 0.75-0.85 band. The remaining 2 disagreements go to the principal annotator for a final call, and those calls become two more examples in the guideline. This loop (measure kappa, read disagreements, patch one rule, re-measure) is the core mechanic of building a trustworthy eval set.
+
+### Adjudication of Disagreements
+
+Disagreements are not waste; they are your richest signal about where the criteria are thin. The goal of adjudication is twofold: produce a single gold label for the trace, *and* extract a reusable rule so the same disagreement never recurs.
+
+A workable adjudication protocol:
+
+1. **Surface every disagreement** automatically (the annotation tool should flag any trace where labels differ). Do not let them disappear into an average.
+2. **The principal annotator (the dictator) makes the final call**, with the two original annotators present where possible so the reasoning is shared, not decreed.
+3. **Write down the why.** Every adjudicated case yields either a new edge-case rule or a new positive/negative example in the guideline. If a disagreement produces no guideline change, you adjudicated a coin-flip and learned nothing.
+4. **Decide the trace's fate in the eval set.** Genuinely irreducible-ambiguity cases (experts still disagree after discussion) are valuable: keep them as a separate "hard" slice and *expect* your LLM judge to score lower there. Do not force them to a clean label just to make the set tidy; that launders real ambiguity into fake ground truth.
+
+Anti-patterns to avoid: **majority vote as a substitute for adjudication** (three shallow opinions averaging to a number teaches you nothing and hides the disagreement), and **silent resolution by the most senior person without recording the rationale** (the standard stays trapped in one head and the guideline never improves).
+
 ### Label Quality > Label Quantity
 
 **50 high-quality labels beat 500 noisy labels.** Invest time in:
 1. Clear, written labeling guidelines with examples
 2. Edge case documentation ("if you see X, label it as Y because...")
 3. Regular calibration sessions where labelers discuss disagreements
+
+#### Why fewer, cleaner labels win
+
+The intuition is that noise does not just dilute your signal, it actively poisons it. A 90%-accurate label set used as ground truth caps the *measured* accuracy of any judge you calibrate against it: a perfect judge will look ~90% accurate because the 10% of mislabeled rows mark its correct answers as wrong. You literally cannot measure quality above your label quality. Worse, the errors are rarely random; sloppy labels cluster on exactly the hard, ambiguous cases you most need to get right, so the poison concentrates where it does the most damage.
+
+Concretely: 100 labels at kappa 0.85 give you a trustworthy benchmark you can calibrate an LLM judge against and defend in a review. 1,000 labels at kappa 0.45 give you a large, official-looking dataset that quietly lies to you, and every downstream decision (which model to ship, whether a prompt change helped) inherits the lie. The 1,000-label set also *feels* more authoritative, which makes it more dangerous: people trust big numbers.
+
+There is a real exception: if your goal is *fine-tuning* a model or training a small classifier rather than *measuring*, volume starts to matter and a larger, somewhat noisier set can beat a tiny clean one because the model averages over noise. But for **evaluation**, which is this book's subject, quality dominates until you are well past a few hundred clean labels per criterion. Spend on quality first, volume second.
+
+Rule of thumb for sizing: aim for at least 100 clean labels per criterion to estimate a pass rate with a 95% confidence interval of roughly +/-10 points, and 300-400 if you need +/-5 points or want to slice by subpopulation. Beyond that, returns diminish fast unless you are chasing a rare failure class, in which case the next section applies.
+
+### Where to Spend Your Labeling Budget (Active Learning)
+
+Labeling uniformly at random is the default and it is wasteful. If 95% of traffic is easy and obviously-good, random sampling spends 95% of your budget confirming what you already know. Point the budget at the cases that carry information.
+
+Highest-value targets, in order:
+
+1. **Judge-disagreement cases.** Where your LLM judge's confidence is low, or where it flips between runs, or where two judge prompts disagree. These are by definition the boundary of what the judge knows, and a human label there is worth several labels in the easy middle. This is the single best use of an active-learning loop: each cycle, label the traces the judge is least sure about, fold them into the calibration set, and the judge sharpens fastest.
+2. **Decision-boundary cases.** Traces near whatever threshold drives an action (the score where you ship vs hold, or where a guardrail fires). Accuracy in the easy extremes does not change any decision; accuracy at the boundary changes every decision.
+3. **Production failures and complaints.** Real thumbs-down, escalations, and incident traces. These are pre-filtered to be informative and they keep your eval set anchored to reality rather than to a stale curated sample.
+4. **New or rare classes.** Deliberately oversample suspected new failure modes (a fresh jailbreak family, a new document type in your RAG corpus). Random sampling will under-represent a 1%-prevalence failure to the point of statistical invisibility; targeted sampling makes it measurable.
+
+What this buys you: teams that switch from uniform to uncertainty-and-boundary sampling routinely reach a target judge agreement with roughly half to a third of the labels, because every label is spent where the model is wrong rather than where it is already right.
+
+The one caution: do not let active learning corrupt your *measurement* set. Keep two pools. A **held-out, randomly-sampled** evaluation set gives you an unbiased estimate of real-world quality and must stay representative (no cherry-picking hard cases into it). A separate **calibration/training pool** is where you aggressively spend on boundary and disagreement cases to improve the judge. Mixing them inflates your headline numbers, because a judge tuned on the same hard cases you then score it on will look better than it is.
+
+### Annotation Tooling
+
+The tool's job is to make labeling fast, capture the rationale, compute agreement, and route disagreements. Picking one is less important than picking *any* structured tool: spreadsheets lose the trace context, do not version the guideline, and make kappa a manual chore. Options that fit an LLM-eval workflow in 2026:
+
+| Tool | Strengths | Best fit | Watch-outs |
+|---|---|---|---|
+| **Arize Phoenix** (annotations) | Annotations attach directly to traces/spans; OSS and self-hostable; ties human labels to the same spans your LLM judge scored, so human-vs-judge agreement is one query | Teams already tracing with OpenTelemetry; tight judge-calibration loops | UI is engineer-oriented; less polished for non-technical PMs |
+| **LangWatch** (annotations) | Built for product teams to label production traces; annotation queues, scoring, and side-by-side human/LLM comparison | PM/QA-driven review of live traffic | Hosted-first; check data-residency for regulated domains |
+| **Langfuse** (scores + comments) | Open-source; flexible `scores` API (numeric/categorical/boolean) plus free-text comments; annotation queues; easy to attach scores programmatically | Teams wanting an OSS hub for both human scores and automated eval scores in one schema | You assemble more of the workflow yourself; agreement metrics often computed outside the tool |
+| **Label Studio** | The most flexible labeling UI (text, audio, image, ranking, spans); strong for complex or multimodal rubrics; OSS | Bespoke or multimodal annotation, large crowd ops | Heavier to operate; not LLM-trace-native, so you wire up the trace plumbing |
+
+Opinionated default: if you are calibrating an LLM judge, label *inside the same platform that holds your traces* (Phoenix or Langfuse) so human labels and judge scores live on the same spans and agreement is a built-in comparison rather than a CSV join. Reach for Label Studio when the annotation itself is rich (span highlighting, ranking, multimodal) and outgrows a scores-and-comments model. Whatever you choose, require three things: the trace is visible *in full* next to the label (annotators labeling truncated previews is a top source of noise), a free-text rationale field (the rationale is what becomes your next guideline rule), and an export that lets you compute kappa programmatically.
 
 ### For PMs/QAs: You Are the Best Labelers
 
@@ -2842,15 +3345,77 @@ PMs and QAs often produce better labels than engineers because:
 - You understand the product's policies and constraints
 - You think from the user's perspective, not the code's perspective
 
+#### Why this matters more than it sounds
+
+This is not a morale-boosting aside; it is a staffing recommendation. Engineers reliably mislabel quality criteria in a predictable direction: they reward technically-correct-but-unusable answers (the response is accurate and well-structured, but a real user would still be stuck) and they under-penalize policy violations they do not feel in their gut. The PM who has read 500 support tickets *feels* the difference between a reply that resolves the ticket and one that merely looks competent, and that felt difference is exactly the taste a rubric is trying to capture.
+
+So the principal annotator (the benevolent dictator from earlier) should usually be a PM, QA lead, or domain expert, not the engineer who built the feature, for one more reason: the builder is biased toward seeing their own output as good. Put product people on judgment criteria (helpfulness, tone, policy, "would this satisfy the user"), and let engineers own the objective, checkable criteria (schema validity, correct tool call, latency, citation-ID present) where their precision is an asset and their bias is irrelevant. That division of labor, product taste on the fuzzy half and engineering rigor on the mechanical half, is what produces an eval set you can actually trust.
+
 ---
 
 <a name="chapter-13"></a>
 ## Chapter 13: Cost, Latency & Scaling Evals
 
+Evaluation is not free. Once you move from "I ran 50 evals by hand" to "I score every production trace with an LLM judge," eval becomes a line item that shows up on your inference bill, and a tax on every user request if any of it runs inline. This chapter is about keeping both under control without going blind. The short version: most teams over-spend on eval by running their most expensive judge on 100% of traffic when a tiered, sampled, cached pipeline would give them the same signal for 5-20% of the cost.
+
+#### Table of Contents
+
+- [The Cost Problem](#the-cost-problem)
+- [Strategy 1: Use Cheaper Models for Judges](#strategy-1-cheaper-judges)
+- [Strategy 2: Sample Instead of Exhaustive](#strategy-2-sampling)
+- [Strategy 3: Tiered Evaluation](#strategy-3-tiered)
+- [Strategy 4: Cache Duplicate Evaluations](#strategy-4-caching)
+- [Latency Considerations for Real-Time Guardrails](#latency-guardrails)
+- [Summary Decision Table](#summary-decision-table)
+
+---
+
+<a name="the-cost-problem"></a>
 ### The Cost Problem
 
 Running GPT-4o as a judge on 10,000 traces is expensive. Here's how to manage costs:
 
+#### Work the arithmetic before you architect
+
+The single most useful thing you can do is multiply three numbers: **traces/day x tokens/eval x price/token**. People skip this and then get surprised by a $40k invoice. Do it on a napkin first.
+
+Take a mid-size assistant doing **500,000 production traces/day**. You want to LLM-judge each one for helpfulness and safety. A realistic judge call is not tiny: you send the user input, the model's full output, a rubric, and few-shot examples, then read back a short verdict. Budget **~2,500 input tokens + ~300 output tokens** per eval (the rubric and examples dominate, and they repeat on every call).
+
+Illustrative June 2026 list prices (per 1M tokens, used here only for the math, always re-check current pricing):
+
+| Judge model | Input $/1M | Output $/1M | Tier |
+|---|---|---|---|
+| Claude Opus 4.8 | ~$5.00 | ~$25.00 | Frontier |
+| GPT-5.6 | ~$4.00 | ~$16.00 | Frontier |
+| Gemini 3.1 Pro | ~$2.50 | ~$10.00 | Strong mid |
+| GPT-5.5 mini | ~$0.40 | ~$1.60 | Cheap |
+| DeepSeek V4 Flash | ~$0.15 | ~$0.60 | Very cheap |
+| Gemini 3.1 Flash | ~$0.10 | ~$0.40 | Very cheap |
+
+Cost per eval = (2500 / 1e6 x input_price) + (300 / 1e6 x output_price).
+
+- **Opus 4.8:** (0.0025 x 5.00) + (0.0003 x 25.00) = $0.0125 + $0.0075 = **$0.020/eval**.
+- **DeepSeek V4 Flash:** (0.0025 x 0.15) + (0.0003 x 0.60) = $0.000375 + $0.00018 = **$0.00055/eval**.
+
+Now multiply by 500,000 traces/day x 30 days = 15M evals/month:
+
+| Judge | $/eval | Monthly bill (15M evals) |
+|---|---|---|
+| Opus 4.8 on 100% | $0.020 | **~$300,000** |
+| GPT-5.6 on 100% | $0.0148 | ~$222,000 |
+| Gemini 3.1 Pro on 100% | $0.00925 | ~$139,000 |
+| GPT-5.5 mini on 100% | $0.00148 | ~$22,200 |
+| DeepSeek V4 Flash on 100% | $0.00055 | **~$8,250** |
+
+That spread is the whole chapter in one table: same coverage, **a 36x cost difference** between the frontier and budget judge purely from model choice, before you have sampled, tiered, or cached anything. $300k/month to grade chat logs is the kind of number that gets eval programs cancelled. The four strategies below stack multiplicatively: a cheap judge (Strategy 1) on a 10% sample (Strategy 2), gated behind free code checks (Strategy 3), with caching (Strategy 4), can take that $300k closer to **$500-2,000/month** while preserving the metric you actually report.
+
+**Hidden costs people forget:**
+- **Output tokens dominate for reasoning judges.** If you use a "think step by step" rubric or a reasoning model (o-series, DeepSeek V4 Pro in reasoning mode), output can balloon to 1,500-4,000 tokens and output is priced 4-6x input. A chain-of-thought judge can cost 3-5x a verdict-only judge. Ask for the rationale only on disagreements or failures, not on every pass.
+- **Retries and rate-limit backoff** silently double cost when you hammer an API at 500k/day. Budget 5-15% overhead.
+- **Re-running the whole eval suite on every prompt change** during development. A 5,000-row golden set re-scored 30 times in a week is 150k evals nobody put on the spreadsheet.
+- **Human review time** is the most expensive judge of all. A labeler at $25/hr doing 40 traces/hr costs **$0.62/trace**, ~30x an Opus call and ~1,000x a Flash call. Reserve humans for calibration sets and disagreements, never for routine coverage.
+
+<a name="strategy-1-cheaper-judges"></a>
 ### Strategy 1: Use Cheaper Models for Judges
 
 Not every eval needs the best model:
@@ -2863,6 +3428,59 @@ Not every eval needs the best model:
 
 **Tip:** Start with a strong model, validate your judge prompt, then test if a cheaper model gives similar TPR/TNR. Often it does.
 
+#### A fuller judge-tier ladder (capability vs cost vs agreement)
+
+The two-row table above is the right idea but too coarse to plan with. Here is the ladder most teams actually choose between in 2026. "Agreement with humans" is Cohen's kappa against a gold-labeled set; treat the numbers as the *typical band you should expect to measure*, not a promise, because agreement is task-specific and you must verify it yourself (see below).
+
+| Tier | Example judge (June 2026) | Rel. cost/eval | Typical human agreement (kappa) | Best for | Where it breaks |
+|---|---|---|---|---|---|
+| Code / deterministic | regex, JSON schema, `assert` | $0 | n/a (exact) | Format, length, profanity lists, required-field presence, valid SQL parse | Anything subjective; brittle to paraphrase |
+| Embedding / classifier | `text-embedding-3-large` + threshold, a fine-tuned DistilBERT toxicity head | ~$0.0001 | 0.55-0.75 on narrow tasks | Topic/PII routing, toxicity gate, "is this on-topic" | No reasoning; one threshold rarely fits all classes |
+| Tiny LLM judge | Gemini 3.1 Flash, DeepSeek V4 Flash, Claude Fable 5 | ~$0.0005 | 0.60-0.80 on clear rubrics | Well-defined yes/no rubrics, pairwise "A or B better" | Subtle factuality, multi-step reasoning, long context |
+| Mid LLM judge | GPT-5.5 mini, Gemini 3.1 Pro | ~$0.003-0.009 | 0.70-0.85 | Most production grading: helpfulness, groundedness with retrieved context | Adversarial safety, expert-domain correctness |
+| Frontier judge | Claude Opus 4.8, GPT-5.6, DeepSeek V4 Pro (reasoning) | ~$0.015-0.020 | 0.80-0.90 | Safety-critical, nuanced subjective calls, building the gold set itself | Cost at scale; still not a substitute for human sign-off on high-stakes |
+
+Read this top-to-bottom and stop at the cheapest tier that clears your agreement bar for *that specific check*. A toxicity gate does not need Opus; a "did the medical advice contradict the retrieved guideline" check probably does.
+
+**Why cheaper usually works (the quantified intuition):** most production rubrics are not subtle. "Did the answer cite a source?", "Is the tone professional?", "Did it answer the question asked?" are tasks where a Flash-class model and Opus agree 90%+ of the time. You pay 30x for the frontier model to win the remaining ~5-10% of genuinely hard cases. If those hard cases are rare and low-stakes, the cheap judge is simply the correct engineering choice. The mistake is assuming this without measuring.
+
+#### How to validate a cheap judge before you trust it
+
+Never swap Opus for Flash on faith. Run a head-to-head on a labeled set first. The protocol:
+
+1. **Build a gold set of 150-300 traces** with trusted labels (human-reviewed, or frontier-judge labels you have spot-checked). 150 is the floor for a stable kappa; under ~100 your confidence interval is too wide to conclude anything.
+2. **Score the gold set with both judges.** Treat human labels as truth.
+3. **Compute agreement metrics**, not just accuracy. Accuracy lies when classes are imbalanced (if 95% of traces pass, a judge that says "pass" always is 95% accurate and useless).
+
+Key metrics, with formulas and targets:
+
+- **TPR (recall / sensitivity)** = TP / (TP + FN). "Of the truly-bad traces, how many did the judge catch?" For a safety gate you want **>= 0.95**; missing bad outputs is the expensive failure.
+- **TNR (specificity)** = TN / (TN + FP). "Of the truly-good traces, how many did it correctly pass?" Low TNR means false alarms that waste reviewer time; aim **>= 0.90** for guardrails so you are not crying wolf.
+- **Cohen's kappa** = (p_o - p_e) / (1 - p_e), where p_o is observed agreement and p_e is agreement expected by chance. This is the headline number because it corrects for class imbalance. Rough reading: **< 0.4 poor, 0.4-0.6 moderate, 0.6-0.8 substantial, > 0.8 near-human.** Promote a cheap judge only if its kappa-vs-humans is within ~0.05 of the expensive judge's kappa-vs-humans.
+
+```python
+from sklearn.metrics import cohen_kappa_score, confusion_matrix
+
+# human_labels, opus_labels, flash_labels: aligned lists of 0/1 (1 = "fail/flag")
+def judge_report(name, judge_labels, human_labels):
+    tn, fp, fn, tp = confusion_matrix(human_labels, judge_labels).ravel()
+    tpr = tp / (tp + fn) if (tp + fn) else float("nan")  # recall on the bad class
+    tnr = tn / (tn + fp) if (tn + fp) else float("nan")
+    kappa = cohen_kappa_score(human_labels, judge_labels)
+    print(f"{name:6s}  TPR={tpr:.2f}  TNR={tnr:.2f}  kappa={kappa:.2f}")
+
+judge_report("opus",  opus_labels,  human_labels)
+judge_report("flash", flash_labels, human_labels)
+# Promote flash only if its kappa is within ~0.05 of opus AND TPR clears your safety floor.
+```
+
+**Edge cases that bite:**
+- **Position and verbosity bias** are worse on cheap judges in pairwise mode: a Flash-class model favors the first option or the longer answer more often than a frontier judge. Mitigate by swapping A/B order and averaging, and by capping length in the rubric.
+- **A cheap judge can match average accuracy but fail on the tail you care about.** If your gold set is mostly easy cases, high overall agreement hides that it misses the rare adversarial jailbreak. Stratify your gold set so hard/safety cases are over-represented, then read TPR on that slice specifically.
+- **Re-validate after any prompt or model upgrade.** When you move the *system under test* from GPT-5.5 to GPT-5.6, its failure modes shift, and a judge tuned on the old failures can silently drift. Re-run the head-to-head quarterly or after major changes.
+- **Self-preference bias:** a judge tends to score outputs from its own family higher. If you generate with GPT-5.6, prefer a non-OpenAI judge (Gemini 3.1 or Claude) for unbiased grading, or at least be aware of the lean.
+
+<a name="strategy-2-sampling"></a>
 ### Strategy 2: Sample Instead of Exhaustive
 
 You don't need to eval every trace:
@@ -2879,6 +3497,71 @@ def sample_traces(traces, sample_rate=0.1, min_sample=100):
 # Statistical confidence is still high with proper sampling
 ```
 
+#### The statistics: sample size depends on confidence, not on population size
+
+The single biggest misconception is that you need a *percentage* of traffic ("10% feels safe"). For estimating a pass rate, what you need is an absolute *count*, and that count barely depends on how big the population is. Sampling 10% of 500,000 traces (50,000 evals) is enormous overkill if all you want is "what is today's pass rate, plus or minus 2 points."
+
+The margin of error for a proportion is approximately:
+
+```
+E  ≈  z * sqrt( p * (1 - p) / n )
+```
+
+where `p` is the pass rate you are estimating, `n` is the sample size, and `z` is 1.96 for 95% confidence. Solve for `n` and use the worst case `p = 0.5` (which maximizes the numerator):
+
+```
+n  ≈  z^2 * p * (1 - p) / E^2     →     for 95% conf, p=0.5:   n ≈ 0.96 / E^2
+```
+
+That gives a clean rule of thumb you can memorize:
+
+| Target margin of error (95% conf) | Sample size `n` (worst case p=0.5) |
+|---|---|
+| +/- 10 pts | ~96 |
+| +/- 5 pts | ~385 |
+| +/- 3 pts | ~1,067 |
+| +/- 2 pts | ~2,401 |
+| +/- 1 pt | ~9,604 |
+
+So **~400 evals gets you +/- 5 points at 95% confidence whether your population is 5,000 or 50 million.** This is why the `min_sample` floor in the code matters far more than the `sample_rate`: a flat 1% of a small day could be 20 traces (useless), while 1% of a huge day is wasteful. Better to set an absolute target like `n = 1,000-2,000/day` and derive the rate from it. If your pass rate is already high (say p=0.95), the math is even kinder: `n` shrinks because `p(1-p)` is small, so detecting *rare* failures is the hard part, not estimating a high pass rate.
+
+```python
+import math
+
+def required_n(margin=0.03, conf_z=1.96, p=0.5):
+    """Sample size for a proportion at a target margin of error."""
+    return math.ceil(conf_z**2 * p * (1 - p) / margin**2)
+
+# required_n(0.03) -> 1068 evals for +/- 3 points, regardless of traffic volume
+```
+
+**Finite population correction (when it actually helps):** if your sample is a large fraction of a small pool, multiply `n` by `N / (N + n - 1)`. This only matters when N is small (e.g. sampling 1,000 from 2,000 total); at production scale it is negligible and you can ignore it.
+
+#### Stratify, do not just uniform-sample
+
+Uniform random sampling drowns out your tail. If 2% of traffic is a high-value enterprise flow and 0.1% is a known-risky tool-calling path, a uniform sample will contain almost none of them, so you learn nothing about the segments that matter. **Stratified sampling** fixes this: sample more heavily where stakes or variance are high.
+
+- Over-sample new features, recently changed prompts, low-confidence outputs, long sessions, and high-value users.
+- Under-sample the boring 80% (FAQ-style queries that always pass).
+- Keep the weights so you can still compute an unbiased global rate if you need one.
+
+A practical split for a 2,000/day budget: 1,000 uniform (for the global metric), 600 over-sampled from changed/risky flows, 400 from low-confidence outputs (where the model self-reported uncertainty or the retrieval score was weak).
+
+#### When full coverage is mandatory (do not sample)
+
+Sampling estimates a *rate*. It does **not** protect any *individual* user, because the bad trace you skipped still shipped. Use 100% coverage when a single miss is unacceptable:
+
+| Situation | Why sampling fails | Run on |
+|---|---|---|
+| Safety / harmful-content guardrails | One harmful output to one user is the failure; an estimate is no comfort | 100%, inline |
+| Compliance / PII leakage (GDPR, HIPAA, SOC 2) | Regulators care about the leaked record, not the average | 100%, often blocking |
+| Hard format/validity gates (must-parse JSON to an API) | A malformed payload breaks the downstream call every time | 100%, code-based (free anyway) |
+| Rare but catastrophic actions (sending money, deleting data, executing code via Computer Use) | Base rate is low, blast radius is huge | 100%, inline |
+| High-value, low-volume flows (a 5-figure B2B contract draft) | Volume is small enough that 100% is cheap | 100% |
+
+The reconciling principle: **use 100% coverage for guardrails (per-trace protection) and sampling for quality metrics (population trends).** They are different jobs. Code-based and embedding checks are cheap enough to run on 100% regardless, so "full coverage" usually means tiers 1-2; reserve sampling for the expensive LLM tier (Strategy 3).
+
+<a name="strategy-3-tiered"></a>
 ### Strategy 3: Tiered Evaluation
 
 Run cheap evals on everything, expensive evals on a sample:
@@ -2896,6 +3579,46 @@ sample = random.sample(tier1_passed, 500)
 tier3_results = run_llm_eval(sample, model="gpt-4o")
 ```
 
+#### The cascade as a funnel: cheap filters out the obvious, expensive judges the survivors
+
+The mental model is a sieve. Each tier is cheaper-per-unit and runs on more volume than the tier above it. The goal is to let the **free and near-free tiers absorb 90%+ of the volume** so your frontier judge only ever sees the small, genuinely-ambiguous remainder. Crucially, the cascade does two different jobs at once: code tiers *reject* hard failures (route them straight to "fail"), while the LLM tiers *adjudicate* quality on what survives.
+
+A worked funnel for 500,000 traces/day. Numbers are illustrative but the shape is typical:
+
+| Tier | What it does | Volume in | Catches/handles | Volume out (passes up) | Unit cost | Tier cost/day |
+|---|---|---|---|---|---|---|
+| T1: code/regex/schema | JSON valid, length, banned words, required citations present | 500,000 | rejects ~10% as hard-fail (50k) | 450,000 | $0 | $0 |
+| T2: classifier/embedding | toxicity head, on-topic, PII detector | 450,000 | flags ~5% to review (22.5k), passes rest | 427,500 | ~$0.0001 | ~$45 |
+| T3: cheap LLM judge (Flash) | helpfulness + groundedness rubric, pass/fail | 427,500 (or a sample) | confidently passes ~80% (342k), sends the uncertain ~20% up | ~85,500 | ~$0.0005 | ~$214 |
+| T4: frontier judge (Opus 4.8) | adjudicate only the low-confidence / disagreement cases | ~85,500 | final verdict | n/a | ~$0.020 | ~$1,710 |
+
+Total: **~$1,969/day (~$59k/month)** versus **~$300k/month** to run Opus on 100%. Same protective coverage on the hard-fail path, frontier-quality judgment on the cases that actually need it, ~80% cost reduction. If you also sample T3/T4 instead of running full volume, you drop another order of magnitude.
+
+The lever that makes this work is the **T3 -> T4 escalation rule**. Do not escalate randomly; escalate on *signal*:
+
+```python
+def needs_expensive_judge(trace, cheap_verdict):
+    # Escalate only when the cheap judge is unsure or the stakes are high.
+    return (
+        cheap_verdict["confidence"] < 0.75            # judge hedged
+        or cheap_verdict["score"] in (2, 3)           # mid-band on a 1-5 scale = ambiguous
+        or trace["flow"] in HIGH_STAKES_FLOWS         # money, medical, legal
+        or trace["self_reported_uncertainty"] > 0.5   # model itself was unsure
+    )
+
+to_escalate = [t for t, v in zip(passed_t2, t3_results) if needs_expensive_judge(t, v)]
+t4_results  = run_llm_eval(to_escalate, model="claude-opus-4-8")
+```
+
+#### Tradeoffs and pitfalls of cascades
+
+- **When to use:** high volume (>50k/day), a metric where most cases are easy, and a clear "uncertain" band you can detect. If your traffic is low (a few thousand/day), skip the cascade complexity and just run a mid-tier judge on everything; the engineering is not worth the savings.
+- **Strength:** cost scales with *difficulty*, not volume. Your frontier judge bill is bounded by how many genuinely hard cases you get, which grows slowly.
+- **Weakness / the classic trap:** **the cheap tier's false negatives never reach the expensive tier.** In the funnel above, if T3 confidently *passes* a bad trace, T4 never sees it. So the cascade is only as safe as its cheap gate's recall on the bad class. Mitigate two ways: (1) on safety-critical checks, do not cascade-by-pass, run the safety judge on 100% independently; (2) keep an audit sample, route a random 1-3% of T3-*passed* traces up to T4 anyway, and watch for cases where T4 disagrees. That audit sample is your tripwire for cheap-tier drift.
+- **Calibrate the confidence threshold.** A cheap LLM's self-reported confidence is not well calibrated out of the box. Tune the escalation threshold against your gold set: pick the cutoff where escalating fewer cases would start missing T4-confirmed failures. Often this lands at "escalate the middle 15-25%."
+- **Order tiers by cost-per-unit ascending and reject-rate descending.** Put the cheapest, highest-yield filter first. Schema validation that rejects 10% for $0 should always precede a classifier that rejects 5% for $45.
+
+<a name="strategy-4-caching"></a>
 ### Strategy 4: Cache Duplicate Evaluations
 
 If the same input appears multiple times, cache the eval result:
@@ -2912,6 +3635,48 @@ def cached_eval(trace, eval_fn):
     return eval_cache[key]
 ```
 
+#### Two different caches: do not confuse them
+
+There are two caching wins in an eval pipeline and they have different rules:
+
+1. **Eval-result caching** (the code above): "I already graded this exact input+output, reuse the verdict." Saves a whole judge call.
+2. **Judge prompt-prefix caching**: the rubric and few-shot examples are identical on every call, so cache the *prompt prefix* at the provider. Anthropic and others bill cached input tokens at ~10% of the normal rate. If your 2,500-token judge prompt is 2,200 tokens of static rubric, prefix caching cuts input cost ~80% on every single eval, including unique ones. This is the highest-ROI, lowest-risk caching you can do, turn it on first.
+
+#### When eval-result caching is safe
+
+Caching a verdict is only valid when the verdict is a **pure function of the cache key**. That holds when:
+
+- **The eval is deterministic.** Code checks (schema, regex, length) are perfectly cacheable forever. An LLM judge at `temperature=0` is *mostly* deterministic but not guaranteed identical across calls, still, the verdict is stable enough to cache for a window.
+- **Inputs genuinely repeat.** Caching only pays off with real duplication: FAQ bots, autocomplete, templated/canned responses, retries of the same request, and re-running an unchanged eval suite in CI. Measure your hit rate before building this; on free-form chat with long unique contexts the hit rate can be under 2% and the cache is pure overhead.
+- **The key captures everything that affects the verdict.** The example above keys on `input + output`. That is wrong the moment your judge also depends on retrieved context, the rubric version, the judge model, or a system prompt. Include all of them.
+
+#### When caching bites you (real failure modes)
+
+- **Rubric or judge upgrade with a stale key.** You improve the grading prompt or switch from Flash to Opus, but the key is still just `input+output`, so every "cached" result is a verdict from the *old* judge. Your dashboard shows no change because you are serving last week's grades. **Always version the key.**
+- **String concatenation collisions.** `input + output` means `("ab","c")` and `("a","bc")` hash to the same key. Use a delimiter or hash a structured dict.
+- **Unbounded in-memory dict.** The `eval_cache = {}` above grows forever and dies with the process. In production use an LRU or a TTL store (Redis with a 24-48h expiry) so non-deterministic judge drift and content staleness self-heal, and so memory is bounded.
+- **Non-determinism you cached anyway.** If you cache an LLM judge running at `temperature > 0`, you freeze one random sample of its opinion. Fine for cost dashboards, dangerous for a safety gate where you actually wanted the judge to re-evaluate. Do not cache safety verdicts across long windows.
+
+```python
+import hashlib, json
+
+JUDGE_VERSION = "groundedness-v4"   # bump on any rubric/model change to bust the cache
+
+def cache_key(trace, judge_model):
+    payload = {
+        "input": trace["input"],
+        "output": trace["output"],
+        "context": trace.get("retrieved_context", ""),  # judge depends on it -> include it
+        "judge_model": judge_model,
+        "rubric": JUDGE_VERSION,
+    }
+    blob = json.dumps(payload, sort_keys=True).encode()
+    return hashlib.sha256(blob).hexdigest()   # sha256, structured, collision-safe
+```
+
+Rule of thumb: cache freely for deterministic code checks and for prompt prefixes; cache LLM verdicts only with a versioned key and a TTL; never long-cache a safety verdict.
+
+<a name="latency-guardrails"></a>
 ### Latency Considerations for Real-Time Guardrails
 
 | Check Type | Typical Latency | Suitable for Real-Time? |
@@ -2920,6 +3685,74 @@ def cached_eval(trace, eval_fn):
 | Embedding similarity | 10-50ms | Yes |
 | Small LLM (Haiku-class) | 200-500ms | Marginal (adds noticeable delay) |
 | Large LLM (GPT-4o-class) | 1-3s | No (use offline only) |
+
+Offline eval cares about *cost*; online eval (a guardrail in the request path) cares about *cost and latency*, and latency is the harder constraint. Every millisecond a guardrail adds is felt by the user on every request, so the discipline here is a strict budget, not a vibe.
+
+#### Set an explicit latency budget
+
+A guardrail is a tax on perceived responsiveness. The working rule most teams use: an inline pre- or post-check should add **under ~200-300ms p99**, and ideally under 100ms p50, so it disappears under normal network and model jitter. Above ~500ms users notice the lag and your TTFT (time to first token) story falls apart. Budget per stage:
+
+| Stage | Budget (p99) | What fits |
+|---|---|---|
+| Input guardrail (pre-LLM) | < 100ms | regex, blocklist, embedding/classifier, PII detector |
+| Output guardrail (post-LLM, blocking) | < 200-300ms | small-LLM judge, classifier, schema check |
+| Async/observability eval | seconds, off-path | full frontier-judge grading, logged not blocking |
+
+If a check cannot fit its budget, it does not belong inline. Move it to the async tier and accept that it catches issues after the fact (good for dashboards and alerting, not for blocking).
+
+#### Parallel vs sequential checks
+
+Running guardrails sequentially adds their latencies. Five 40ms checks in series = 200ms; the same five in parallel = ~40ms (the slowest one). **Fan out independent checks concurrently and join.** The only reason to keep something sequential is a true dependency (e.g. only run the expensive PII redactor if the cheap PII *detector* fired) or short-circuit economics (run the 1ms blocklist first; if it trips, skip the 40ms classifier entirely).
+
+```python
+import asyncio
+
+async def guard_input(text):
+    # Independent checks run concurrently; total latency ~= the slowest, not the sum.
+    blocklist, toxicity, pii = await asyncio.gather(
+        regex_blocklist(text),      # ~1ms
+        toxicity_classifier(text),  # ~30ms
+        pii_detector(text),         # ~40ms
+    )
+    return blocklist.blocked or toxicity.flag or pii.found  # ~40ms total, not ~71ms
+```
+
+#### Small models and classifiers are the real-time workhorses
+
+Frontier LLMs (1-3s) are simply too slow to block on. The inline tier is built from:
+
+- **Code and regex** (<1ms): blocklists, schema validity, length, required disclaimers. Free and instant; always your first line.
+- **Fine-tuned classifiers / embedding gates** (10-50ms): a DistilBERT-class toxicity or jailbreak head, or an embedding-similarity check against known-bad patterns. This is the sweet spot for input guardrails: near-LLM quality on a *narrow* task at classifier speed and cost. Llama Guard-style small safety classifiers live here.
+- **Tiny LLMs** (Gemini 3.1 Flash, Claude Fable 5, ~150-400ms): use when a check genuinely needs language understanding the classifier lacks, and only on the *output* side where you have already paid the generation latency. Even here, prefer it as a fast-fail: short prompt, `max_tokens` capped at a one-word verdict, `temperature=0`.
+- **Frontier LLMs:** offline/async only. The moment you put a 2s Opus call in the request path you have doubled your latency; do not.
+
+#### Streaming considerations
+
+If you stream tokens to the user (almost everyone does now), output guardrails get awkward, because you may have already shown the user text before the guardrail sees the full response. Three options, in order of preference:
+
+1. **Buffer-then-release in chunks:** stream into a small buffer, run a fast incremental check per chunk, release the chunk only if it passes. Adds the per-chunk check latency but keeps the streaming feel. Works for toxicity/PII that can be judged on partial text.
+2. **Optimistic stream with retract:** stream immediately, run the guardrail in parallel, and if it trips, stop the stream and replace with a safe message. Best UX when violations are rare, but the user briefly sees flagged text, unacceptable for hard-safety content.
+3. **Block-then-stream:** generate fully, guardrail the complete output, then stream. Safest, but you lose the TTFT win of streaming entirely; reserve for high-stakes flows.
+
+For most assistants: input guardrail blocking (cheap, pre-generation), output guardrail as buffered-chunk or optimistic-retract, and the heavyweight frontier judge running fully async for the dashboard. Never let the async grading tier touch the user's latency path.
+
+<a name="summary-decision-table"></a>
+### Summary Decision Table
+
+Putting the strategies together, here is how to decide *coverage* and *placement* per eval type. "Online" = inline in the request path (latency-budgeted); "Offline" = async/batch (cost-budgeted, no latency limit).
+
+| Eval type | Run on all / sample / tiered | Online or offline | Judge tier | Why |
+|---|---|---|---|---|
+| Format / schema / length | All (it is free) | Online | Code | Zero cost, instant, downstream depends on validity |
+| Safety / harmful content | All | Online (blocking) | Classifier inline + frontier async audit | One miss is the failure; cannot sample |
+| PII / compliance leakage | All | Online (blocking) | Classifier/detector | Per-record regulatory risk |
+| Helpfulness / quality (subjective) | Sample (~1-2k/day) + tiered | Offline | Cheap LLM, escalate hard cases to frontier | It is a trend metric; per-trace protection not needed |
+| Groundedness / hallucination (RAG) | Tiered: cheap on all, frontier on uncertain | Mostly offline; inline only if cheap | Cheap LLM gate + frontier adjudication | High volume, most cases easy, hard cases need reasoning |
+| Tool-call / agent action correctness | All for high-stakes actions, sample otherwise | Online for irreversible actions | Code (validate args/permissions) + LLM for intent | Money/delete/Computer-Use actions are catastrophic if wrong |
+| Regression suite (pre-deploy) | All of the golden set | Offline | Mid/frontier (accuracy matters, volume is small) | Small fixed set; spend for trustworthy gating |
+| Drift / dashboard metrics | Sample (stratified) | Offline | Cheap LLM | You want the curve over time, cheaply |
+
+The meta-rule: **guardrails get full coverage and a latency budget (online); quality metrics get sampling and a cost budget (offline); everything expensive sits behind a cheap gate (tiered) and a versioned cache.**
 
 ---
 
