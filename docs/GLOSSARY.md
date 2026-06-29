@@ -6,6 +6,8 @@ Quick reference for key terms used throughout this guide.
 
 ## A
 
+**A2A (Agent-to-Agent Protocol)** - Open protocol for communication and task delegation between agents (agent cards, a task lifecycle, streaming updates), complementary to MCP: A2A is the agent-to-agent boundary, MCP is the agent-to-tool boundary. Reached v1.0 in 2026. See [Multi-Agent Orchestration](07-agentic-systems/04-multi-agent-orchestration.md).
+
 **Agentic Coding** - LLM autonomously editing files, running shell commands, writing tests and iterating until a coding task is complete. Exemplified by Claude Code, OpenHands, and Cline.
 
 **Agentic System** - LLM application that autonomously plans and executes multi-step tasks using tools.
@@ -22,6 +24,8 @@ Quick reference for key terms used throughout this guide.
 
 ## B
 
+**Barge-in** - In a voice agent, letting the caller interrupt the agent mid-utterance so the agent stops talking and listens. Essential for natural turn-taking; needs echo cancellation and fast VAD so the agent does not talk over the user. See [Real-Time Voice Agents](18-voice-and-audio-agents/01-realtime-voice-agents.md).
+
 **Batching** - Processing multiple requests together to improve GPU utilization. Continuous batching adds new requests while others generate.
 
 **Benchmark Saturation** - When frontier models cluster so near a benchmark's ceiling that score differences fall within noise (prompt phrasing, run variance), so the benchmark no longer separates models. MMLU, HumanEval, and GSM8K are saturated. See [Benchmarks and Leaderboards](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md).
@@ -36,9 +40,15 @@ Quick reference for key terms used throughout this guide.
 
 **C2PA (Content Credentials)** - An open standard that cryptographically binds provenance metadata (who made this, whether AI was involved, what edits) to a media asset, with tamper-evident hard bindings and watermark-based soft bindings that survive re-encoding. The provenance layer behind AI-content labeling laws; removable, so layer it with watermarking and detection. See [Multimodal Generation](19-multimodal-generation/01-multimodal-generation.md).
 
+**CaMeL (Capabilities for Machine Learning)** - A prompt-injection defense (Google DeepMind, 2025) that runs untrusted data through a privileged planner which emits a capability-gated plan, so instructions hidden in tool results cannot trigger sensitive actions. The reference pattern for capability gating. See [Agentic Security and Sandboxing](07-agentic-systems/09-agentic-security-and-sandboxing.md).
+
+**Capability Gating** - Restricting which tools an agent may invoke based on the trust level of the content currently in context, so state-changing tools (refunds, writes, sends) cannot be fired from untrusted tool results. A core indirect-prompt-injection defense. See [Agentic Security and Sandboxing](07-agentic-systems/09-agentic-security-and-sandboxing.md).
+
 **Capability Index (Composite Benchmark)** - A weighted aggregate of many benchmarks (e.g. Artificial Analysis Intelligence Index, Epoch Capability Index, HAL for agents) used to rank frontier models so the ranking keeps discriminating as individual benchmarks saturate.
 
 **Chain-of-Thought (CoT)** - Prompting technique that elicits step-by-step reasoning before final answer.
+
+**Change Data Capture (CDC)** - Streaming only the inserts, updates, and deletes from a source system (via a log or a delta query) instead of re-crawling everything. The basis for keeping a RAG index fresh and cheap; missing deletes is the classic CDC bug that leaves removed documents retrievable. See [Data Engineering for AI](06-retrieval-systems/15-data-engineering-for-ai.md).
 
 **Chunking** - Splitting documents into smaller pieces for embedding and retrieval. Strategies include fixed-size, semantic, and hierarchical.
 
@@ -70,7 +80,11 @@ Quick reference for key terms used throughout this guide.
 
 **DPO (Direct Preference Optimization)** - Fine-tuning method that optimizes directly on preference data without a separate reward model.
 
+**Drift Detection** - Monitoring for a statistically significant shift in inputs (input or embedding distribution drift) or outputs (quality drift) of a deployed model, so degradation is caught before users complain. Distinct from APM: a model can return 200 OK while quietly getting worse. See [LLM Evaluation](14-evaluation-and-observability/01-llm-evaluation.md).
+
 **DSPy** - Framework for programming LLMs through optimizable modules rather than manual prompts.
+
+**Dual-LLM Pattern** - A prompt-injection containment design (Simon Willison) that splits work between a privileged LLM which can call tools but never sees raw untrusted text, and a quarantined LLM which processes untrusted content with no tool access, passing only structured, validated data between them. See [LLM Security](12-security-and-access/01-llm-security.md).
 
 **Durable Execution** - An execution model (Temporal, Restate, DBOS) that makes long-running agents survive crashes and restarts via an append-only event history and deterministic replay, giving exactly-once side effects, durable timers, and pauses that outlive deploys. See [Durable Execution](07-agentic-systems/11-durable-execution.md).
 
@@ -85,6 +99,8 @@ Quick reference for key terms used throughout this guide.
 **Endpointing (Turn Detection)** - In voice agents, deciding when the user has finished speaking so the agent can respond. Learned turn-detection models fire on a semantically complete thought, beating fixed silence timeouts that tax every turn. See [Real-Time Voice Agents](18-voice-and-audio-agents/01-realtime-voice-agents.md).
 
 **Ensemble** - Combining multiple model outputs to improve reliability. Includes voting, debate, and mixture-of-agents.
+
+**Entity Resolution** - Normalizing the many surface forms of one real-world entity (a gene, protein, or company can have dozens of names) to a single canonical identifier, often against an ontology (UMLS, ChEMBL, UniProt). The make-or-break step in knowledge-graph construction for GraphRAG. See [GraphRAG](06-retrieval-systems/07-graph-rag.md).
 
 **Eval Awareness** - A model's tendency to detect when it is being evaluated and alter behavior accordingly, which confounds safety and capability benchmarks and argues for naturalistic, held-out test conditions.
 
@@ -111,6 +127,8 @@ Quick reference for key terms used throughout this guide.
 ## G
 
 **GGUF** - The quantized model file format used by llama.cpp, Ollama, and LM Studio for local inference. Quant levels trade quality for size; Q4_K_M is the practical sweet spot. See [On-Device and Edge Deployment](04-inference-optimization/09-on-device-and-edge-deployment.md).
+
+**GraphRAG** - Retrieval-augmented generation over a knowledge graph rather than (or alongside) a flat vector index, enabling multi-hop, relationship-typed queries and global summaries via community detection. Popularized by Microsoft Research. Worth it when answers require traversing relationships no single chunk contains. See [GraphRAG](06-retrieval-systems/07-graph-rag.md).
 
 **Guardrails** - Input/output validation to prevent harmful or off-topic responses.
 
@@ -154,6 +172,8 @@ Quick reference for key terms used throughout this guide.
 
 ## K
 
+**Knowledge Tracing** - Modeling a learner's mastery of each skill over time from their answer history (Bayesian Knowledge Tracing, Deep Knowledge Tracing) to drive adaptive difficulty in an AI tutor. See [Case Study: Adaptive AI Tutor](16-case-studies/27-adaptive-ai-tutor.md).
+
 **KV Cache** - Cached key-value pairs from attention computation. Enables efficient autoregressive generation.
 
 ---
@@ -182,6 +202,8 @@ Quick reference for key terms used throughout this guide.
 
 **MCP (Model Context Protocol)** - Open protocol for standardized tool/resource integration with LLMs. Launched by Anthropic November 2024; governance moved to the Linux Foundation's Agentic AI Foundation December 2025; adopted by Anthropic, OpenAI, Google, Microsoft, AWS. Version 2.0 (ratified March 2026) adds Streamable HTTP transport and OAuth 2.1 auth.
 
+**Mem0** - An open-source agentic memory layer that extracts, stores, and updates salient facts across sessions (add, update, delete over a vector or graph store), giving agents long-term memory without replaying full history into context. See [Agentic Memory with Mem0](08-memory-and-state/04-agentic-memory-mem0.md).
+
 **Memory Poisoning** - An attack that plants malicious or false entries into an agent's long-term memory so they resurface and influence future sessions. Added to the OWASP 2026 Agentic Top 10 as ASI06. Defense favors provenance at write time over sanitization at read time. See [Research Radar](RESEARCH-RADAR.md).
 
 **Mixture of Agents (MoA)** - Ensemble pattern where multiple agents contribute to a synthesized response.
@@ -200,9 +222,13 @@ Quick reference for key terms used throughout this guide.
 
 **OpenHands** - Open-source autonomous software engineering agent (formerly OpenDevin). Supports multiple backend LLMs, runs in a Docker sandbox.
 
+**OpenTelemetry GenAI (Semantic Conventions)** - The vendor-neutral standard for tracing LLM calls (spans for prompts, responses, tool calls, tokens, cost, model version), so observability is not locked to one platform. Langfuse, LangSmith, Phoenix, and Helicone all emit or ingest it. See [LLM Evaluation](14-evaluation-and-observability/01-llm-evaluation.md).
+
 ---
 
 ## P
+
+**PagedAttention** - The KV-cache memory manager behind vLLM that stores attention keys and values in non-contiguous fixed-size blocks (like OS virtual-memory paging), eliminating fragmentation and enabling far larger batches and higher throughput. See [Serving Infrastructure](04-inference-optimization/06-serving-infrastructure.md).
 
 **pass^k** - Agent reliability metric: the fraction of tasks solved on all k independent attempts (versus pass@k, solved on at least one). Exposes the reliability cliff where an agent at ~60% pass@1 can drop to ~25% pass^8. The production-relevant consistency signal.
 
@@ -252,6 +278,8 @@ Quick reference for key terms used throughout this guide.
 
 **SWE-bench Verified** - Human-validated 500-issue subset of SWE-bench measuring resolution of real GitHub issues; the canonical coding benchmark of 2024-2026. Now near-saturated and partly contaminated, so the field is shifting to SWE-bench Pro and contamination-resistant live variants. Read the harness before trusting a score. See [Benchmarks and Leaderboards](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md).
 
+**SynthID** - Google DeepMind's invisible watermarking for AI-generated images, audio, video, and text that survives common transforms (recompression, cropping). Used as the survivability layer alongside removable C2PA manifests. See [Multimodal Generation](19-multimodal-generation/01-multimodal-generation.md).
+
 **System Prompt** - Instructions that set context and behavior for an LLM conversation.
 
 ---
@@ -270,9 +298,13 @@ Quick reference for key terms used throughout this guide.
 
 **Transformer** - Neural network architecture based on self-attention. Foundation of modern LLMs.
 
+**Trust-Tagging** - Marking spans of retrieved or tool-result content with a trust level (for example wrapping untrusted text in explicit tags) so the agent and its capability gate refuse to act on instructions embedded in low-trust content. An indirect-prompt-injection defense at the read layer. See [Agentic Security and Sandboxing](07-agentic-systems/09-agentic-security-and-sandboxing.md).
+
 ---
 
 ## V
+
+**VAD (Voice Activity Detection)** - Detecting whether a chunk of audio contains speech, the first stage of a voice agent's turn-taking. Paired with endpointing to decide when the user has finished; fast VAD also enables barge-in. Silero VAD is a common choice. See [Real-Time Voice Agents](18-voice-and-audio-agents/01-realtime-voice-agents.md).
 
 **Vector Database** - Database optimized for storing and searching high-dimensional vectors (embeddings).
 
