@@ -16,6 +16,8 @@ Quick reference for key terms used throughout this guide.
 
 **AI Gateway** - A control-plane proxy between your apps and model providers (LiteLLM, OpenRouter, Portkey, Kong). Exposes one OpenAI-compatible API and centralizes routing, fallback, load balancing, rate-limit handling, virtual keys and budgets, caching, and observability. See [AI Gateways and Model Routing](11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md).
 
+**Alert Fatigue** - When an assistant raises so many low-value alerts (flags, warnings, suggestions) that users start ignoring all of them, including the critical ones. The reason precision matters more than recall for clinical decision support, code review, and observability alerting. See [Case Study: Clinical Decision Support](16-case-studies/35-clinical-decision-support.md).
+
 **Attention Mechanism** - Neural network component that allows models to focus on relevant parts of input. Self-attention compares each token to all others.
 
 **ABAC (Attribute-Based Access Control)** - Access control based on attributes of user, resource, and environment rather than fixed roles.
@@ -208,6 +210,8 @@ Quick reference for key terms used throughout this guide.
 
 **Mixture of Agents (MoA)** - Ensemble pattern where multiple agents contribute to a synthesized response.
 
+**Model Collapse** - The degradation that happens when a model is trained repeatedly on AI-generated output: tails of the distribution vanish, diversity shrinks, and quality decays over generations. The core risk of naive synthetic-data pipelines; mitigated by keeping real data in the mix and filtering hard. See [Case Study: Synthetic Data Generation](16-case-studies/37-synthetic-data-generation.md).
+
 **Model Routing** - Choosing which model serves each request by task, cost, latency, capability, or semantics, often with a cascade (cheap model first, escalate on low confidence) and cross-provider fallback. See [AI Gateways and Model Routing](11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md).
 
 **Multi-Tenancy** - Serving multiple customers from shared infrastructure with data isolation.
@@ -265,6 +269,10 @@ Quick reference for key terms used throughout this guide.
 ---
 
 ## S
+
+**Saga Pattern** - A distributed-transaction pattern that breaks a multi-step workflow into local steps each with a compensating action, so a partial failure rolls back cleanly without a global lock. Used for multi-leg agent workflows (e.g. cross-org booking) where one participant can fail mid-transaction. See [Case Study: Cross-Organization Agent Federation](16-case-studies/38-cross-org-a2a-federation.md).
+
+**SaMD (Software as a Medical Device)** - Software intended for a medical purpose that is itself a regulated medical device. The FDA Clinical Decision Support criteria carve out an exemption when a clinician can independently review the basis of a recommendation, which is why clinical copilots are built to explain and cite rather than to autonomously decide. See [Case Study: Clinical Decision Support](16-case-studies/35-clinical-decision-support.md).
 
 **Self-Consistency** - Sampling multiple reasoning paths and selecting most common answer.
 
