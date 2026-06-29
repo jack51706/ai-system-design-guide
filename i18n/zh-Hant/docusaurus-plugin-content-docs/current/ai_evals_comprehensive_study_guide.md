@@ -1998,6 +1998,45 @@ FAIL: Products violate stated filters or preferences
 
 結構永遠都一樣：定義評估標準、寫出 PASS/FAIL 定義、加上 few-shot 範例、用 TPR/TNR 驗證。
 
+### 實作範例：偵測位置偏誤與 judge 漂移 {#judge-worked-examples}
+
+有兩項檢查值得早早接上，因為它們能抓住那些會悄悄摧毀 judge 可信度的失效。
+
+**消除成對評比中的位置偏誤。** 兩種排列順序都評一次，只信任那些在交換後依然成立的判決：
+
+```python
+def judge_pairwise(question, answer_a, answer_b, judge):
+    """Score both orderings; a verdict that flips on swap is position bias, not signal."""
+    v1 = judge(question, answer_a, answer_b)   # A presented first
+    v2 = judge(question, answer_b, answer_a)   # B presented first
+    if v1.winner == "A" and v2.winner == "B":
+        return "A"   # A wins regardless of position
+    if v1.winner == "B" and v2.winner == "A":
+        return "B"   # B wins regardless of position
+    return "TIE"     # inconsistent under swap, do not trust this pair
+```
+
+在你的 Dev 集上量測這個翻轉率（flip rate）。大約 5% 以下還可以接受；高於 10% 就代表你應該在生產環境中隨機化呈現順序，並考慮換一個更強的 judge 模型（例如把 judge 從 GPT-5.5 換成 Claude Opus 4.8）。
+
+**定期對一個凍結的黃金集重新驗證。** 一個在上線時有 95% 準確率的 judge，會隨著流量改變、以及你升級 judge 模型而漂移。維護一個小型、凍結、由人工標註的黃金集（50 到 100 筆範例），每週重跑一次，而且在任何 judge 模型變更之後都要立即再跑：
+
+```python
+def revalidate_judge(judge, golden_set, min_tpr=0.9, min_tnr=0.9):
+    tp = tn = fp = fn = 0
+    for ex in golden_set:
+        pred, truth = judge(ex.input).label, ex.label
+        if   pred == "PASS" and truth == "PASS": tp += 1
+        elif pred == "FAIL" and truth == "FAIL": tn += 1
+        elif pred == "PASS" and truth == "FAIL": fp += 1
+        else: fn += 1
+    tpr = tp / (tp + fn) if (tp + fn) else 0.0
+    tnr = tn / (tn + fp) if (tn + fp) else 0.0
+    return {"tpr": round(tpr, 3), "tnr": round(tnr, 3),
+            "passed": tpr >= min_tpr and tnr >= min_tnr}
+```
+
+如果其中任一比率掉到你的標準以下，就把上一次良好執行以來的每一筆判決都視為可疑，並在信任新數字之前重新校準 judge 提示。judge 模型升版並不是白賺的好處：即使是更好的模型也會移動決策邊界，所以重新驗證是必做的。
+
 ---
 
 ## 第 5 章：以程式碼為基礎的評估器 {#chapter-5}

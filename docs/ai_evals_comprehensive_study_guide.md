@@ -1993,6 +1993,45 @@ FAIL: Products violate stated filters or preferences
 
 The structure is always the same: define the criterion, write PASS/FAIL definitions, add few-shot examples, validate with TPR/TNR.
 
+### Worked Examples: Detecting Position Bias and Judge Drift {#judge-worked-examples}
+
+Two checks worth wiring up early, because they catch the failures that quietly destroy a judge's trustworthiness.
+
+**Cancel position bias in pairwise judging.** Score both orderings and only trust a verdict that survives the swap:
+
+```python
+def judge_pairwise(question, answer_a, answer_b, judge):
+    """Score both orderings; a verdict that flips on swap is position bias, not signal."""
+    v1 = judge(question, answer_a, answer_b)   # A presented first
+    v2 = judge(question, answer_b, answer_a)   # B presented first
+    if v1.winner == "A" and v2.winner == "B":
+        return "A"   # A wins regardless of position
+    if v1.winner == "B" and v2.winner == "A":
+        return "B"   # B wins regardless of position
+    return "TIE"     # inconsistent under swap, do not trust this pair
+```
+
+Measure the flip rate across your dev set. Under about 5 percent is tolerable; above 10 percent means you should randomize presentation order in production and consider a stronger judge model (for example moving the judge from GPT-5.5 to Claude Opus 4.8).
+
+**Re-validate against a frozen golden set on a schedule.** A judge that was 95 percent accurate at launch drifts as traffic shifts and as you upgrade the judge model. Keep a small frozen golden set (50 to 100 hand-labeled examples), re-run it weekly, and always immediately after any judge-model change:
+
+```python
+def revalidate_judge(judge, golden_set, min_tpr=0.9, min_tnr=0.9):
+    tp = tn = fp = fn = 0
+    for ex in golden_set:
+        pred, truth = judge(ex.input).label, ex.label
+        if   pred == "PASS" and truth == "PASS": tp += 1
+        elif pred == "FAIL" and truth == "FAIL": tn += 1
+        elif pred == "PASS" and truth == "FAIL": fp += 1
+        else: fn += 1
+    tpr = tp / (tp + fn) if (tp + fn) else 0.0
+    tnr = tn / (tn + fp) if (tn + fp) else 0.0
+    return {"tpr": round(tpr, 3), "tnr": round(tnr, 3),
+            "passed": tpr >= min_tpr and tnr >= min_tnr}
+```
+
+If either rate falls below your bar, treat every verdict since the last good run as suspect and re-calibrate the judge prompt before trusting new numbers. A judge-model upgrade is not a free win: even a better model shifts the decision boundary, so re-validation is mandatory.
+
 ---
 
 ## Chapter 5: Code-Based Evaluators {#chapter-5}
