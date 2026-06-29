@@ -16,6 +16,8 @@
 
 **AI Gateway（AI 閘道）** - 介於你的應用程式與模型供應商之間的控制平面代理（LiteLLM、OpenRouter、Portkey、Kong）。它對外提供單一個與 OpenAI 相容的 API，並集中處理路由、備援、負載平衡、速率限制處理、虛擬金鑰與預算、快取，以及可觀測性。請參閱 [AI Gateways and Model Routing](11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md)。
 
+**Alert Fatigue（警示疲勞）** - 當助理發出太多低價值的警示（標記、警告、建議），使用者便開始忽略全部，連關鍵的也一併忽略。這正是為何在臨床決策支援、code review 與可觀測性告警上，精確率比召回率更重要。請參閱 [Case Study: Clinical Decision Support](16-case-studies/35-clinical-decision-support.md)。
+
 **Attention Mechanism（注意力機制）** - 神經網路元件，讓模型能夠聚焦於輸入中相關的部分。自注意力（self-attention）會將每個 token 與其他所有 token 進行比較。
 
 **ABAC（Attribute-Based Access Control，屬性型存取控制）** - 根據使用者、資源與環境的屬性，而非固定角色，來進行存取控制。
@@ -208,6 +210,8 @@
 
 **Mixture of Agents（MoA，代理混合）** - 一種集成模式，由多個代理共同促成一個綜合後的回應。
 
+**Model Collapse（模型崩塌）** - 當模型反覆在 AI 生成的輸出上訓練時所發生的劣化：分布的尾端消失、多樣性萎縮，品質隨世代衰退。這是天真的合成資料管線的核心風險；緩解之道是讓真實資料維持在訓練組合中，並嚴格過濾。請參閱 [Case Study: Synthetic Data Generation](16-case-studies/37-synthetic-data-generation.md)。
+
 **Model Routing（模型路由）** - 依任務、成本、延遲、能力或語意來選擇由哪個模型服務每個請求，通常搭配級聯（先用便宜模型，信心不足時升級）與跨供應商備援。請參閱 [AI Gateways and Model Routing](11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md)。
 
 **Multi-Tenancy（多租戶）** - 以共享的基礎設施服務多個客戶，並做到資料隔離。
@@ -265,6 +269,10 @@
 ---
 
 ## S
+
+**Saga Pattern（Saga 模式）** - 一種分散式交易模式，把多步驟工作流程拆成各自帶有補償動作的本地步驟，使部分失敗能乾淨回滾，而無需全域鎖。用於多段式代理工作流程（例如跨組織訂位），當其中一個參與者可能在交易中途失敗時。請參閱 [Case Study: Cross-Organization Agent Federation](16-case-studies/38-cross-org-a2a-federation.md)。
+
+**SaMD（Software as a Medical Device，醫療器材軟體）** - 以醫療為用途、其本身即屬受規範醫療器材的軟體。FDA 的臨床決策支援準則在臨床人員能獨立審查建議依據時提供豁免，這正是臨床 copilot 之所以設計成解釋並引用、而非自主決策的原因。請參閱 [Case Study: Clinical Decision Support](16-case-studies/35-clinical-decision-support.md)。
 
 **Self-Consistency（自我一致性）** - 取樣多條推理路徑並選出最常見的答案。
 
