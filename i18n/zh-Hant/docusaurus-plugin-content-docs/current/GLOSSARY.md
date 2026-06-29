@@ -6,6 +6,8 @@
 
 ## A
 
+**A2A（Agent-to-Agent Protocol，代理對代理協定）** - 用於代理之間通訊與任務委派的開放協定（agent card、任務生命週期、串流更新），與 MCP 互補：A2A 是代理對代理的邊界，MCP 是代理對工具的邊界。於 2026 年達到 v1.0。請參閱 [Multi-Agent Orchestration](07-agentic-systems/04-multi-agent-orchestration.md)。
+
 **Agentic Coding（代理式編碼）** - LLM 自主編輯檔案、執行 shell 命令、撰寫測試並反覆迭代，直到編碼任務完成為止。代表案例有 Claude Code、OpenHands 與 Cline。
 
 **Agentic System（代理式系統）** - 使用工具自主規劃並執行多步驟任務的 LLM 應用程式。
@@ -22,6 +24,8 @@
 
 ## B
 
+**Barge-in（插話）** - 在語音代理中，讓來電者能在代理講話中途打斷，使代理停止說話並開始聆聽。對自然的輪替至關重要；需要回音消除與快速的 VAD，才不會讓代理蓋過使用者的話。請參閱 [Real-Time Voice Agents](18-voice-and-audio-agents/01-realtime-voice-agents.md)。
+
 **Batching（批次處理）** - 將多個請求一起處理以提升 GPU 使用率。連續批次處理（continuous batching）會在其他請求仍在生成時加入新的請求。
 
 **Benchmark Saturation（基準測試飽和）** - 當前沿模型聚集得太靠近某個基準測試的上限，以致分數差異落在雜訊範圍內（提示措辭、執行變異），使該基準測試不再能區分模型。MMLU、HumanEval 與 GSM8K 都已飽和。請參閱 [Benchmarks and Leaderboards](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md)。
@@ -36,9 +40,15 @@
 
 **C2PA（Content Credentials）** - 一項開放標準，以密碼學方式將來源出處的詮釋資料（由誰製作、是否有 AI 參與、做了哪些編輯）綁定到媒體資產上，並具備防竄改的硬綁定，以及能在重新編碼後存活的浮水印型軟綁定。它是 AI 內容標示法規背後的來源出處層；由於可被移除，因此應與浮水印及偵測技術分層搭配使用。請參閱 [Multimodal Generation](19-multimodal-generation/01-multimodal-generation.md)。
 
+**CaMeL（Capabilities for Machine Learning）** - 一種提示注入防禦（Google DeepMind，2025），讓不受信任的資料經過一個特權 planner，由它產生一份受能力閘控的計畫，使藏在工具結果中的指令無法觸發敏感動作。能力閘控的參考範式。請參閱 [Agentic Security and Sandboxing](07-agentic-systems/09-agentic-security-and-sandboxing.md)。
+
+**Capability Gating（能力閘控）** - 依目前上下文中內容的信任層級，限制代理可調用的工具，使會改變狀態的工具（退款、寫入、寄送）無法由不受信任的工具結果觸發。這是核心的間接提示注入防禦。請參閱 [Agentic Security and Sandboxing](07-agentic-systems/09-agentic-security-and-sandboxing.md)。
+
 **Capability Index（綜合基準測試，Composite Benchmark）** - 將許多基準測試加權彙整而成的指標（例如 Artificial Analysis Intelligence Index、Epoch Capability Index、給代理用的 HAL），用來為前沿模型排名，使排名在個別基準測試飽和後仍能持續區分高下。
 
 **Chain-of-Thought（CoT，思維鏈）** - 一種提示技巧，在給出最終答案之前引導出逐步推理。
+
+**Change Data Capture（CDC，變更資料擷取）** - 只串流來源系統的新增、更新與刪除（透過日誌或差異查詢），而非重新爬取全部資料。這是讓 RAG 索引保持新鮮且划算的基礎；漏掉刪除是經典的 CDC 臭蟲，會讓已移除的文件仍可被檢索到。請參閱 [Data Engineering for AI](06-retrieval-systems/15-data-engineering-for-ai.md)。
 
 **Chunking（分塊）** - 將文件切分成較小的片段以進行嵌入與檢索。策略包括固定大小、語意，以及階層式分塊。
 
@@ -70,7 +80,11 @@
 
 **DPO（Direct Preference Optimization，直接偏好最佳化）** - 一種微調方法，直接針對偏好資料進行最佳化，無需獨立的獎勵模型。
 
+**Drift Detection（漂移偵測）** - 監測已部署模型的輸入（輸入或嵌入分布漂移）或輸出（品質漂移）是否出現統計上顯著的位移，好在使用者抱怨之前就抓到劣化。這有別於 APM：模型可能回傳 200 OK 卻悄悄變差。請參閱 [LLM Evaluation](14-evaluation-and-observability/01-llm-evaluation.md)。
+
 **DSPy** - 透過可最佳化的模組（而非手動提示）來編寫 LLM 程式的框架。
+
+**Dual-LLM Pattern（雙 LLM 模式）** - 一種提示注入圍堵設計（Simon Willison），將工作拆分給一個可呼叫工具但從不看到原始不受信任文字的特權 LLM，以及一個處理不受信任內容但沒有任何工具存取的隔離（quarantined）LLM，兩者之間只傳遞結構化、已驗證的資料。請參閱 [LLM Security](12-security-and-access/01-llm-security.md)。
 
 **Durable Execution（持久執行）** - 一種執行模型（Temporal、Restate、DBOS），透過僅可追加的事件歷史與確定性重播，讓長時間執行的代理能在當機與重新啟動後存活，提供恰好一次（exactly-once）的副作用、持久計時器，以及能跨越部署存活的暫停。請參閱 [Durable Execution](07-agentic-systems/11-durable-execution.md)。
 
@@ -85,6 +99,8 @@
 **Endpointing（Turn Detection，回合偵測）** - 在語音代理中，判斷使用者是否已說完話，好讓代理能夠回應。經學習的回合偵測模型會在語意完整的想法出現時觸發，勝過會讓每個回合都付出代價的固定靜默逾時。請參閱 [Real-Time Voice Agents](18-voice-and-audio-agents/01-realtime-voice-agents.md)。
 
 **Ensemble（集成）** - 結合多個模型的輸出以提升可靠度。包括投票、辯論，以及代理混合（mixture-of-agents）。
+
+**Entity Resolution（實體解析）** - 將同一個真實世界實體的眾多表面形式（一個基因、蛋白質或公司可能有數十種名稱）正規化為單一個標準識別碼，通常對照某個本體論（UMLS、ChEMBL、UniProt）。這是 GraphRAG 中知識圖譜建構的成敗關鍵步驟。請參閱 [GraphRAG](06-retrieval-systems/07-graph-rag.md)。
 
 **Eval Awareness（評估覺察）** - 模型偵測到自己正在被評估，並隨之改變行為的傾向，這會干擾安全與能力基準測試，並支持採用自然、保留（held-out）的測試條件。
 
@@ -111,6 +127,8 @@
 ## G
 
 **GGUF** - llama.cpp、Ollama 與 LM Studio 用於本地推論的量化模型檔案格式。量化等級以品質換取大小；Q4_K_M 是實務上的甜蜜點。請參閱 [On-Device and Edge Deployment](04-inference-optimization/09-on-device-and-edge-deployment.md)。
+
+**GraphRAG** - 在知識圖譜上（而非或並用於扁平向量索引）進行的檢索增強生成，可支援多跳、帶關係型別的查詢，並透過社群偵測（community detection）做全域摘要。由 Microsoft Research 推廣。當答案需要走訪沒有任何單一片段能涵蓋的關係時值得採用。請參閱 [GraphRAG](06-retrieval-systems/07-graph-rag.md)。
 
 **Guardrails（防護機制）** - 輸入／輸出驗證，用以防止有害或離題的回應。
 
@@ -154,6 +172,8 @@
 
 ## K
 
+**Knowledge Tracing（知識追蹤）** - 從學習者的作答歷史，對其每項技能的精熟度隨時間建模（Bayesian Knowledge Tracing、Deep Knowledge Tracing），以驅動 AI 家教的自適應難度。請參閱 [Case Study: Adaptive AI Tutor](16-case-studies/27-adaptive-ai-tutor.md)。
+
 **KV Cache** - 從注意力運算中快取的鍵值對。可實現高效的自回歸生成。
 
 ---
@@ -182,6 +202,8 @@
 
 **MCP（Model Context Protocol，模型上下文協定）** - 用於與 LLM 進行標準化工具／資源整合的開放協定。由 Anthropic 於 2024 年 11 月推出；治理權於 2025 年 12 月移交給 Linux Foundation 的 Agentic AI Foundation；獲 Anthropic、OpenAI、Google、Microsoft、AWS 採用。2.0 版（2026 年 3 月批准）新增 Streamable HTTP 傳輸與 OAuth 2.1 驗證。
 
+**Mem0** - 一個開源的代理式記憶層，跨工作階段擷取、儲存並更新重要事實（在向量或圖資料庫上做新增、更新、刪除），讓代理擁有長期記憶，而無需把完整歷史重播進上下文。請參閱 [Agentic Memory with Mem0](08-memory-and-state/04-agentic-memory-mem0.md)。
+
 **Memory Poisoning（記憶汙染）** - 一種攻擊，在代理的長期記憶中植入惡意或不實的條目，使其在未來的工作階段中重新浮現並造成影響。已被新增至 OWASP 2026 Agentic Top 10，編號為 ASI06。防禦上偏好在寫入時記錄來源出處，而非在讀取時清理。請參閱 [Research Radar](RESEARCH-RADAR.md)。
 
 **Mixture of Agents（MoA，代理混合）** - 一種集成模式，由多個代理共同促成一個綜合後的回應。
@@ -200,9 +222,13 @@
 
 **OpenHands** - 開源的自主軟體工程代理（前稱 OpenDevin）。支援多種後端 LLM，在 Docker 沙箱中執行。
 
+**OpenTelemetry GenAI（語意慣例，Semantic Conventions）** - 用於追蹤 LLM 呼叫的供應商中立標準（為提示、回應、工具呼叫、token、成本、模型版本建立 span），讓可觀測性不被綁定在單一平台。Langfuse、LangSmith、Phoenix 與 Helicone 都會發出或接收它。請參閱 [LLM Evaluation](14-evaluation-and-observability/01-llm-evaluation.md)。
+
 ---
 
 ## P
+
+**PagedAttention** - vLLM 背後的 KV cache 記憶體管理機制，將注意力的鍵與值以非連續的固定大小區塊儲存（類似作業系統的虛擬記憶體分頁），消除碎片化並使批次規模與吞吐量大幅提升。請參閱 [Serving Infrastructure](04-inference-optimization/06-serving-infrastructure.md)。
 
 **pass^k** - 代理可靠度度量：在所有 k 次獨立嘗試中都解出的任務比例（相對於 pass@k，後者只需至少一次解出即可）。它揭露了可靠度懸崖：一個在 pass@1 約 60% 的代理，可能在 pass^8 掉到約 25%。這是與生產環境相關的一致性訊號。
 
@@ -252,6 +278,8 @@
 
 **SWE-bench Verified** - SWE-bench 中經人工驗證的 500 個議題子集，衡量真實 GitHub 議題的解決情況；是 2024-2026 年標準的編碼基準測試。如今已接近飽和且部分受到汙染，因此該領域正轉向 SWE-bench Pro 與抗汙染的即時變體。在信任某個分數之前，請先閱讀其測試框架。請參閱 [Benchmarks and Leaderboards](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md)。
 
+**SynthID** - Google DeepMind 為 AI 生成的影像、音訊、影片與文字所做的隱形浮水印，能在常見的轉換（重新壓縮、裁切）後存活。用作可被移除的 C2PA manifest 旁的存活層。請參閱 [Multimodal Generation](19-multimodal-generation/01-multimodal-generation.md)。
+
 **System Prompt（系統提示）** - 為 LLM 對話設定上下文與行為的指令。
 
 ---
@@ -270,9 +298,13 @@
 
 **Transformer** - 以自注意力為基礎的神經網路架構。現代 LLM 的基礎。
 
+**Trust-Tagging（信任標籤）** - 為檢索或工具結果內容的片段標上信任層級（例如把不受信任的文字以明確標籤包裹），讓代理及其能力閘控能拒絕對低信任內容中嵌入的指令採取行動。這是在讀取層的間接提示注入防禦。請參閱 [Agentic Security and Sandboxing](07-agentic-systems/09-agentic-security-and-sandboxing.md)。
+
 ---
 
 ## V
+
+**VAD（Voice Activity Detection，語音活動偵測）** - 偵測一段音訊是否含有語音，是語音代理輪替的第一階段。與 endpointing 搭配以判斷使用者是否已說完；快速的 VAD 也讓 barge-in 得以實現。Silero VAD 是常見選擇。請參閱 [Real-Time Voice Agents](18-voice-and-audio-agents/01-realtime-voice-agents.md)。
 
 **Vector Database（向量資料庫）** - 為儲存與搜尋高維向量（嵌入）而最佳化的資料庫。
 
