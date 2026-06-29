@@ -15,7 +15,7 @@ Retrieval-Augmented Generation (RAG) is the architectural pattern of providing a
 
 ---
 
-## The Core Philosophy: Grounding vs. Training
+## The Core Philosophy: Grounding vs. Training {#philosophy}
 
 | Aspect | Fine-Tuning | RAG |
 |--------|-------------|-----|
@@ -28,7 +28,7 @@ Retrieval-Augmented Generation (RAG) is the architectural pattern of providing a
 
 ---
 
-## The RAG Taxonomy
+## The RAG Taxonomy {#taxonomy}
 
 Production RAG systems are categorized by their "Agentic Depth":
 
@@ -100,7 +100,7 @@ flowchart TD
 
 ---
 
-## The Retrieval Quality Gap
+## The Retrieval Quality Gap {#quality-gap}
 
 The "Retrieval Gap" is the #1 cause of RAG failure.
 - **Gap 1: Semantic Mismatch**: Query says "fast cars," DB has "Porsche 911." Solved by **Embedding Rerankers**.
@@ -109,7 +109,7 @@ The "Retrieval Gap" is the #1 cause of RAG failure.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why would you still use RAG if frontier models ship 1M-2M token contexts?
 
@@ -136,7 +136,7 @@ Advanced RAG is a **deterministic pipeline** (Linear: Rewrite -> Search -> Reran
 
 ---
 
-## References
+## References {#references}
 - Gao et al. "Retrieval-Augmented Generation for LLMs: A Survey" (2024 update)
 - Microsoft. "From RAG to GraphRAG" (2024)
 - Google. "Long-context LLMs as Retrievers" (2025)

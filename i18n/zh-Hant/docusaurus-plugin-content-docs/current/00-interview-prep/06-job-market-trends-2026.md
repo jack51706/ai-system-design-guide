@@ -23,7 +23,7 @@
 
 ---
 
-## 三大頭條轉變
+## 三大頭條轉變 {#the-three-headline-shifts}
 
 如果你只讀一段，請把這三件事內化於心。
 
@@ -47,7 +47,7 @@
 
 ---
 
-## 2026 年的職位分類
+## 2026 年的職位分類 {#role-taxonomy-in-2026}
 
 ### 既有職稱（仍在強勁招聘）
 
@@ -84,7 +84,7 @@
 
 ---
 
-## 依職涯層級劃分的技能
+## 依職涯層級劃分的技能 {#skills-by-career-level}
 
 ### L4-L5（中階個人貢獻者，3-5 年）
 
@@ -126,7 +126,7 @@
 
 ---
 
-## 職缺實際要求什麼
+## 職缺實際要求什麼 {#what-job-listings-actually-require}
 
 ### 必備（在 100 多則職缺中被點名為必要）
 
@@ -182,7 +182,7 @@
 
 ---
 
-## 薪酬現實
+## 薪酬現實 {#compensation-reality}
 
 > 僅限公開來源範圍。請以 [levels.fyi](https://www.levels.fyi/) 查驗最新資料。除另有註明外，所有數字皆為美元。
 
@@ -227,7 +227,7 @@
 
 ---
 
-## 地理與產業分布
+## 地理與產業分布 {#geographic--industry-distribution}
 
 - **集中度：** 超過 65% 的 AI 工程師位於 SF + NYC
 - **雙層市場：** Indeed Hiring Lab 報告，約 95% 的招聘公司「並未」張貼過 AI 職缺，採用集中在規模最大的公司（[Indeed Hiring Lab 2026 年 1 月](https://www.hiringlab.org/2026/01/16/ai-adoption-accelerating-still-concentrated-among-largest-firms/)）
@@ -239,7 +239,7 @@
 
 ---
 
-## 面試流程模式
+## 面試流程模式 {#interview-process-patterns}
 
 2026 年 5 月在 AI 原生公司的標準：
 
@@ -266,7 +266,7 @@
 
 ---
 
-## 值得關注的新興職位
+## 值得關注的新興職位 {#emerging-roles-to-watch}
 
 這些角色在 2026 年 5 月成長最快，如果你正在規劃 12 個月的職涯軌跡，可以押注它們。
 
@@ -307,7 +307,7 @@
 
 ---
 
-## 策略要點
+## 策略要點 {#strategic-takeaways}
 
 給正在規劃下一步的**工程師**：
 
@@ -332,7 +332,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 本章節取材自截至 2026 年 5 月 17 日的 100 多則公開職缺、招聘報告與招募人員訊號。主要來源：
 

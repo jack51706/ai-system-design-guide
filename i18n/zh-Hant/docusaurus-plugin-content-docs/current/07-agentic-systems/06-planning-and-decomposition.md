@@ -14,7 +14,7 @@
 
 ---
 
-## 規劃光譜
+## 規劃光譜 {#spectrum}
 
 | 方法 | 策略 | 複雜度 | 最適用於 |
 |--------|----------|------------|----------|
@@ -25,7 +25,7 @@
 
 ---
 
-## 靜態規劃與動態規劃
+## 靜態規劃與動態規劃 {#static-vs-dynamic}
 
 ### 靜態（Plan-and-Solve）
 代理寫出一份 10 步驟的計畫並嚴格依照執行。
@@ -46,7 +46,7 @@
 
 ---
 
-## 遞迴式任務分解
+## 遞迴式任務分解 {#decomposition}
 
 對於龐大的任務（例如「建構一個全端應用程式」），我們會使用 **子代理衍生（Sub-Agent Spawning）**。
 1. **主代理（Master Agent）**：將「專案」分解成「前端」、「後端」與「資料庫」。
@@ -66,7 +66,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你如何防止代理在任務分解過程中發生「無限遞迴（Infinite Recursion）」？
 
@@ -80,7 +80,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Silver et al. "Mastering the game of Go with deep neural networks and tree search"（應用於 LLM，2024/2025）
 - Wang et al. "Self-Consistency Improves Chain of Thought Reasoning"（2022 年，2025 年更新）
 - LangGraph. "Multi-Agent Planning Patterns"（2025）

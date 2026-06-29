@@ -19,7 +19,7 @@ Claude Code is Anthropic's **terminal-native autonomous coding agent**. Unlike I
 
 ---
 
-## What Claude Code Is
+## What Claude Code Is {#what-it-is}
 
 Released by Anthropic in early 2025, Claude Code is:
 
@@ -45,7 +45,7 @@ claude -p "Add unit tests for all functions in src/utils.py" --output-format jso
 
 ---
 
-## Core Architecture
+## Core Architecture {#architecture}
 
 ```mermaid
 flowchart TD
@@ -71,7 +71,7 @@ Claude Code uses **Claude 3.7 Sonnet** as its backbone model, with Extended Thin
 
 ---
 
-## Core Tools
+## Core Tools {#tools}
 
 Claude Code has three native tools and supports custom MCP tools:
 
@@ -123,7 +123,7 @@ Full desktop control (screenshots, mouse, keyboard) — used for browser testing
 
 ---
 
-## The CLAUDE.md Manifest Pattern
+## The CLAUDE.md Manifest Pattern {#claude-md}
 
 The `CLAUDE.md` file is the **single most important pattern** for using Claude Code productively. It injects persistent project context into every Claude Code session.
 
@@ -182,7 +182,7 @@ Claude automatically reads the closest CLAUDE.md when working in a directory.
 
 ---
 
-## Running Claude Code
+## Running Claude Code {#running}
 
 ### Interactive Mode
 
@@ -238,7 +238,7 @@ result = asyncio.run(run_coding_task(
 
 ---
 
-## Sub-Agents and Parallelism
+## Sub-Agents and Parallelism {#subagents}
 
 Claude Code supports **sub-agent dispatch** for large codebases:
 
@@ -267,7 +267,7 @@ Each sub-agent runs in parallel, then the main agent reviews and merges the resu
 
 ---
 
-## Custom MCP Integration
+## Custom MCP Integration {#mcp-integration}
 
 Claude Code reads MCP servers from `~/.claude/config.json` or `.claude/mcp.json`:
 
@@ -302,7 +302,7 @@ With this config, Claude Code can:
 
 ---
 
-## Safety and Permission Model
+## Safety and Permission Model {#safety}
 
 Claude Code has a **layered permission model**:
 
@@ -343,7 +343,7 @@ Claude Code has a **layered permission model**:
 
 ---
 
-## Production Use: CI Pipelines
+## Production Use: CI Pipelines {#production}
 
 ### GitHub Actions Integration
 
@@ -399,7 +399,7 @@ jobs:
 
 ---
 
-## Comparison: Claude Code vs Alternatives
+## Comparison: Claude Code vs Alternatives {#comparison}
 
 | Feature | Claude Code | Cursor/Windsurf | Cline | OpenHands |
 |---------|-------------|-----------------|-------|-----------|
@@ -426,7 +426,7 @@ jobs:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How does Claude Code differ from GitHub Copilot?
 
@@ -456,7 +456,7 @@ I optimize in three ways:
 
 ---
 
-## References
+## References {#references}
 
 - Anthropic. "Claude Code: Building Agentic Coding Experiences" (2025) — https://docs.anthropic.com/claude-code
 - Anthropic. "Claude Code SDK Documentation" — https://github.com/anthropics/claude-code

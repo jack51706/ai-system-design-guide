@@ -14,7 +14,7 @@
 
 ---
 
-## PEFT 革命
+## PEFT 革命 {#the-peft-revolution}
 
 對前沿模型（GPT-5.5、Claude Opus 4.7、Llama 4 405B）進行完整微調，對多數企業而言在經濟上並不可行。PEFT 帶來以下優勢：
 1. **記憶體效率**：在單張 A100 上訓練 70B 模型。
@@ -23,7 +23,7 @@
 
 ---
 
-## LoRA 運作機制
+## LoRA 運作機制 {#lora-mechanics}
 
 LoRA（Low-Rank Adaptation，低秩適應）將可訓練的秩分解矩陣注入 transformer 各層之中。
 
@@ -42,7 +42,7 @@ h = Wx + (BA)x * (alpha/r)
 
 ---
 
-## QLoRA：4-bit 微調
+## QLoRA：4-bit 微調 {#qlora}
 
 QLoRA 將效率推得更高，把基礎模型量化為 4-bit（NF4），同時維持 16-bit 的梯度。
 
@@ -72,7 +72,7 @@ Vera 不使用低秩矩陣 `A` 與 `B`，而是改用固定的隨機投影，搭
 
 ---
 
-## Multi-LoRA 服務（Adapters）
+## Multi-LoRA 服務（Adapters） {#multi-lora-serving}
 
 生產環境系統現在會以單一基礎模型（例如 Llama 4 70B）提供服務，並在同一個批次中動態抽換 adapters。
 
@@ -86,7 +86,7 @@ Vera 不使用低秩矩陣 `A` 與 `B`，而是改用固定的隨機投影，搭
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼 LoRA 的 alpha 參數通常設為秩的 2 倍？
 
@@ -100,7 +100,7 @@ DoRA（Weight-Decomposed Low-Rank Adaptation）是 2024 年的技術，它將預
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Hu et al. "LoRA: Low-Rank Adaptation of Large Language Models" (2021)
 - Liu et al. "DoRA: Weight-Decomposed Low-Rank Adaptation" (2024)
 - Dettmers et al. "QLoRA: Efficient Finetuning of Quantized LLMs" (2023)

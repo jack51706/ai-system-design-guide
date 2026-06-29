@@ -20,7 +20,7 @@ The way AI agents interact with the outside world has undergone a dramatic shift
 
 ---
 
-## Ecosystem Overview
+## Ecosystem Overview {#ecosystem-overview}
 
 The 2026 tool-use ecosystem has consolidated around four architectural patterns, each optimized for different levels of autonomy, safety, and integration depth:
 
@@ -37,7 +37,7 @@ The key insight for 2026: these categories are converging. Claude Code is a clou
 
 ---
 
-## Category Taxonomy
+## Category Taxonomy {#category-taxonomy}
 
 ### 1. Local Agents (Self-Hosted, User-Controlled)
 
@@ -89,7 +89,7 @@ Agents that interact with software the way humans do -- by looking at screenshot
 
 ---
 
-## OpenClaw: The Viral Personal AI Agent
+## OpenClaw: The Viral Personal AI Agent {#openclaw}
 
 ### What It Is
 
@@ -144,7 +144,7 @@ OpenClaw's rapid growth has outpaced security practices. As of May 2026, over 13
 
 ---
 
-## OpenHands: Autonomous Developer Agent
+## OpenHands: Autonomous Developer Agent {#openhands}
 
 ### What It Is
 
@@ -180,7 +180,7 @@ flowchart TD
 
 ---
 
-## Open Interpreter: Local Code Execution
+## Open Interpreter: Local Code Execution {#open-interpreter}
 
 ### What It Is
 
@@ -208,7 +208,7 @@ Best for data analysis, file manipulation, and system administration tasks where
 
 ---
 
-## Claude Computer Use: Vision-Based Automation
+## Claude Computer Use: Vision-Based Automation {#claude-computer-use}
 
 ### What It Is
 
@@ -248,7 +248,7 @@ flowchart TD
 
 ---
 
-## Claude Code: The Terminal Agent
+## Claude Code: The Terminal Agent {#claude-code}
 
 ### What It Is
 
@@ -281,7 +281,7 @@ Built-in Tools: `bash`, `read`, `write`, `edit`, `glob`, `grep`, `browser`, `sub
 
 ---
 
-## IDE Agents: Cursor, Windsurf, Cline
+## IDE Agents: Cursor, Windsurf, Cline {#ide-agents}
 
 ### Cursor
 
@@ -337,7 +337,7 @@ flowchart TD
 
 ---
 
-## Comparison Matrix
+## Comparison Matrix {#comparison-matrix}
 
 | Feature | OpenClaw | OpenHands | Open Interpreter | Claude Computer Use | Claude Code | Cursor |
 |---------|----------|-----------|-----------------|-------------------|-------------|--------|
@@ -356,7 +356,7 @@ flowchart TD
 
 ---
 
-## Market Trends and Adoption (2026)
+## Market Trends and Adoption (2026) {#market-trends}
 
 ### The Numbers
 
@@ -380,7 +380,7 @@ flowchart TD
 
 ---
 
-## System Design Interview Angle
+## System Design Interview Angle {#interview-angle}
 
 When asked about tool-use agents in system design interviews, focus on these dimensions:
 
@@ -396,7 +396,7 @@ When asked about tool-use agents in system design interviews, focus on these dim
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Your team wants to build an internal AI assistant. Should you build on OpenClaw, OpenHands, or build custom with Claude Code + MCP?
 
@@ -420,7 +420,7 @@ Sandboxed (Docker/VM): Use for untrusted code execution, multi-tenant systems, o
 
 ---
 
-## References
+## References {#references}
 
 - OpenClaw GitHub Repository and Documentation (2025-2026)
 - OpenHands Documentation and SDK Reference (2025-2026)

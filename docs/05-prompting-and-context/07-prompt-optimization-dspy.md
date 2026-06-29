@@ -14,7 +14,7 @@ Prompting has moved from the "Hand-tuning" era to the "Programmatic" era. **DSPy
 
 ---
 
-## The DSPy Philosophy: Programming vs. Prompting
+## The DSPy Philosophy: Programming vs. Prompting {#philosophy}
 
 In traditional prompting, changing a model (e.g., from GPT-5.5 to Claude Sonnet 4.6 or Llama 4) requires re-writing all your prompts.
 **DSPy separates Logic from Formatting.**
@@ -24,7 +24,7 @@ In traditional prompting, changing a model (e.g., from GPT-5.5 to Claude Sonnet 
 
 ---
 
-## Signatures & Modules
+## Signatures & Modules {#signatures-modules}
 
 Instead of writing a prompt, you define a **Signature**: what the input is and what the output should be.
 
@@ -42,7 +42,7 @@ qa_system = dspy.ChainOfThought(MultiHopQA)
 
 ---
 
-## Teleprompters (Optimizers)
+## Teleprompters (Optimizers) {#optimizers}
 
 Teleprompters are algorithms that iterate on your program to improve accuracy.
 1. **BootstrapFewShot**: Automatically finds high-quality examples for your prompt.
@@ -52,14 +52,14 @@ Teleprompters are algorithms that iterate on your program to improve accuracy.
 
 ---
 
-## The "Prompt as Weight" Analogy
+## The "Prompt as Weight" Analogy {#prompt-as-weight}
 
 In DSPy, your prompt is like a weight in a neural network. You don't "hardcode" weights; you train them.
 - If you change your model, you just **Re-compile** (re-train) your program. The optimizer will find new few-shot examples that the new model understands better.
 
 ---
 
-## Metric-Driven Optimization
+## Metric-Driven Optimization {#metrics}
 
 Optimization requires a **Metric** (a function that returns a score).
 - **Exact Match**: `prediction.answer == target.answer`
@@ -67,7 +67,7 @@ Optimization requires a **Metric** (a function that returns a score).
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How does DSPy solve the "fragility" of prompt engineering?
 
@@ -81,7 +81,7 @@ A Teleprompter is a programmatic optimizer. Its job is to take a DSPy program (w
 
 ---
 
-## References
+## References {#references}
 - Khattab et al. "DSPy: Compiling Declarative Language Models" (2023/2024)
 - Stanford NLP. "DSPy Documentation and Tutorials" (2025)
 

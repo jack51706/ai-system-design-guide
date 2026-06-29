@@ -18,7 +18,7 @@ Attention is the core innovation that enables transformers. This chapter covers 
 
 ---
 
-## Attention Fundamentals
+## Attention Fundamentals {#attention-fundamentals}
 
 ### The Core Idea
 
@@ -48,7 +48,7 @@ V = x @ W_v  # [batch, seq_len, d_v]
 
 ---
 
-## Scaled Dot-Product Attention
+## Scaled Dot-Product Attention {#scaled-dot-product-attention}
 
 The fundamental attention operation:
 
@@ -117,7 +117,7 @@ Positions with mask=0 get score of negative infinity, becoming 0 after softmax.
 
 ---
 
-## Multi-Head Attention
+## Multi-Head Attention {#multi-head-attention}
 
 Instead of one attention function, use multiple "heads" that attend to different aspects:
 
@@ -177,7 +177,7 @@ The d_k of 64 or 128 is remarkably consistent across model sizes.
 
 ---
 
-## Attention Patterns
+## Attention Patterns {#attention-patterns}
 
 ### What Attention Learns
 
@@ -215,7 +215,7 @@ mat     [○    ●    ○    ●    ●    □ ]
 
 ---
 
-## Efficient Attention Variants
+## Efficient Attention Variants {#efficient-attention-variants}
 
 Standard attention is O(n^2) in sequence length. Many variants reduce this:
 
@@ -313,7 +313,7 @@ Optimized for A100/H100 by improving parallelism across heads and sequence lengt
 
 ---
 
-## Multi-head Latent Attention (MLA)
+## Multi-head Latent Attention (MLA) {#multi-head-latent-attention-mla}
 
 Introduced by DeepSeek (V2/V3), **MLA is the modern alternative to GQA** for extreme KV cache pressure.
 
@@ -337,7 +337,7 @@ flowchart LR
 
 ---
 
-## KV Cache Optimizations & Context Caching
+## KV Cache Optimizations & Context Caching {#kv-cache-optimizations}
 
 ### Context Caching (System-level)
 API providers (OpenAI, Gemini, Anthropic) now offer **Context Caching**. 
@@ -395,7 +395,7 @@ V: [batch, 8, seq, d_k]   # 8 KV heads
 
 ---
 
-## Practical Implications
+## Practical Implications {#practical-implications}
 
 ### For System Design
 
@@ -439,7 +439,7 @@ Long context requires:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Explain the attention mechanism and why it scales quadratically.
 
@@ -505,7 +505,7 @@ The result is exact attention (not an approximation) with O(n) memory and 2-4x s
 
 ---
 
-## References
+## References {#references}
 
 - Vaswani et al. "Attention Is All You Need" (2017)
 - Dao et al. "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness" (2022)

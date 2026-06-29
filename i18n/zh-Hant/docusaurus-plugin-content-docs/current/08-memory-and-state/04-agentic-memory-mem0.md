@@ -14,7 +14,7 @@
 
 ---
 
-## Mem0 的設計哲學
+## Mem0 的設計哲學 {#philosophy}
 
 傳統記憶會儲存*所有東西*。
 Mem0 儲存的是**洞見（Insights）**。
@@ -22,7 +22,7 @@ Mem0 不會儲存「使用者說他喜歡藍色的咖啡馬克杯」，而是儲
 
 ---
 
-## 運作方式：消化迴圈
+## 運作方式：消化迴圈 {#digest-loop}
 
 1. **觀察（Observe）**：代理在 L1 監看對話內容。
 2. **擷取（Extract）**：背景的「記憶代理（Memory Agent）」辨識出一項值得記住的事實。
@@ -31,7 +31,7 @@ Mem0 不會儲存「使用者說他喜歡藍色的咖啡馬克杯」，而是儲
 
 ---
 
-## 自我更新的記憶
+## 自我更新的記憶 {#self-updating}
 
 現代的代理式記憶是**遞迴式（Recursive）**的。
 - 如果使用者提到一項任務：「我得在星期五前完成預算。」
@@ -40,7 +40,7 @@ Mem0 不會儲存「使用者說他喜歡藍色的咖啡馬克杯」，而是儲
 
 ---
 
-## 將 Mem0 與 LangGraph 整合
+## 將 Mem0 與 LangGraph 整合 {#langgraph}
 
 在狀態機架構中，Mem0 扮演**外部狀態提供者（External State Provider）**的角色。
 
@@ -55,7 +55,7 @@ def memory_node(state: AgentState):
 
 ---
 
-## 大規模個人化
+## 大規模個人化 {#personalization}
 
 對於企業級應用（數百萬名使用者），Mem0 負責管理：
 - **一致性（Consistency）**：AI 能跨 Web App、行動 App 與 Slack Bot「記得」使用者的名字。
@@ -63,7 +63,7 @@ def memory_node(state: AgentState):
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼要用 Mem0 這種專用服務，而不是寫一個自訂的 Python 腳本來寫入 Postgres？
 
@@ -77,7 +77,7 @@ def memory_node(state: AgentState):
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Mem0. "Learning User Preferences across Sessions" (2025)
 - TMemory. "Temporal Logic in AI Agents" (2024/2025)
 - NVIDIA. "Memory Banks for Intelligent Assistants" (2025)

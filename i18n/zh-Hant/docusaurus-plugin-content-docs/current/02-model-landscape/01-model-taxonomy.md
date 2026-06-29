@@ -26,7 +26,7 @@
 
 ---
 
-## 模型分類別
+## 模型分類別 {#model-categories}
 
 ### 依能力等級（2026 年 4 月實況）
 
@@ -373,7 +373,7 @@
 
 ---
 
-## 開源模型
+## 開源模型 {#open-source-models}
 
 ### Llama 4 家族（Meta）-- 2026 年 4 月新品
 
@@ -473,7 +473,7 @@
 
 ---
 
-## 專用模型
+## 專用模型 {#specialized-models}
 
 ### 編碼精熟度（2026 年 6 月）
 
@@ -514,7 +514,7 @@
 
 ---
 
-## 嵌入模型
+## 嵌入模型 {#embedding-models}
 
 ### API 嵌入模型（2026 年 5 月）
 
@@ -586,7 +586,7 @@ flowchart TD
 
 ---
 
-## 主權 AI 與資料落地
+## 主權 AI 與資料落地 {#sovereign-ai-and-data-residency}
 
 **2026 年的法規現實：**
 企業必須遵循 GDPR（歐盟）、DPDPA（印度）、Saudi Arabia PDPL，以及各產業規範。「主權 AI」現在已是一個產品類別。
@@ -620,7 +620,7 @@ flowchart TD
 
 ---
 
-## 能力比較
+## 能力比較 {#capability-comparison}
 
 ### 基準測試效能（2026 年 5 月）
 
@@ -653,7 +653,7 @@ flowchart TD
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：你會如何為一個生產環境 RAG 系統選擇模型？
 
@@ -710,7 +710,7 @@ flowchart TD
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Anthropic: https://platform.claude.com/docs/en/about-claude/models/overview
 - OpenAI Platform: https://developers.openai.com/api/docs/models

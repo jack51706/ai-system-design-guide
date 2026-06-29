@@ -14,7 +14,7 @@ This chapter catalogs common patterns for building AI systems, similar to design
 
 ---
 
-## RAG Patterns
+## RAG Patterns {#rag-patterns}
 
 ### Pattern: Naive RAG
 
@@ -202,7 +202,7 @@ class CorrectiveRAG:
 
 ---
 
-## Agent Patterns
+## Agent Patterns {#agent-patterns}
 
 ### Pattern: ReAct
 
@@ -339,7 +339,7 @@ class ManagerAgent:
 
 ---
 
-## Optimization Patterns
+## Optimization Patterns {#optimization-patterns}
 
 ### Pattern: Cascading Models
 
@@ -449,7 +449,7 @@ class CachingLLM:
 
 ---
 
-## Reliability Patterns
+## Reliability Patterns {#reliability-patterns}
 
 ### Pattern: Retry with Fallback
 
@@ -529,7 +529,7 @@ agent_bulkhead = BulkheadExecutor(max_concurrent=5)
 
 ---
 
-## Cost Patterns
+## Cost Patterns {#cost-patterns}
 
 ### Pattern: Token Budget
 
@@ -579,7 +579,7 @@ async def generate_response(query: str):
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Describe three RAG patterns and when to use each.
 
@@ -617,7 +617,7 @@ The key is assuming failures will happen and designing for them rather than hopi
 
 ---
 
-## References
+## References {#references}
 
 - Gao et al. "Retrieval-Augmented Generation for Large Language Models: A Survey" (2024)
 - Yao et al. "ReAct: Synergizing Reasoning and Acting in Language Models" (2023)

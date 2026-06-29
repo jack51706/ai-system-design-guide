@@ -13,7 +13,7 @@ PagedAttention is the foundational algorithm behind high-throughput serving engi
 
 ---
 
-## The Contiguous Memory Problem
+## The Contiguous Memory Problem {#contiguous-memory}
 
 Standard deep learning frameworks allocate memory in large, contiguous blocks. 
 For an LLM request, you might pre-allocate memory for a `max_sequence_length` of 8192 tokens.
@@ -36,7 +36,7 @@ PagedAttention draws inspiration from Virtual Memory in Operating Systems.
 
 ---
 
-## Managing Virtual Memory (Block Manager)
+## Managing Virtual Memory (Block Manager) {#block-manager}
 
 Serving frameworks (vLLM, SGLang) act as "mini-OSs" for GPUs.
 
@@ -45,7 +45,7 @@ Serving frameworks (vLLM, SGLang) act as "mini-OSs" for GPUs.
 
 ---
 
-## KV Cache Sharing (Copy-on-Write)
+## KV Cache Sharing (Copy-on-Write) {#sharing}
 
 PagedAttention enables effortless sharing of "Common Prefixes."
 
@@ -56,7 +56,7 @@ PagedAttention enables effortless sharing of "Common Prefixes."
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why does PagedAttention significantly increase throughput?
 
@@ -70,7 +70,7 @@ The Block Table is a mapping structure that bridges the Gap between the model's 
 
 ---
 
-## References
+## References {#references}
 - Kwon et al. "Efficient Memory Management for Large Language Model Serving with PagedAttention" (SOSP 2023)
 - vLLM Documentation. "PagedAttention Logic" (2024)
 

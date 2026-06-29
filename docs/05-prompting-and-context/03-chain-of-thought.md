@@ -14,7 +14,7 @@ Chain-of-Thought (CoT) is the technique of encouraging an LLM to generate interm
 
 ---
 
-## The CoT Revolution
+## The CoT Revolution {#cot-revolution}
 
 Standard LLMs are "Next Token Predictors." For complex math or logic, a single pass is often insufficient. CoT provides the "Scribble Pad" (Working Memory) for the model to work through sub-problems.
 
@@ -22,7 +22,7 @@ Standard LLMs are "Next Token Predictors." For complex math or logic, a single p
 
 ---
 
-## Zero-Shot vs. Programmatic CoT
+## Zero-Shot vs. Programmatic CoT {#zero-vs-programmatic}
 
 | Technique | Trigger Phrase | Efficiency | Use Case |
 |-----------|----------------|------------|----------|
@@ -42,7 +42,7 @@ Models like **OpenAI o1/GPT-5.5 extended thinking**, **DeepSeek-R2**, and **Clau
 
 ---
 
-## Self-Correction and Verification
+## Self-Correction and Verification {#self-correction}
 
 Production pipelines no longer trust a single Chain-of-Thought. They layer in **Self-Verification**.
 
@@ -57,7 +57,7 @@ Production pipelines no longer trust a single Chain-of-Thought. They layer in **
 
 ---
 
-## When CoT Fails (Over-thinking)
+## When CoT Fails (Over-thinking) {#over-thinking}
 
 CoT is not a silver bullet. For simple tasks, it adds:
 1. **Latency**: More tokens = slower response.
@@ -66,7 +66,7 @@ CoT is not a silver bullet. For simple tasks, it adds:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why does CoT improve performance on mathematical word problems?
 
@@ -83,7 +83,7 @@ We use a **Hybrid Reasoning Architecture**:
 
 ---
 
-## References
+## References {#references}
 - Wei et al. "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models" (2022)
 - Wang et al. "Self-Consistency Improves Chain of Thought Reasoning in Language Models" (2023)
 - OpenAI. "Learning to Reason with LLMs" (2024)

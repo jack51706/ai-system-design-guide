@@ -20,7 +20,7 @@ The 2026 research wave shaping this chapter: A-MEM (NeurIPS 2025), HippoRAG (mul
 
 ---
 
-## The Memory Hierarchy
+## The Memory Hierarchy {#hierarchy}
 
 Agents use a tiered approach to storage:
 
@@ -50,7 +50,7 @@ The tiers differ on more than purpose. Read pattern, write pattern, latency budg
 
 ---
 
-## Short-Term: The Reasoning Trace
+## Short-Term: The Reasoning Trace {#short-term}
 
 Production agents no longer just store the "Messages"; they store the **State Object**.
 - **The Scratchpad**: A dedicated section of the prompt where the agent "writes notes" to itself that are NOT shown to the user.
@@ -58,7 +58,7 @@ Production agents no longer just store the "Messages"; they store the **State Ob
 
 ---
 
-## Episodic Memory: Past Experiences
+## Episodic Memory: Past Experiences {#episodic}
 
 Episodic memory stores "Runs" or "Trajectories."
 - If an agent failed to scrape a website last Tuesday, episodic memory should prevent it from trying the same failing selector today.
@@ -66,7 +66,7 @@ Episodic memory stores "Runs" or "Trajectories."
 
 ---
 
-## Semantic Memory: The Persona
+## Semantic Memory: The Persona {#semantic}
 
 Semantic memory stores "Facts" about the user or the environment.
 - *"The user prefers JSON output."*
@@ -76,7 +76,7 @@ Semantic memory stores "Facts" about the user or the environment.
 
 ---
 
-## Procedural Memory: Learned Skills and Workflows
+## Procedural Memory: Learned Skills and Workflows {#procedural-memory-learned-skills-and-workflows}
 
 Procedural memory stores how to do things. While episodic memory answers, "What happened before?" and semantic memory answers, "What is true?", procedural memory answers:
 
@@ -94,7 +94,7 @@ Procedural memory is especially important for agentic systems because many tasks
 
 ---
 
-## Tradeoffs: Where Does Fact X Go?
+## Tradeoffs: Where Does Fact X Go? {#tradeoffs}
 
 The first-order decision is not "which tier" but *"who pays the cost of being wrong?"* A missed retrieval in L2 fails one turn. A bad fact in L3 fails *every* turn until corrected. A poisoned skill in L4 propagates to every future invocation.
 
@@ -129,7 +129,7 @@ The interesting design question is *when an L2 episode graduates to L3 or L4*. T
 
 ---
 
-## Production Implementations (May 2026)
+## Production Implementations (May 2026) {#production-implementations}
 
 The named systems differ less on "what they store" and more on *write discipline*, *retrieval algorithm*, and *governance posture*.
 
@@ -150,7 +150,7 @@ The named systems differ less on "what they store" and more on *write discipline
 
 ---
 
-## Failure Modes and Mitigations
+## Failure Modes and Mitigations {#failure-modes}
 
 Production memory systems have six recurring failure modes. Knowing them by name is the difference between a junior and staff-level architecture conversation.
 
@@ -226,7 +226,7 @@ Vector ANN returns a neighbor from another tenant; cached prompts contain anothe
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you handle "Conflicting Memories" in an agentic system?
 
@@ -338,7 +338,7 @@ The right framing: TTT-E2E moves memory governance from the storage layer to the
 
 ---
 
-## References
+## References {#references}
 
 ### Production Frameworks
 - [Mem0: Production-Ready AI Agents with Scalable Long-Term Memory (ECAI 2025)](https://arxiv.org/abs/2504.19413)

@@ -18,7 +18,7 @@
 
 ---
 
-## 為什麼 LLM 評估很困難
+## 為什麼 LLM 評估很困難 {#why-llm-evaluation-is-hard}
 
 ### 根本性的挑戰
 
@@ -43,7 +43,7 @@
 
 ---
 
-## 評估維度
+## 評估維度 {#evaluation-dimensions}
 
 ### 核心維度
 
@@ -76,7 +76,7 @@
 
 ---
 
-## 自動化評估方法
+## 自動化評估方法 {#automated-evaluation-methods}
 
 ### 完全匹配（Exact Match）
 
@@ -162,7 +162,7 @@ def evaluate_code(prediction: str, test_cases: list[dict]) -> dict:
 
 ---
 
-## LLM-as-Judge
+## LLM-as-Judge {#llm-as-judge}
 
 使用一個 LLM 來評估另一個 LLM 的輸出。
 
@@ -276,7 +276,7 @@ def calibrated_pairwise_judge(question: str, response_a: str, response_b: str) -
 
 ---
 
-## 人工評估
+## 人工評估 {#human-evaluation}
 
 ### 何時使用人工評估
 
@@ -342,7 +342,7 @@ def interpret_kappa(kappa: float) -> str:
 
 ---
 
-## RAG 專屬評估
+## RAG 專屬評估 {#rag-specific-evaluation}
 
 ### RAGAS 指標
 
@@ -446,7 +446,7 @@ def evaluate_context_relevance(query: str, contexts: list[str]) -> dict:
 
 ---
 
-## 建構評估管線
+## 建構評估管線 {#building-evaluation-pipelines}
 
 ### 評估資料集結構
 
@@ -536,7 +536,7 @@ class EvaluationPipeline:
 
 ---
 
-## 生產環境監控
+## 生產環境監控 {#production-monitoring}
 
 ### 需要追蹤的關鍵指標
 
@@ -620,7 +620,7 @@ def detect_quality_drift(
 
 ---
 
-## 2026 評估演進：超越 LLM-as-Judge
+## 2026 評估演進：超越 LLM-as-Judge {#2026-eval-evolution-beyond-llm-as-judge}
 
 2023 到 2024 年的劇本（「用 GPT-4 當 judge」）對於 v1 系統來說已經夠用，但在三股壓力下出現裂痕：規模化時的成本、字串評分器無法檢視的代理軌跡，以及把檢索、記憶與推理混為一談的基準測試。到了 2026 年 5 月，生產環境的評估技術堆疊已分裂成四個協同運作的層級。
 
@@ -754,7 +754,7 @@ flowchart LR
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你會如何評估一個 RAG 系統？
 
@@ -818,7 +818,7 @@ flowchart LR
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Es et al. "RAGAS: Automated Evaluation of Retrieval Augmented Generation" (2023)
 - Zheng et al. "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena" (2023)

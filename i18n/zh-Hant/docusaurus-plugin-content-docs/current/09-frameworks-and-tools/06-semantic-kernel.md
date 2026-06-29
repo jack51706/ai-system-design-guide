@@ -13,7 +13,7 @@
 
 ---
 
-## 企業 DNA
+## 企業 DNA {#dna}
 
 LangChain 受到新創公司的青睞，而 Semantic Kernel 則受到**銀行與 Fortune 500 企業**的青睞。
 - **Dependency Injection（依賴注入）**：SK 遵循標準的企業設計模式。
@@ -22,7 +22,7 @@ LangChain 受到新創公司的青睞，而 Semantic Kernel 則受到**銀行與
 
 ---
 
-## Plugins 與 Planners
+## Plugins 與 Planners {#plugins}
 
 1. **Kernel Functions**：邏輯的基本單位（原生程式碼或 LLM 提示）。
 2. **Plugins**：一組函式的集合（例如「GitHub Plugin」或「SQL Plugin」）。
@@ -30,7 +30,7 @@ LangChain 受到新創公司的青睞，而 Semantic Kernel 則受到**銀行與
 
 ---
 
-## 記憶體與 Connectors
+## 記憶體與 Connectors {#memory}
 
 Semantic Kernel 使用 **Connectors** 來抽象化底層基礎設施。
 - **通用 Connectors**：以單一介面對接 OpenAI、Mistral 與本地端的 Onyx 模型。
@@ -46,7 +46,7 @@ SK 是少數將 C# 與 Python 視為對等地位的主流框架之一。
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼 Staff Engineer 會選擇 Semantic Kernel 而非 LangChain？
 
@@ -60,7 +60,7 @@ SK 採用**以 Plugin 為基礎的模型**。每個函式（原生 C# 或基於 
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Microsoft Learn. "Semantic Kernel Documentation" (2025)
 - Azure Architecture Center. "AI Design Patterns with Semantic Kernel" (2025)
 - Build 2025. "The Future of Copilots with SK" (2025 Conference Recap)

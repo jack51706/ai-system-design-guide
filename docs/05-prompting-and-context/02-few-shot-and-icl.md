@@ -14,7 +14,7 @@ In-Context Learning (ICL) is the ability of an LLM to learn a new task simply by
 
 ---
 
-## The Anatomy of a Few-Shot Example
+## The Anatomy of a Few-Shot Example {#anatomy}
 
 A high-quality example consists of three parts:
 1. **Input**: A realistic sample of potential user data.
@@ -29,7 +29,7 @@ Sentiment: Mixed
 
 ---
 
-## How many examples?
+## How many examples? {#how-many}
 
 | Model Size | Sweet Spot | Scaling Behavior |
 |------------|------------|------------------|
@@ -41,7 +41,7 @@ Sentiment: Mixed
 
 ---
 
-## Dynamic Example Selection
+## Dynamic Example Selection {#dynamic-selection}
 
 In production RAG or Classification, don't use the same static examples for every user.
 **The Dynamic Pattern:**
@@ -53,7 +53,7 @@ In production RAG or Classification, don't use the same static examples for ever
 
 ---
 
-## The Importance of Labelling Nuance
+## The Importance of Labelling Nuance {#labelling}
 
 Frontier models are sensitive to **Distribution Bias** in examples.
 - If you provide 5 "Positive" examples and 1 "Negative," the model will bias toward "Positive."
@@ -70,7 +70,7 @@ Frontier models are sensitive to **Distribution Bias** in examples.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why not just provide all 50 examples we have in the prompt?
 
@@ -90,7 +90,7 @@ Label bias occurs when the model predicts a specific label more frequently simpl
 
 ---
 
-## References
+## References {#references}
 - Brown et al. "Language Models are Few-Shot Learners" (2020)
 - Min et al. "Rethinking the Role of Demonstrations: What Makes In-Context Learning Work?" (2022)
 

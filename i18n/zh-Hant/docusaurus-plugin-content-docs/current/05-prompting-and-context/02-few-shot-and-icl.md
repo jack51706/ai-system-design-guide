@@ -14,7 +14,7 @@
 
 ---
 
-## Few-Shot 範例的剖析
+## Few-Shot 範例的剖析 {#anatomy}
 
 一個高品質的範例由三個部分組成：
 1. **輸入（Input）**：一份貼近真實的潛在使用者資料樣本。
@@ -29,7 +29,7 @@ Sentiment: Mixed
 
 ---
 
-## 需要幾個範例？
+## 需要幾個範例？ {#how-many}
 
 | 模型規模 | 最佳區間 | 擴展行為 |
 |------------|------------|------------------|
@@ -41,7 +41,7 @@ Sentiment: Mixed
 
 ---
 
-## 動態範例選擇
+## 動態範例選擇 {#dynamic-selection}
 
 在生產環境的 RAG 或分類任務中，不要對每位使用者都套用同一組靜態範例。
 **動態模式：**
@@ -53,7 +53,7 @@ Sentiment: Mixed
 
 ---
 
-## 標註細緻度的重要性
+## 標註細緻度的重要性 {#labelling}
 
 前沿模型對範例中的**分布偏差（Distribution Bias）**非常敏感。
 - 如果你提供 5 個「正面」範例和 1 個「負面」範例，模型就會偏向「正面」。
@@ -70,7 +70,7 @@ Sentiment: Mixed
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼不乾脆把我們手上全部 50 個範例都放進提示裡？
 
@@ -90,7 +90,7 @@ Sentiment: Mixed
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Brown et al. "Language Models are Few-Shot Learners" (2020)
 - Min et al. "Rethinking the Role of Demonstrations: What Makes In-Context Learning Work?" (2022)
 

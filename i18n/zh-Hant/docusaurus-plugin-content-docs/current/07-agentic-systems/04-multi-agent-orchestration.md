@@ -17,7 +17,7 @@
 
 ---
 
-## 為什麼需要多代理？
+## 為什麼需要多代理？ {#why}
 
 一個擁有 50 個工具的單一代理會承受**認知負荷（Cognitive Load）**。
 1. **專精化**：一個「程式碼代理」可以使用針對 Python 最佳化的模型，而一個「搜尋代理」則使用針對 RAG 最佳化的模型。
@@ -48,7 +48,7 @@
 
 ---
 
-## 圖形式編排（2026 年主流模式）
+## 圖形式編排（2026 年主流模式） {#graph-orchestration}
 
 2026 年的架構動能已明確轉向**圖形式編排（graph-based orchestration）**，也就是把代理工作流程建模為帶有型別狀態的有向圖。
 
@@ -75,7 +75,7 @@
 
 ---
 
-## 透過 A2A 進行跨廠商代理編排
+## 透過 A2A 進行跨廠商代理編排 {#cross-vendor}
 
 **Agent-to-Agent（A2A）協定**（參見 [工具使用與 MCP](03-tool-use-and-mcp.md#a2a)）開啟了一種全新的多代理模式：**跨廠商編排（cross-vendor orchestration）**。在 A2A 之前，多代理系統要求所有代理共用同一套框架與執行環境。如今則是：
 
@@ -90,7 +90,7 @@
 
 ---
 
-## 2026 年多代理框架版圖
+## 2026 年多代理框架版圖 {#framework-landscape}
 
 如今每個主要的 AI 實驗室都推出了自己的代理框架。截至 2026 年 5 月的多代理編排版圖如下：
 
@@ -131,7 +131,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：「監督者」多代理架構的主要失效模式有哪些？
 
@@ -150,7 +150,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Wu et al. "AutoGPT: An Autonomous GPT-4 Experiment"（歷史文獻／2025 年更新）
 - Li et al. "Camel: Communicative Agents for 'Mind' Exploration"（2023／2025）
 - OpenAI. "Swarms Framework"（2024／2025）

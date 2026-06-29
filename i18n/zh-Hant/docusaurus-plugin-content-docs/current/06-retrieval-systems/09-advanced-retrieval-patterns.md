@@ -14,7 +14,7 @@
 
 ---
 
-## 查詢分解（Multi-Query）
+## 查詢分解（Multi-Query） {#query-decomposition}
 
 複雜的使用者查詢往往屬於「複合查詢」。
 - **使用者**：「比較我們第三季與第四季的營收，並解釋為何下滑。」
@@ -26,7 +26,7 @@
 
 ---
 
-## 假設性文件嵌入（HyDE）
+## 假設性文件嵌入（HyDE） {#hyde}
 
 查詢很短，文件很長。這種「不對稱性」會造成檢索失敗。
 - **模式**： 
@@ -37,7 +37,7 @@
 
 ---
 
-## 情境式檢索（Anthropic 模式）
+## 情境式檢索（Anthropic 模式） {#contextual}
 
 此模式在 2024 年底由 Anthropic 標準化，用來解決**情境稀釋（Context Dilution）**的問題。
 
@@ -47,7 +47,7 @@
 
 ---
 
-## 迭代式文件擴充
+## 迭代式文件擴充 {#enrichment}
 
 我們不再只是儲存原始文件，而是改為儲存「擴充過」的中介資料（meta-data）。
 - **摘要**：儲存一段文件的摘要。
@@ -56,7 +56,7 @@
 
 ---
 
-## 情境內重排序
+## 情境內重排序 {#reranking}
 
 如今 1M 至 2M 的上下文視窗已是標準配備（Claude Sonnet 4.6、Gemini 3.1 Pro），因此**依情境排序（Rank-by-Context）**成為一種可行的模式。
 1. 檢索出前 100 份文件。
@@ -66,7 +66,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼 HyDE（假設性文件嵌入）對某些應用而言有風險？
 
@@ -80,7 +80,7 @@ HyDE 仰賴「幻想」出一個基準答案來尋找真實資料。如果使用
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Gao et al. "Precise Zero-Shot Dense Retrieval without Relevance Labels"（HyDE, 2023/2024）
 - Anthropic. "The Contextual Retrieval Playbook"（2024）
 - LlamaIndex. "Query Transformation Cookbook"（2025）

@@ -16,7 +16,7 @@ Context engineering is the science of filling the LLM's finite "working memory" 
 
 ---
 
-## The Long Context Paradigm (1M+ Tokens)
+## The Long Context Paradigm (1M+ Tokens) {#long-context}
 
 Models like Gemini 3.1 Pro (1M), Claude Sonnet 4.6 (1M), Claude Opus 4.7 (1M), and GPT-5.5 (1M) have massive context windows.
 
@@ -25,7 +25,7 @@ For datasets under 100,000 documents, it is often more accurate and faster to pu
 
 ---
 
-## Agentic Context Engineering
+## Agentic Context Engineering {#agentic-context-engineering}
 
 Prompt engineering writes one good instruction. **Context engineering** curates the full set of tokens the model sees on **every inference turn** of an agent loop: system prompt, tools, retrieved data, prior tool results, and running message history. The distinction matters because an agent accumulates context turn after turn, so the curation problem is continuous, not one-shot. This is the framework Anthropic, OpenAI, and Google now build their agent harnesses around.
 
@@ -61,7 +61,7 @@ A coordinator delegates a focused sub-task to a sub-agent that works in its own 
 
 ---
 
-## Extended Thinking & Budget Tokens
+## Extended Thinking & Budget Tokens {#extended-thinking}
 
 Several frontier models now offer **controllable internal reasoning** before generating a response:
 
@@ -137,7 +137,7 @@ def smart_generate(query: str) -> str:
 
 ---
 
-## Lost-in-the-Middle
+## Lost-in-the-Middle {#lost-in-the-middle}
 
 In 2023, models lost accuracy for information in the middle of the prompt.
 **Status**: Frontier models (Claude Sonnet 4.6, Claude Opus 4.7, Gemini 3.1 Pro, GPT-5.5) perform significantly better, but the **Attention Gradient** still exists.
@@ -146,7 +146,7 @@ In 2023, models lost accuracy for information in the middle of the prompt.
 
 ---
 
-## Context Budgeting & Token Awareness
+## Context Budgeting & Token Awareness {#budgeting}
 
 Every token costs money and increases TTFT (Time to First Token).
 
@@ -159,7 +159,7 @@ Every token costs money and increases TTFT (Time to First Token).
 
 ---
 
-## Prompt Caching Economics
+## Prompt Caching Economics {#prompt-caching}
 
 Almost all major providers (OpenAI, DeepSeek, Anthropic, Google) support **Prefix Caching**.
 
@@ -171,7 +171,7 @@ Almost all major providers (OpenAI, DeepSeek, Anthropic, Google) support **Prefi
 
 ---
 
-## Contextual Compression (RAD-L)
+## Contextual Compression (RAD-L) {#compression}
 
 For extremely long contexts (10M+), we use **Reasoning-Aware Deletion (RAD-L)**.
 - **How**: A tiny auxiliary model (0.1B) scans the text and removes "filler" words, common linguistic patterns, and irrelevant sections *before* the prompt is sent to the giant frontier model.
@@ -179,7 +179,7 @@ For extremely long contexts (10M+), we use **Reasoning-Aware Deletion (RAD-L)**.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: When would you choose Long Context over RAG?
 
@@ -198,7 +198,7 @@ This is **context rot**: the window fills with stale tool output and the model l
 
 ---
 
-## References
+## References {#references}
 - Liu et al. "Lost in the Middle" (2023/2024 update)
 - [Anthropic. "Effective context engineering for AI agents" (2025)](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
 - [Anthropic. "Effective harnesses for long-running agents" (2026)](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)

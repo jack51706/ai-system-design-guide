@@ -17,7 +17,7 @@
 
 ---
 
-## 為什麼基準測試還不夠
+## 為什麼基準測試還不夠 {#why-benchmarks-are-not-enough}
 
 ### 基準測試的問題
 
@@ -44,7 +44,7 @@ customers' questions about our product documentation?"
 
 ---
 
-## 評估維度
+## 評估維度 {#evaluation-dimensions}
 
 ### 維度 1：任務表現
 
@@ -101,7 +101,7 @@ def evaluate_agentic_flow(agent, task_environment):
 
 ---
 
-## 內部基於 Elo 的評估
+## 內部基於 Elo 的評估 {#internal-elo-based-evaluation}
 
 **超越靜態評分標準。**
 評分標準（1 至 5 分制）容易出現「評審疲勞」與「分數漂移」。現代系統會對內部黃金集（golden set）採用**成對 Elo（Pairwise Elo）**。
@@ -133,7 +133,7 @@ def update_elo(winner_elo, loser_elo, k=32):
 
 ---
 
-## 建立自訂評估
+## 建立自訂評估 {#building-custom-evaluations}
 
 ### 步驟 1：定義評估標準
 
@@ -272,7 +272,7 @@ Output JSON:
 
 ---
 
-## 常見的評估陷阱
+## 常見的評估陷阱 {#common-evaluation-pitfalls}
 
 ### 陷阱 1：測試集太小
 
@@ -325,7 +325,7 @@ def quality_adjusted_cost(model_results):
 
 ---
 
-## 實務評估流程
+## 實務評估流程 {#practical-assessment-process}
 
 ### 第 1 週：設定與初步篩選
 
@@ -381,7 +381,7 @@ Model C (Llama 3.1 70B) for high-volume, cost-sensitive paths
 
 ---
 
-## 模型 A/B 測試
+## 模型 A/B 測試 {#ab-testing-models}
 
 ### 何時該做 A/B 測試
 
@@ -439,7 +439,7 @@ class ModelABTest:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：你會如何為客服聊天機器人評估模型？
 
@@ -495,7 +495,7 @@ MMLU 對特定使用情境有幾個問題：
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Zheng et al. "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena" (2023)
 - LMSYS Chatbot Arena: https://chat.lmsys.org/

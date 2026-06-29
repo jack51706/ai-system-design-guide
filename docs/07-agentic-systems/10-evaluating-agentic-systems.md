@@ -17,7 +17,7 @@ Evaluating agents is fundamentally different from evaluating RAG. While RAG is a
 
 ---
 
-## The Evaluation Shift
+## The Evaluation Shift {#shift}
 
 | Metric | RAG App | Agentic App |
 |--------|---------|-------------|
@@ -56,7 +56,7 @@ Total tokens + infrastructure cost (Sandboxes, API calls) per completed goal.
 
 ---
 
-## LLM-as-Judge for Step Quality
+## LLM-as-Judge for Step Quality {#judge}
 
 We use a stronger model (Claude Opus 4.7, GPT-5.5 reasoning) to review the **Reasoning Log** of a smaller agent.
 - **Thought Quality**: Did the agent's logic for using Tool X follow from Observation Y?
@@ -74,7 +74,7 @@ Production teams use **Shadow Execution**.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you evaluate an agent when the environment is non-deterministic (e.g., the web)?
 
@@ -88,7 +88,7 @@ Meandering leads to three failures: 1) **Cost**: Every step is an LLM call; 2) *
 
 ---
 
-## References
+## References {#references}
 - Jimenez et al. "SWE-bench: Can Language Models Resolve Real-World GitHub Issues?" (2024/2025 update)
 - Microsoft Research. "AgentBench: A Comprehensive Benchmark for AI Agents" (2024)
 - RAGAS. "Agentic Evaluation Module" (2025)

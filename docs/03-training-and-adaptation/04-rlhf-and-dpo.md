@@ -14,7 +14,7 @@ Alignment is the process of ensuring an LLM's behavior matches human values and 
 
 ---
 
-## The Alignment Problem
+## The Alignment Problem {#the-alignment-problem}
 
 Pretrained models are "knowledgeable but uncontrolled." They may:
 1. Generate harmful content (Safety).
@@ -25,7 +25,7 @@ Alignment creates "Reward Models" and "Policy Updates" to steer the model.
 
 ---
 
-## RLHF: The Foundation
+## RLHF: The Foundation {#rlhf-foundation}
 
 Reinforcement Learning from Human Feedback (RLHF) involves three steps:
 1. **SFT**: Supervised Fine-Tuning.
@@ -36,7 +36,7 @@ Reinforcement Learning from Human Feedback (RLHF) involves three steps:
 
 ---
 
-## DPO: Direct Preference Optimization
+## DPO: Direct Preference Optimization {#dpo}
 
 DPO is the industry standard. It eliminates the Reward Model.
 
@@ -51,7 +51,7 @@ DPO uses the LLM itself as the Reward Model by mathematically deriving the optim
 
 ---
 
-## Online Alignment
+## Online Alignment {#online-alignment}
 
 **The Problem with Offline DPO**: It only learns from static data. If the model improves beyond that data, it hits a ceiling.
 
@@ -76,7 +76,7 @@ Aligning "Thinking" models requires a shift from **Response Preference** to **Pr
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is DPO often preferred over RLHF/PPO?
 
@@ -90,7 +90,7 @@ The "Alignment Tax" refers to the decline in a model's raw capabilities (e.g., c
 
 ---
 
-## References
+## References {#references}
 - Rafailov et al. "Direct Preference Optimization: Your Language Model is Secretly a Reward Model" (2023)
 - Schulman et al. "Proximal Policy Optimization Algorithms" (2017)
 - OpenAI. "Learning to Reason with LLMs" (2024)

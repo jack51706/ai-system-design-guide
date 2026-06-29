@@ -17,7 +17,7 @@
 
 ---
 
-## 評估的轉變
+## 評估的轉變 {#shift}
 
 | 指標 | RAG 應用 | 代理式應用 |
 |--------|---------|-------------|
@@ -56,7 +56,7 @@
 
 ---
 
-## 用於步驟品質的 LLM-as-Judge
+## 用於步驟品質的 LLM-as-Judge {#judge}
 
 我們使用較強的模型（Claude Opus 4.7、GPT-5.5 reasoning）來審查較小型代理的 **推理日誌（Reasoning Log）**。
 - **思考品質（Thought Quality）**：代理使用工具 X 的邏輯，是否確實由觀察 Y 推導而來？
@@ -74,7 +74,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：當環境具有非確定性時（例如網路），你如何評估代理？
 
@@ -88,7 +88,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Jimenez et al. 〈SWE-bench: Can Language Models Resolve Real-World GitHub Issues?〉（2024/2025 更新版）
 - Microsoft Research. 〈AgentBench: A Comprehensive Benchmark for AI Agents〉（2024）
 - RAGAS. 〈Agentic Evaluation Module〉（2025）

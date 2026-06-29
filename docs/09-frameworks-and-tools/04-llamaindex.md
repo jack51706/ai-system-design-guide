@@ -15,7 +15,7 @@ While LangChain focuses on "Orchestration," **LlamaIndex** is the master of **Da
 
 ---
 
-## The Data Framework Philosophy
+## The Data Framework Philosophy {#philosophy}
 
 LlamaIndex is built on the belief that **the data is more important than the model**.
 - **The Node**: Every chunk of data is a "Node" with rich metadata (relationships, summaries, and parent-child links).
@@ -23,7 +23,7 @@ LlamaIndex is built on the belief that **the data is more important than the mod
 
 ---
 
-## LlamaIndex Workflows
+## LlamaIndex Workflows {#workflows}
 
 In late 2024, LlamaIndex introduced **Workflows**, its answer to LangGraph.
 - **Event-Driven Architecture**: Nodes communicate by emitting `Events`.
@@ -48,7 +48,7 @@ class RAGWorkflow(Workflow):
 
 ---
 
-## LlamaCloud and Managed Ingestion
+## LlamaCloud and Managed Ingestion {#llamacloud}
 
 For enterprise scale, LlamaIndex focuses on **LlamaCloud**.
 - **Managed Ingestion**: Handling PDF parsing, OCR, and Table extraction as a service.
@@ -56,7 +56,7 @@ For enterprise scale, LlamaIndex focuses on **LlamaCloud**.
 
 ---
 
-## Agents as Tools
+## Agents as Tools {#agents-as-tools}
 
 LlamaIndex treats agents as **high-level retrievers**.
 - You can "wrap" a complex LlamaIndex query engine as a tool and give it to a LangGraph agent.
@@ -64,7 +64,7 @@ LlamaIndex treats agents as **high-level retrievers**.
 
 ---
 
-## LlamaIndex Workflows: Event-Driven Application Framework
+## LlamaIndex Workflows: Event-Driven Application Framework {#llamaindex-workflows-event-driven-application-framework}
 
 The pitch in 2024 was "Workflows is our LangGraph." The pitch today is different: Workflows is a general-purpose event-driven framework for any AI application, with RAG as one possible use. Today `llama-index-core` ships Workflows as the primary application surface, while the index / retriever classes have moved into integration packages around it ([LlamaIndex workflows docs](https://developers.llamaindex.ai/python/framework/understanding/workflows/)). One naming subtlety worth pinning down: the **Workflows** package reached 1.0 in mid-2025 and is now on a 2.x line as a standalone package, while the core `llama-index` framework itself remains on the 0.x line (around 0.14.x in mid-2026). For how this kind of version churn breaks tutorials and how to survive it, see [Navigating Framework Churn](12-navigating-framework-churn.md).
 
@@ -160,7 +160,7 @@ If you only pick one for a new greenfield app, the question reduces to: **is you
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: LangChain and LlamaIndex now both have "Graph/Workflow" features. How do you choose?
 
@@ -174,7 +174,7 @@ A Property Graph combines the **Semantic flexibility** of vectors with the **Str
 
 ---
 
-## References
+## References {#references}
 - LlamaIndex. "The Workflows Framework: Event-Driven Agents" (2025)
 - Jerry Liu. "Data-Centric AI in the LLM Era" (2024/2025)
 - LlamaHub. "The Repository of 1000+ Data Loaders" (2025)

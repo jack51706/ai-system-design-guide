@@ -13,7 +13,7 @@
 
 ---
 
-## 樹狀 vs 鏈狀
+## 樹狀 vs 鏈狀 {#tree-vs-chain}
 
 **思維鏈（Chain-of-Thought）** 是線性的（單一路徑），而 **思維樹（Tree-of-Thought）** 則允許分支。
 
@@ -26,7 +26,7 @@
 
 ---
 
-## ToT 迴圈：提議、評估、搜尋
+## ToT 迴圈：提議、評估、搜尋 {#tot-loop}
 
 一個 ToT 系統由三個模組組成：
 1. **思維提議者（Thought Proposer）**：為問題產生 3 至 5 個可能的「下一步」。
@@ -45,14 +45,14 @@ For each branch:
 
 ---
 
-## 自我修正與回溯
+## 自我修正與回溯 {#self-correction}
 
 ToT 是專門為了克服 **幻覺串連（Hallucination Cascades）** 而設計的。
 在線性的鏈狀結構中，如果模型在第 1 步犯了錯，後續每一步都很可能跟著錯。在 ToT 中，「評估器」（可以是另一個模型，或是以規則為基礎的檢查）會在第 1 步就抓出錯誤，並迫使模型嘗試不同的起始點。
 
 ---
 
-## MCTS 與搜尋即服務
+## MCTS 與搜尋即服務 {#mcts}
 
 ToT 已經演進為應用於 LLM 的 **蒙地卡羅樹搜尋（Monte Carlo Tree Search, MCTS）**。
 - **搜尋時運算擴展（Search-time Compute Scaling）**：我們不使用單一的大型提示，而是用 100 個小型提示去「搜尋」最佳答案。
@@ -60,7 +60,7 @@ ToT 已經演進為應用於 LLM 的 **蒙地卡羅樹搜尋（Monte Carlo Tree 
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：在什麼情況下 ToT 會明顯優於單純的 CoT？
 
@@ -74,7 +74,7 @@ ToT 已經演進為應用於 LLM 的 **蒙地卡羅樹搜尋（Monte Carlo Tree 
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Yao et al. "Tree of Thoughts: Deliberate Problem Solving with Large Language Models" (2023)
 - Silver et al. "Mastering the Game of Go without Human Knowledge"（MCTS 的靈感來源）
 

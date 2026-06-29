@@ -26,7 +26,7 @@ This chapter provides a comprehensive guide to the model landscape as of **June 
 
 ---
 
-## Model Categories
+## Model Categories {#model-categories}
 
 ### By Capability Level (April 2026 Reality)
 
@@ -373,7 +373,7 @@ While frontier models lead on benchmarks, many enterprise systems rely on **batt
 
 ---
 
-## Open Source Models
+## Open Source Models {#open-source-models}
 
 ### Llama 4 Family (Meta) -- NEW April 2026
 
@@ -473,7 +473,7 @@ While frontier models lead on benchmarks, many enterprise systems rely on **batt
 
 ---
 
-## Specialized Models
+## Specialized Models {#specialized-models}
 
 ### Coding Mastery (June 2026)
 
@@ -514,7 +514,7 @@ While frontier models lead on benchmarks, many enterprise systems rely on **batt
 
 ---
 
-## Embedding Models
+## Embedding Models {#embedding-models}
 
 ### API Embedding Models (May 2026)
 
@@ -620,7 +620,7 @@ Assume 1M requests/day, 1K input + 500 output tokens:
 
 ---
 
-## Capability Comparison
+## Capability Comparison {#capability-comparison}
 
 ### Benchmark Performance (May 2026)
 
@@ -653,7 +653,7 @@ Assume 1M requests/day, 1K input + 500 output tokens:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How would you select a model for a production RAG system?
 
@@ -710,7 +710,7 @@ Both use internal chain-of-thought, but the mechanics differ:
 
 ---
 
-## References
+## References {#references}
 
 - Anthropic: https://platform.claude.com/docs/en/about-claude/models/overview
 - OpenAI Platform: https://developers.openai.com/api/docs/models

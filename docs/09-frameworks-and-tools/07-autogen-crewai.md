@@ -14,7 +14,7 @@ The multi-agent framework landscape consolidated significantly over the past yea
 
 ---
 
-## CrewAI: The Manager Perspective
+## CrewAI: The Manager Perspective {#crewai}
 
 CrewAI is built around the concept of a **Process**.
 - **Role-Based Agents**: You define a "Researcher," a "Writer," and a "Manager."
@@ -62,7 +62,7 @@ CrewAI v1.13 marks a turning point toward enterprise production readiness:
 
 ---
 
-## Microsoft Agent Framework (AutoGen's Successor)
+## Microsoft Agent Framework (AutoGen's Successor) {#microsoft-agent-framework}
 
 ### The Merger: AutoGen + Semantic Kernel = Agent Framework
 
@@ -104,7 +104,7 @@ workflow = Workflow(
 
 ---
 
-## The Agent SDK Landscape
+## The Agent SDK Landscape {#agent-sdk-landscape}
 
 Every major AI lab now ships its own agent framework. The landscape as of May 2026:
 
@@ -162,7 +162,7 @@ Both frameworks (and the broader SDK landscape) have adopted **Swarm Patterns**.
 
 ---
 
-## Framework Comparison Matrix
+## Framework Comparison Matrix {#comparison}
 
 | Feature | CrewAI | MS Agent Framework | LangGraph | Claude Agent SDK | OpenAI Agents SDK | Google ADK |
 |---------|--------|-------------------|-----------|-----------------|-------------------|------------|
@@ -177,7 +177,7 @@ Both frameworks (and the broader SDK landscape) have adopted **Swarm Patterns**.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: When would you use CrewAI instead of LangGraph?
 
@@ -196,7 +196,7 @@ We use **Termination Conditions** and **Max Conversational Turns**. We also impl
 
 ---
 
-## References
+## References {#references}
 - CrewAI. "The Multi-Agent Process Engine" (2025/2026, v1.13)
 - Microsoft. "Agent Framework Overview" (2026) — learn.microsoft.com/en-us/agent-framework
 - Microsoft. "AutoGen to Agent Framework Migration Guide" (2026)

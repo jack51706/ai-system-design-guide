@@ -17,7 +17,7 @@
 
 ---
 
-## 練習 1：企業級 RAG 系統
+## 練習 1：企業級 RAG 系統 {#exercise-1-enterprise-rag-system}
 
 ### 問題描述
 
@@ -296,7 +296,7 @@ Total:                 2000ms (buffer for P95)
 
 ---
 
-## 練習 2：客戶支援聊天機器人
+## 練習 2：客戶支援聊天機器人 {#exercise-2-customer-support-chatbot}
 
 ### 問題描述
 
@@ -390,7 +390,7 @@ Zendesk integration:
 
 ---
 
-## 練習 3：程式碼審查助手
+## 練習 3：程式碼審查助手 {#exercise-3-code-review-assistant}
 
 ### 問題描述
 
@@ -471,7 +471,7 @@ Strategy:
 
 ---
 
-## 練習 4：文件處理管線
+## 練習 4：文件處理管線 {#exercise-4-document-processing-pipeline}
 
 ### 問題描述
 
@@ -565,7 +565,7 @@ HIPAA/SOC2 requirements:
 
 ---
 
-## 練習 5：即時內容審核
+## 練習 5：即時內容審核 {#exercise-5-real-time-content-moderation}
 
 ### 問題描述
 
@@ -645,7 +645,7 @@ thresholds = {
 
 ---
 
-## 練習 6：多租戶 AI 平台
+## 練習 6：多租戶 AI 平台 {#exercise-6-multi-tenant-ai-platform}
 
 ### 問題描述
 
@@ -725,7 +725,7 @@ async def track_usage(tenant_id: str, operation: Usage):
 
 ---
 
-## 練習 7：大規模語意搜尋
+## 練習 7：大規模語意搜尋 {#exercise-7-semantic-search-at-scale}
 
 ### 問題描述
 
@@ -822,7 +822,7 @@ Reindexing (description changes):
 
 ---
 
-## 練習 8：生產環境 LLM 產品的評估管線
+## 練習 8：生產環境 LLM 產品的評估管線 {#exercise-8-evaluation-pipeline-for-a-production-llm-product}
 
 ### 問題描述
 
@@ -923,7 +923,7 @@ dominant cost and it is what keeps the judge honest.
 
 ---
 
-## 練習 9：長時間運行代理的記憶與狀態
+## 練習 9：長時間運行代理的記憶與狀態 {#exercise-9-memory-and-state-for-a-long-running-agent}
 
 ### 問題描述
 
@@ -1005,7 +1005,7 @@ Cost: extraction pass on session close is the main LLM cost;
 
 ---
 
-## 白板練習小技巧
+## 白板練習小技巧 {#tips-for-whiteboard-exercises}
 
 ### 繪圖技巧
 

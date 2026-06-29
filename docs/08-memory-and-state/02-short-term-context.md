@@ -14,7 +14,7 @@ Short-term context (L1 Memory) is the high-speed interface where reasoning happe
 
 ---
 
-## The Context Lifecycle
+## The Context Lifecycle {#lifecycle}
 
 Context goes through three stages:
 1. **Intake**: User query + recent history + system instructions.
@@ -40,7 +40,7 @@ This is the **Holy Grail of Latency** for any production LLM stack.
 
 ---
 
-## Sliding Windows vs. Summarization
+## Sliding Windows vs. Summarization {#sliding-vs-summary}
 
 | Method | Mechanics | Pro | Con |
 |--------|-----------|-----|-----|
@@ -58,7 +58,7 @@ Current frontier models support **Prompt Hardening**.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: What is the difference between "Model Context Window" and "Application Context Window"?
 
@@ -72,7 +72,7 @@ It forces me to move **Static content to the front** and **Dynamic content to th
 
 ---
 
-## References
+## References {#references}
 - vLLM Team. "PagedAttention: Software-Defined Memory for LLM Serving" (2024/2025)
 - NVIDIA. "Optimizing Inference with TensorRT-LLM" (2025)
 - Anthropic. "Prompt Caching: Scale while reducing costs" (2024/2025)

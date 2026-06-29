@@ -14,7 +14,7 @@
 
 ---
 
-## The Programming Paradigm
+## The Programming Paradigm {#paradigm}
 
 DSPy treats an LLM application like a **Neural Network**.
 - **The Module**: A reusable block of logic (e.g., `ChainOfThought`).
@@ -23,7 +23,7 @@ DSPy treats an LLM application like a **Neural Network**.
 
 ---
 
-## Signatures: Describing the Task
+## Signatures: Describing the Task {#signatures}
 
 Instead of writing a 100-line prompt, you write a **Signature**:
 ```python
@@ -37,7 +37,7 @@ class ResearchAssistant(dspy.Signature):
 
 ---
 
-## Optimizers and MIPROv2
+## Optimizers and MIPROv2 {#optimizers}
 
 **MIPROv2 (Multi-stage Instruction PRoposal Optimizer)** is the flagship DSPy optimizer.
 1. **Instruction Proposal**: An "Assistant Model" proposes 10-20 different ways to write the system prompt for the task.
@@ -46,7 +46,7 @@ class ResearchAssistant(dspy.Signature):
 
 ---
 
-## Assertions and Constraints
+## Assertions and Constraints {#assertions}
 
 DSPy allows for **Hard and Soft Assertions**.
 - `dspy.Suggest(...)`: If the model fails a check (e.g., "The answer must be under 50 words"), DSPy **automatically re-prompts** the model with the failure reason to correct itself.
@@ -54,14 +54,14 @@ DSPy allows for **Hard and Soft Assertions**.
 
 ---
 
-## Managing Model Drift
+## Managing Model Drift {#model-drift}
 
 When OpenAI or Anthropic releases a weight update, hand-crafted prompts often break.
 - **The 2025 Solution**: With DSPy, you simply **Re-compile**. The optimizer finds the new "optimal" tokens for the updated model architecture, maintaining consistency without human labor.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is DSPy considered "Anti-Prompt Engineering"?
 
@@ -75,7 +75,7 @@ Because it replaces the **Manual trial-and-error loop** with an **Optimization L
 
 ---
 
-## References
+## References {#references}
 - Khattab et al. "DSPy: Compiling Declarative Language Model Calls" (2024/2025)
 - Stanford NLP. "The MIPROv2 Technical Report" (2025)
 - Databricks. "Productionizing Programmed Prompts" (2025)

@@ -17,7 +17,7 @@ This chapter provides a comprehensive view of the complete transformer architect
 
 ---
 
-## Architecture Overview
+## Architecture Overview {#architecture-overview}
 
 A decoder-only transformer (the architecture used by GPT, Claude, Llama) consists of:
 
@@ -43,7 +43,7 @@ flowchart TD
 
 ---
 
-## Input Processing
+## Input Processing {#input-processing}
 
 ### Token Embedding
 
@@ -89,7 +89,7 @@ x = token_embeddings + position_embeddings(positions)
 
 ---
 
-## The Transformer Block
+## The Transformer Block {#the-transformer-block}
 
 ### Pre-Norm Structure
 
@@ -202,7 +202,7 @@ Simpler and faster than LayerNorm since it skips mean centering.
 
 ---
 
-## Output Processing
+## Output Processing {#output-processing}
 
 ### Final Normalization
 
@@ -226,7 +226,7 @@ class LMHead(nn.Module):
         return self.linear(x)  # Returns logits
 ```
 
-## Untied vs. Tied Embeddings
+## Untied vs. Tied Embeddings {#untied-vs-tied-embeddings}
 
 **Standard Pattern (GPT-3, Llama 2):** Weight Tying
 - Output head shares weights with input embeddings.
@@ -292,7 +292,7 @@ The standard attention block in [DeepSeek-V3 / V4](03-attention-mechanisms.md#mu
 
 ---
 
-## Scaling Properties
+## Scaling Properties {#scaling-properties}
 
 ### Parameter Counts
 
@@ -329,7 +329,7 @@ For a 70B model, train on ~1.4T tokens for compute-optimal training.
 
 ---
 
-## Architecture Comparison Table
+## Architecture Comparison Table {#architecture-comparison-table}
 
 | Model | Params | Layers | d_model | Heads | KV Heads | FFN | Context |
 |-------|--------|--------|---------|-------|----------|-----|---------|
@@ -343,7 +343,7 @@ For a 70B model, train on ~1.4T tokens for compute-optimal training.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Walk me through the forward pass of a transformer.
 
@@ -444,7 +444,7 @@ These changes enable training larger models more stably and serving them more ef
 
 ---
 
-## References
+## References {#references}
 
 - Vaswani et al. "Attention Is All You Need" (2017)
 - Touvron et al. "Llama: Open and Efficient Foundation Language Models" (2023)

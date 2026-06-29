@@ -20,7 +20,7 @@ The one-line version: **frameworks are how you ship this quarter; primitives are
 
 ---
 
-## The Trigger: Why a Course Breaks on a Fresh Install
+## The Trigger: Why a Course Breaks on a Fresh Install {#the-trigger-why-a-course-breaks-on-a-fresh-install}
 
 A common, real example: a learner starts a well-regarded LlamaIndex video course, copies the first cell, and hits
 
@@ -40,7 +40,7 @@ This is not a LlamaIndex problem or a course-quality problem. It is the default 
 
 ---
 
-## What Actually Changed
+## What Actually Changed {#what-actually-changed}
 
 Two re-architectures define the modern churn. Version numbers below are accurate as of June 2026; treat them as a snapshot, since they will keep moving.
 
@@ -75,7 +75,7 @@ The deeper detail in each is in the [LangChain deep dive](01-langchain-deep-dive
 
 ---
 
-## Why Courses and Tutorials Go Stale
+## Why Courses and Tutorials Go Stale {#why-courses-and-tutorials-go-stale}
 
 Recorded courses and blog posts capture a *snapshot*: the video, and usually a pinned `requirements.txt` or hosted notebook environment, are fixed at recording time. The live package index is not. When a learner installs fresh, the resolver pulls current versions that have moved past the pin, and the recorded code no longer matches the installed API.
 
@@ -90,7 +90,7 @@ Most teaching platforms encode their version contract only as a bundled lockfile
 
 ---
 
-## Is This Tutorial Current? A 30-Second Check
+## Is This Tutorial Current? A 30-Second Check {#is-this-tutorial-current-a-30-second-check}
 
 Before investing hours in any course, post, or notebook:
 
@@ -103,7 +103,7 @@ Before investing hours in any course, post, or notebook:
 
 ---
 
-## Surviving Churn: Pin, Lock, Isolate
+## Surviving Churn: Pin, Lock, Isolate {#surviving-churn-pin-lock-isolate}
 
 The discipline that prevents "worked yesterday, broken today":
 
@@ -115,7 +115,7 @@ The discipline that prevents "worked yesterday, broken today":
 
 ---
 
-## Framework vs Raw SDK vs Thin Layer
+## Framework vs Raw SDK vs Thin Layer {#framework-vs-raw-sdk-vs-thin-layer}
 
 A live 2026 question, because the original reason frameworks existed has partly evaporated. When LangChain and LlamaIndex appeared, provider APIs were inconsistent and a unifying layer paid for itself. Since then, tool/function calling and structured outputs have converged into native, similar features across the major provider SDKs, so the framework's abstraction value has shrunk while its churn cost has not.
 
@@ -129,7 +129,7 @@ For production, the thin layer is often the sweet spot: depend on the provider S
 
 ---
 
-## What Transfers Across Versions
+## What Transfers Across Versions {#what-transfers-across-versions}
 
 This is the core of learning durably. The half-life of a framework *API* is roughly a year. The half-life of the *concepts under it* is the field itself. Invest accordingly.
 
@@ -143,7 +143,7 @@ This is the core of learning durably. The half-life of a framework *API* is roug
 
 ---
 
-## Migrating When You Must Upgrade
+## Migrating When You Must Upgrade {#migrating-when-you-must-upgrade}
 
 When you do have to move a real codebase forward:
 
@@ -154,7 +154,7 @@ When you do have to move a real codebase forward:
 
 ---
 
-## A Durable-Learning Playbook
+## A Durable-Learning Playbook {#a-durable-learning-playbook}
 
 1. **Build the loop once from the raw SDK**, no framework, so you understand what the framework automates. You will debug framework failures far faster afterward.
 2. **Then adopt a framework** for breadth and speed, but treat its API as replaceable, behind a thin interface.
@@ -166,7 +166,7 @@ For curated, currency-checked courses, see [COURSES.md](../COURSES.md). The reas
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: A teammate followed a six-month-old LlamaIndex tutorial and it fails on import. Walk me through what happened and how you would fix it.
 
@@ -180,7 +180,7 @@ I look at what the framework is actually buying me. Its original job was smoothi
 
 ---
 
-## References
+## References {#references}
 
 - LlamaIndex v0.10 migration guide: https://developers.llamaindex.ai/python/framework/getting_started/v0_10_0_migration/
 - LlamaIndex ServiceContext to Settings guide: https://developers.llamaindex.ai/python/framework/module_guides/supporting_modules/service_context_migration/

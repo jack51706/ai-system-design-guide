@@ -15,7 +15,7 @@ Secure access control is essential for multi-user and multi-tenant LLM applicati
 
 ---
 
-## Access Control Requirements
+## Access Control Requirements {#access-control-requirements}
 
 ### Security Dimensions
 
@@ -37,7 +37,7 @@ Secure access control is essential for multi-user and multi-tenant LLM applicati
 
 ---
 
-## Authentication Patterns
+## Authentication Patterns {#authentication-patterns}
 
 ### API Key Authentication
 
@@ -107,7 +107,7 @@ class JWTAuthenticator:
 
 ---
 
-## Authorization Models
+## Authorization Models {#authorization-models}
 
 ### Role-Based Access Control (RBAC)
 
@@ -180,7 +180,7 @@ class ModelAccessControl:
 
 ---
 
-## Tenant Isolation
+## Tenant Isolation {#tenant-isolation}
 
 ### Data Isolation Patterns
 
@@ -264,7 +264,7 @@ class TenantIsolatedCache:
 
 ---
 
-## API Key Management
+## API Key Management {#api-key-management}
 
 ### Key Lifecycle
 
@@ -349,7 +349,7 @@ class KeyRotator:
 
 ---
 
-## Audit and Compliance
+## Audit and Compliance {#audit-and-compliance}
 
 ### Audit Logging
 
@@ -410,7 +410,7 @@ class ComplianceReporter:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you implement multi-tenant isolation in a RAG system?
 
@@ -476,7 +476,7 @@ The key principle: never store raw keys, support rotation, implement least privi
 
 ---
 
-## References
+## References {#references}
 
 - OAuth 2.0: https://oauth.net/2/
 - OWASP API Security: https://owasp.org/API-Security/

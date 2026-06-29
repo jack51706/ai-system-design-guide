@@ -14,7 +14,7 @@ Parameter-Efficient Fine-Tuning (PEFT) is the industry standard for adapting LLM
 
 ---
 
-## The PEFT Revolution
+## The PEFT Revolution {#the-peft-revolution}
 
 Full fine-tuning of frontier models (GPT-5.5, Claude Opus 4.7, Llama 4 405B) is economically unfeasible for most enterprises. PEFT allows:
 1. **Memory Efficiency**: Train 70B models on a single A100.
@@ -23,7 +23,7 @@ Full fine-tuning of frontier models (GPT-5.5, Claude Opus 4.7, Llama 4 405B) is 
 
 ---
 
-## LoRA Mechanics
+## LoRA Mechanics {#lora-mechanics}
 
 LoRA (Low-Rank Adaptation) injects trainable rank-decomposition matrices into the transformer layers.
 
@@ -42,7 +42,7 @@ Historically, we only targeted query/value projections (`q_proj`, `v_proj`).
 
 ---
 
-## QLoRA: 4-bit Fine-Tuning
+## QLoRA: 4-bit Fine-Tuning {#qlora}
 
 QLoRA pushes efficiency further by quantizing the base model to 4-bit (NF4) while maintaining 16-bit gradients.
 
@@ -72,7 +72,7 @@ Uses a scaling factor of `alpha / sqrt(r)`.
 
 ---
 
-## Multi-LoRA Serving (Adapters)
+## Multi-LoRA Serving (Adapters) {#multi-lora-serving}
 
 Production systems now serve one base model (e.g., Llama 4 70B) and dynamically swap adapters in the same batch.
 
@@ -86,7 +86,7 @@ Production systems now serve one base model (e.g., Llama 4 70B) and dynamically 
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is the LoRA alpha parameter usually set to 2x the rank?
 
@@ -100,7 +100,7 @@ DoRA (Weight-Decomposed Low-Rank Adaptation) is a 2024 technique that separates 
 
 ---
 
-## References
+## References {#references}
 - Hu et al. "LoRA: Low-Rank Adaptation of Large Language Models" (2021)
 - Liu et al. "DoRA: Weight-Decomposed Low-Rank Adaptation" (2024)
 - Dettmers et al. "QLoRA: Efficient Finetuning of Quantized LLMs" (2023)

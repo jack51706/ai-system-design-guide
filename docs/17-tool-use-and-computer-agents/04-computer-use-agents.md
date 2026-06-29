@@ -21,7 +21,7 @@ Computer-use agents let an LLM see a screen, reason about it, and act through mo
 
 ---
 
-## What Are Computer-Use Agents?
+## What Are Computer-Use Agents? {#what-are-computer-use-agents}
 
 A computer-use agent is an LLM that controls a graphical interface by interpreting screenshots and issuing low-level input commands (mouse moves, clicks, keystrokes). It replaces the human in the human-computer interaction loop.
 
@@ -61,7 +61,7 @@ Multiple providers now offer computer-use capabilities:
 
 ---
 
-## The Screenshot-Reason-Act Loop
+## The Screenshot-Reason-Act Loop {#the-screenshot-reason-act-loop}
 
 Every computer-use agent follows the same core loop, often called the "agent loop" or "action loop":
 
@@ -86,7 +86,7 @@ The model maintains context across iterations via the conversation history, whic
 
 ---
 
-## Claude Computer Use: Tools and API
+## Claude Computer Use: Tools and API {#claude-computer-use-tools-and-api}
 
 Claude exposes three built-in tools for computer use. These are Anthropic-defined tools -- you do not write the implementation; Claude knows how to generate calls to them and your runtime executes them against the environment.
 
@@ -161,7 +161,7 @@ The response will contain `tool_use` blocks that your runtime must execute and f
 
 ---
 
-## Architecture: Sandboxed Environments
+## Architecture: Sandboxed Environments {#architecture-sandboxed-environments}
 
 Computer-use agents must run in isolated environments. The model has full control of mouse and keyboard -- you do not want that on your production workstation.
 
@@ -201,7 +201,7 @@ Services like E2B (e2b.dev) provide pre-configured sandboxed environments:
 
 ---
 
-## Browser vs Desktop Automation
+## Browser vs Desktop Automation {#browser-vs-desktop-automation}
 
 | Dimension | Browser-Only | Full Desktop |
 |-----------|-------------|--------------|
@@ -215,7 +215,7 @@ Browser automation controls a web browser (navigate, fill forms, click buttons, 
 
 ---
 
-## Comparison with Traditional Automation
+## Comparison with Traditional Automation {#comparison-with-traditional-automation}
 
 Selenium, Playwright, and Puppeteer automate browsers via direct DOM access. Computer-use agents work with pixels. Both have a place in production.
 
@@ -232,7 +232,7 @@ Selenium, Playwright, and Puppeteer automate browsers via direct DOM access. Com
 
 ---
 
-## When Computer-Use Beats API Calls
+## When Computer-Use Beats API Calls {#when-computer-use-beats-api-calls}
 
 **Use computer use when:** no API exists (legacy systems), anti-bot protections block Selenium, visual judgment is required (chart verification, PDF layout), UIs change faster than selectors can be maintained, or the workflow spans multiple desktop applications.
 
@@ -240,7 +240,7 @@ Selenium, Playwright, and Puppeteer automate browsers via direct DOM access. Com
 
 ---
 
-## Error Handling and Recovery
+## Error Handling and Recovery {#error-handling-and-recovery}
 
 Computer-use agents fail differently from API-based tools. The main failure modes:
 
@@ -280,7 +280,7 @@ The agent loop should track action history and detect repeats. If the same actio
 
 ---
 
-## Performance: Latency, Cost, Throughput
+## Performance: Latency, Cost, Throughput {#performance-latency-cost-throughput}
 
 ### Latency Breakdown
 
@@ -316,7 +316,7 @@ A 20-step workflow costs roughly $0.20-0.60 with Sonnet, or $1.00-3.00 with Opus
 
 ---
 
-## Real-World Applications
+## Real-World Applications {#real-world-applications}
 
 | Application | How It Works | Why Computer Use |
 |------------|--------------|------------------|
@@ -327,7 +327,7 @@ A 20-step workflow costs roughly $0.20-0.60 with Sonnet, or $1.00-3.00 with Opus
 
 ---
 
-## Security Considerations
+## Security Considerations {#security-considerations}
 
 | Risk | What Happens | Mitigation |
 |------|-------------|------------|
@@ -340,7 +340,7 @@ The cardinal rule: **never run computer-use agents on your production workstatio
 
 ---
 
-## Code Examples
+## Code Examples {#code-examples}
 
 ### Minimal Agent Loop
 
@@ -420,7 +420,7 @@ CMD Xvfb :1 -screen 0 1280x800x24 & sleep 1 && mutter & tint2 & \
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: A client has 500 insurance claim PDFs per day that must be entered into a legacy web portal with no API. Design a system using computer-use agents.
 
@@ -444,7 +444,7 @@ The best production systems use both: Playwright handles the predictable steps (
 
 ---
 
-## References
+## References {#references}
 
 - Anthropic. "Computer Use Tool" API Documentation (2025)
 - Anthropic. "Bash Tool" and "Text Editor Tool" API Documentation (2025)

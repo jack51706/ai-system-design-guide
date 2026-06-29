@@ -14,7 +14,7 @@ LLM memory has evolved from "history buffers" to a **Three-Tiered Cognitive Arch
 
 ---
 
-## The Three-Tiered Hierarchy
+## The Three-Tiered Hierarchy {#hierarchy}
 
 | Tier | Type | Human Analogy | Technology | Latency |
 |------|------|---------------|------------|---------|
@@ -52,7 +52,7 @@ L3 stores **Immutable Facts** and **Learned Rules**.
 
 ---
 
-## Memory Consolidation Patterns
+## Memory Consolidation Patterns {#consolidation}
 
 Memories move between tiers via **Consolidation**:
 1. **Extraction**: An LLM "Reviewer" extracts facts from L1 at the end of a session.
@@ -61,7 +61,7 @@ Memories move between tiers via **Consolidation**:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why not just use a 2M token context window for all memory (L1-L3)?
 
@@ -79,7 +79,7 @@ Tier 3 (Semantic Memory) must be **Sharded by Namespace**. Each user or organiza
 
 ---
 
-## References
+## References {#references}
 - Pack et al. "Generative Agents" (2023/2025 Context)
 - OpenAI. "Context Window Optimization" (2025)
 - Mem0 Documentation. "Dynamic Memory Management" (2025)

@@ -20,7 +20,7 @@ AI 編排框架的變化速度，比教這些框架的教材更新得還快。Ll
 
 ---
 
-## 觸發點：為什麼一門課程在全新安裝時就壞掉
+## 觸發點：為什麼一門課程在全新安裝時就壞掉 {#the-trigger-why-a-course-breaks-on-a-fresh-install}
 
 一個常見的真實案例：學習者開始上一門評價不錯的 LlamaIndex 影片課程，複製了第一個程式碼儲存格，然後就撞上
 
@@ -40,7 +40,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 實際上改變了什麼
+## 實際上改變了什麼 {#what-actually-changed}
 
 有兩次重新架構定義了現代的汰換亂象。底下的版本號是截至 2026 年 6 月時準確的；請把它們當成一個快照看待，因為它們會持續變動。
 
@@ -75,7 +75,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 為什麼課程與教學文會過時
+## 為什麼課程與教學文會過時 {#why-courses-and-tutorials-go-stale}
 
 已錄製的課程與部落格文章捕捉的是一個*快照*：影片本身，以及通常隨附的釘死版本 `requirements.txt` 或託管的 notebook 環境，都在錄製當下被固定下來。但線上的套件索引並不會被固定。當學習者重新安裝時，解析器會拉下已經超前那個釘死版本的當前版本，於是錄好的程式碼就不再對得上已安裝的 API。
 
@@ -90,7 +90,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 這份教學還是最新的嗎？30 秒快速檢查
+## 這份教學還是最新的嗎？30 秒快速檢查 {#is-this-tutorial-current-a-30-second-check}
 
 在你投入好幾個小時上任何課程、文章或 notebook 之前：
 
@@ -103,7 +103,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 熬過汰換：釘版本、鎖定、隔離
+## 熬過汰換：釘版本、鎖定、隔離 {#surviving-churn-pin-lock-isolate}
 
 能避免「昨天還能跑，今天就壞了」的紀律：
 
@@ -115,7 +115,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 框架 vs 原生 SDK vs 薄封裝層
+## 框架 vs 原生 SDK vs 薄封裝層 {#framework-vs-raw-sdk-vs-thin-layer}
 
 這是 2026 年一個活生生的問題，因為框架當初存在的理由有一部分已經蒸發了。當 LangChain 和 LlamaIndex 出現時，各家供應商的 API 並不一致，一個統一層自然值回票價。但從那之後，工具/函式呼叫與結構化輸出，已經在各大供應商 SDK 之間收斂成原生且彼此相似的功能，於是框架的抽象價值縮水了，但它的汰換成本卻沒有縮水。
 
@@ -129,7 +129,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 哪些東西能跨版本沿用
+## 哪些東西能跨版本沿用 {#what-transfers-across-versions}
 
 這是「耐用地學習」的核心。一個框架 *API* 的半衰期大約是一年。它底下那些*概念*的半衰期，則是整個領域本身。請依此分配你的投資。
 
@@ -143,7 +143,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 非升級不可時的遷移做法
+## 非升級不可時的遷移做法 {#migrating-when-you-must-upgrade}
 
 當你真的得把一個實際的程式碼庫往前推進時：
 
@@ -154,7 +154,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 一套耐用的學習方法
+## 一套耐用的學習方法 {#a-durable-learning-playbook}
 
 1. **先用原生 SDK 親手把迴圈做一次**，不用任何框架，這樣你才會理解框架到底自動化了什麼。之後你除錯框架失敗的速度會快上許多。
 2. **接著採用一個框架**換取廣度與速度，但要把它的 API 當成可替換的，藏在一個薄介面後面。
@@ -166,7 +166,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 面試題
+## 面試題 {#interview-questions}
 
 ### Q：一位同事照著一份六個月前的 LlamaIndex 教學做，結果在 import 就失敗了。請帶我走過發生了什麼事，以及你會怎麼修。
 
@@ -180,7 +180,7 @@ TypeError: Can't instantiate abstract class OpenAI with abstract method _prepare
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - LlamaIndex v0.10 遷移指南：https://developers.llamaindex.ai/python/framework/getting_started/v0_10_0_migration/
 - LlamaIndex ServiceContext 轉 Settings 指南：https://developers.llamaindex.ai/python/framework/module_guides/supporting_modules/service_context_migration/

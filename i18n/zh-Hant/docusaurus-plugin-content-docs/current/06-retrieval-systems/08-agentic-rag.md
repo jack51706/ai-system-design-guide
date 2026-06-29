@@ -14,7 +14,7 @@
 
 ---
 
-## 線性 RAG 與代理式 RAG 的比較
+## 線性 RAG 與代理式 RAG 的比較 {#comparison}
 
 | 模型 | 線性 RAG | 代理式 RAG |
 |-------|------------|-------------|
@@ -27,7 +27,7 @@
 
 ---
 
-## Self-RAG（自我反思）
+## Self-RAG（自我反思） {#self-rag}
 
 在 2024 / 2025 年廣為流行，**Self-RAG** 利用「批判 token（Critic Tokens）」來評估自己的成果。
 
@@ -38,7 +38,7 @@
 
 ---
 
-## Corrective RAG（CRAG）
+## Corrective RAG（CRAG） {#crag}
 
 CRAG 在檢索與生成之間加入了一層「可靠性層」。
 
@@ -49,7 +49,7 @@ CRAG 在檢索與生成之間加入了一層「可靠性層」。
 
 ---
 
-## 多跳推理迴圈
+## 多跳推理迴圈 {#multi-hop}
 
 對於像「收購 Figma 的那家公司的 CEO 是誰？」這類問題，系統必須：
 1. **第 1 跳**：搜尋「是誰收購了 Figma？」（結果：Adobe）。
@@ -59,7 +59,7 @@ CRAG 在檢索與生成之間加入了一層「可靠性層」。
 
 ---
 
-## 代理式過濾與計畫修訂
+## 代理式過濾與計畫修訂 {#planning}
 
 現代代理會使用**子步驟計畫（Sub-Step Plans）**。
 - 代理不會做一次大規模檢索，而是先寫下一份計畫：「我會先在內部資料庫中查 X，接著再查公開 API 上的 Y。」
@@ -67,7 +67,7 @@ CRAG 在檢索與生成之間加入了一層「可靠性層」。
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：代理式 RAG 中的「推理與檢索平衡（Reasoning-Retrieval Balance）」是什麼？
 
@@ -81,7 +81,7 @@ CRAG 在檢索與生成之間加入了一層「可靠性層」。
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Asai et al. "Self-RAG: Learning to Retrieve, Generate, and Critique" (2024/2025)
 - Yan et al. "Corrective Retrieval Augmented Generation (CRAG)" (2024)
 - LangChain. "Agentic RAG with LangGraph" (2025)

@@ -15,7 +15,7 @@
 
 ---
 
-## 選擇框架
+## 選擇框架 {#selection-framework}
 
 ### 決策樹（2026 年 6 月）
 
@@ -46,7 +46,7 @@ flowchart TD
 
 ---
 
-## 能力比較
+## 能力比較 {#capability-comparison}
 
 ### 前沿模型比較（2026 年 6 月）
 
@@ -78,7 +78,7 @@ flowchart TD
 
 ---
 
-## 使用情境對應
+## 使用情境對應 {#use-case-mapping}
 
 ### 依應用類型（2026 年 6 月）
 
@@ -103,7 +103,7 @@ flowchart TD
 
 ---
 
-## 成本分析
+## 成本分析 {#cost-analysis}
 
 ### 成本建模（2026 年 6 月）
 
@@ -132,7 +132,7 @@ flowchart TD
 
 ---
 
-## 營運考量
+## 營運考量 {#operational-considerations}
 
 ### 速率限制與配額
 
@@ -202,7 +202,7 @@ class LLMClient:
 
 ---
 
-## 多模型策略
+## 多模型策略 {#multi-model-strategies}
 
 ### 模型路由
 
@@ -256,7 +256,7 @@ class ModelCascade:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：在生產環境應用中，你會如何在 GPT-4o、Claude 與 Gemini 之間做選擇？
 
@@ -307,7 +307,7 @@ class ModelCascade:
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - OpenAI API: https://platform.openai.com/
 - Anthropic API: https://docs.anthropic.com/

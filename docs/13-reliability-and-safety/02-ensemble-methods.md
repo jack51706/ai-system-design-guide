@@ -15,7 +15,7 @@ Ensemble methods are critical for production reliability. This chapter covers mu
 
 ---
 
-## Why Ensembles Matter
+## Why Ensembles Matter {#why-ensembles-matter}
 
 Single-model outputs are unreliable for high-stakes applications:
 - Models hallucinate facts
@@ -36,7 +36,7 @@ Ensembles improve reliability through redundancy and diversity.
 
 ---
 
-## Evaluation Ensembles
+## Evaluation Ensembles {#evaluation-ensembles}
 
 ### Panel of LLM Judges (PoLL)
 
@@ -119,7 +119,7 @@ async def pairwise_compare_debiased(model, response_a: str, response_b: str, cri
 
 ---
 
-## Generation Ensembles
+## Generation Ensembles {#generation-ensembles}
 
 ### Self-Consistency (Majority Voting)
 
@@ -251,7 +251,7 @@ class BestOfNSampler:
 
 ---
 
-## Multi-Agent Patterns
+## Multi-Agent Patterns {#multi-agent-patterns}
 
 ### Multi-Agent Debate
 
@@ -374,7 +374,7 @@ Synthesize the best answer, combining the strongest elements from each response.
 
 ---
 
-## Ensemble vs Arbitration
+## Ensemble vs Arbitration {#ensemble-vs-arbitration}
 
 ### Conceptual Distinction
 
@@ -400,7 +400,7 @@ flowchart TD
 
 ---
 
-## Cost-Accuracy Tradeoffs
+## Cost-Accuracy Tradeoffs {#cost-accuracy-tradeoffs}
 
 ### Ensemble Cost Matrix
 
@@ -425,7 +425,7 @@ flowchart TD
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: When would you use Self-Consistency vs Best-of-N?
 
@@ -471,7 +471,7 @@ The key insight is that any single reward signal can be gamed. Ensembles make ga
 
 ---
 
-## References
+## References {#references}
 
 - Verga et al. "Replacing Judges with Juries: Evaluating LLM Generations with a Panel of Diverse Models" (2024)
 - Wang et al. "Self-Consistency Improves Chain of Thought Reasoning" (2023)

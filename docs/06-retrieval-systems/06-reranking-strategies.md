@@ -17,7 +17,7 @@ Reranking is the second stage of retrieval that re-scores a small set of candida
 
 ---
 
-## Why Reranking
+## Why Reranking {#why-reranking}
 
 ### The Quality Gap
 
@@ -55,7 +55,7 @@ The cross-encoder sees that "CUDA memory" in the query relates to "GPU memory...
 
 ---
 
-## Reranking Architectures
+## Reranking Architectures {#reranking-architectures}
 
 ### Bi-Encoder vs Cross-Encoder
 
@@ -118,7 +118,7 @@ Each stage trades speed for accuracy.
 
 ---
 
-## Reranking Models
+## Reranking Models {#reranking-models}
 
 ### Cross-Encoder Models
 
@@ -200,7 +200,7 @@ def cohere_rerank(
 
 ---
 
-## Implementation Patterns
+## Implementation Patterns {#implementation-patterns}
 
 ### Pattern 1: Basic Reranking
 
@@ -304,7 +304,7 @@ class AsyncReranker:
 
 ---
 
-## When to Rerank
+## When to Rerank {#when-to-rerank}
 
 ### Cost-Benefit Analysis
 
@@ -382,7 +382,7 @@ def optimize_candidate_count(test_set, retriever, reranker):
 
 ---
 
-## LLM-Based Reranking
+## LLM-Based Reranking {#llm-based-reranking}
 
 ### Using LLMs as Rerankers
 
@@ -469,7 +469,7 @@ def sliding_window_rerank(
 
 ---
 
-## SLM Distillation
+## SLM Distillation {#slm-distillation}
 
 To solve the latency problem of LLM-based reranking, we now use **Distilled Small Language Models (SLMs)**.
 
@@ -479,7 +479,7 @@ To solve the latency problem of LLM-based reranking, we now use **Distilled Smal
 
 ---
 
-## Production Considerations
+## Production Considerations {#production-considerations}
 
 ### Latency Optimization
 
@@ -563,7 +563,7 @@ def rerank_with_fallback(
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is a Cross-Encoder fundamentally more accurate than a Bi-Encoder?
 
@@ -621,7 +621,7 @@ Long queries present a "Token Budget" problem for cross-encoders, which often ha
 
 ---
 
-## References
+## References {#references}
 
 - Nogueira and Cho. "Passage Re-ranking with BERT" (2019)
 - Nogueira et al. "Multi-Stage Document Ranking with BERT" (2019/2025 update)

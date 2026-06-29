@@ -14,7 +14,7 @@ LangGraph 是建構具狀態、多代理系統的**事實標準**。它在 2025 
 
 ---
 
-## 圖形哲學
+## 圖形哲學 {#philosophy}
 
 在 2023 年，代理是「黑盒子」。
 今天，代理是**圖形（Graphs）**。
@@ -46,7 +46,7 @@ class GraphState(TypedDict):
 
 ---
 
-## 持久化與檢查點
+## 持久化與檢查點 {#persistence}
 
 目前的 LangGraph 使用**以執行緒為基礎的持久化（Thread-based Persistence）**。
 - **概念**：每個工作階段都有一個 `thread_id`。
@@ -65,7 +65,7 @@ class GraphState(TypedDict):
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼要使用 LangGraph，而不是 OpenAI 的「Assistant API」？
 
@@ -79,7 +79,7 @@ class GraphState(TypedDict):
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - LangChain Team. "LangGraph: Multi-Agent Workflows at Scale" (2025)
 - Anthropic. "Building Resilient Agents with State Machines" (2025)
 - OpenSource AI. "Cycles and the Future of Agency" (2024 Tech Report)

@@ -19,7 +19,7 @@ Tool-using AI agents have moved from demo to production. The global AI agents ma
 
 ---
 
-## Category 1: Developer Productivity
+## Category 1: Developer Productivity {#category-1-developer-productivity}
 
 Developer productivity is the most mature category. Tools like Claude Code, GitHub Copilot, and Cursor have moved past autocomplete into multi-step agentic workflows.
 
@@ -47,7 +47,7 @@ Agents that interact with CI/CD pipelines through tool calls (not just generatin
 
 ---
 
-## Category 2: Business Process Automation
+## Category 2: Business Process Automation {#category-2-business-process-automation}
 
 Document processing, data entry, and reporting represent the highest-volume enterprise use case. These are repetitive, rule-heavy tasks where agents excel.
 
@@ -99,7 +99,7 @@ Agents using computer use (screen interaction) for legacy systems that lack APIs
 
 ---
 
-## Category 3: Customer-Facing Agents
+## Category 3: Customer-Facing Agents {#category-3-customer-facing-agents}
 
 Support, sales, and onboarding agents are the most visible deployments but carry the highest reputational risk.
 
@@ -134,7 +134,7 @@ Customer-facing agents are one hallucination away from a PR crisis. Production d
 
 ---
 
-## Category 4: IT Operations
+## Category 4: IT Operations {#category-4-it-operations}
 
 Monitoring, incident response, and infrastructure management. This category has high potential but requires the most careful permission scoping.
 
@@ -181,7 +181,7 @@ An agent with `kubectl delete` or `aws ec2 terminate-instances` access can cause
 
 ---
 
-## Category 5: Research and Analysis
+## Category 5: Research and Analysis {#category-5-research-and-analysis}
 
 Data analysis, market research, and competitive intelligence. Agents excel at gathering and synthesizing information from multiple sources.
 
@@ -206,7 +206,7 @@ Research agents have a **correctness problem** that other categories do not. Whe
 
 ---
 
-## Case Study: Enterprise OpenClaw Deployment
+## Case Study: Enterprise OpenClaw Deployment {#case-study-enterprise-openclaw-deployment}
 
 ### Background
 
@@ -270,7 +270,7 @@ flowchart TD
 
 ---
 
-## Case Study: Claude Computer Use for Legacy Migration
+## Case Study: Claude Computer Use for Legacy Migration {#case-study-claude-computer-use-for-legacy-migration}
 
 ### Background
 
@@ -335,7 +335,7 @@ flowchart TD
 
 ---
 
-## Case Study: Multi-Agent Financial Compliance
+## Case Study: Multi-Agent Financial Compliance {#case-study-multi-agent-financial-compliance}
 
 ### Background
 
@@ -397,7 +397,7 @@ flowchart TD
 
 ---
 
-## ROI Calculations and Metrics
+## ROI Calculations and Metrics {#roi-calculations-and-metrics}
 
 ### The ROI Framework for Tool-Using Agents
 
@@ -436,7 +436,7 @@ Production deployments typically reach ROI within 30-90 days for high-volume, we
 
 ---
 
-## Failure Cases and Lessons Learned
+## Failure Cases and Lessons Learned {#failure-cases-and-lessons-learned}
 
 ### Failure 1: The Replit Database Deletion (July 2025)
 
@@ -472,7 +472,7 @@ Lakera AI research demonstrated how indirect prompt injection via poisoned data 
 
 ---
 
-## System Design Interview Angle
+## System Design Interview Angle {#system-design-interview-angle}
 
 ### Q: "Design a tool-using agent system for automating invoice processing at a company that receives 5,000 invoices per month."
 
@@ -490,7 +490,7 @@ The main risk is incorrect amount extraction leading to wrong payments. I would 
 
 ---
 
-## References
+## References {#references}
 
 - Gartner. "Predicts 2025: AI Agents Transform Work" (2025)
 - OWASP. "Top 10 for Agentic Applications" (2026)

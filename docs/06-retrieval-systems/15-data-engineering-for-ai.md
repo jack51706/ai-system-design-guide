@@ -18,7 +18,7 @@ Models are only as good as the data fed to them, and most of the work in any ser
 
 ---
 
-## The Shared Pipeline
+## The Shared Pipeline {#the-shared-pipeline}
 
 The central idea: one pipeline, two consumers. RAG needs documents parsed, cleaned, deduped, chunked, enriched, and embedded. Fine-tuning needs examples parsed, cleaned, deduped, quality-filtered, decontaminated against eval sets, balanced, and formatted. The first five stages are **shared**; the two diverge only at the tail.
 
@@ -42,7 +42,7 @@ The "most of the work" framing is durable: the widely cited heuristic that pract
 
 ---
 
-## Ingestion
+## Ingestion {#ingestion}
 
 The input is a heterogeneous pile (PDFs, scans, office docs, HTML, email, images). You must detect what each file is, route it to the right parser, and emit a normalized structured representation.
 
@@ -52,7 +52,7 @@ The input is a heterogeneous pile (PDFs, scans, office docs, HTML, email, images
 
 ---
 
-## Cleaning and Normalization
+## Cleaning and Normalization {#cleaning-and-normalization}
 
 The shared first-pass quality gate:
 - **Boilerplate removal.** Strip navigation, ads, headers, footers, cookie banners. For HTML at scale, the standard is a content-extraction library; the FineWeb project found that extracting from raw web archives with such a tool beat using pre-extracted text, which "retained too much boilerplate," so this is upstream quality, not cosmetics.
@@ -64,7 +64,7 @@ A counterintuitive caveat worth teaching: **more filtering is not strictly bette
 
 ---
 
-## Deduplication
+## Deduplication {#deduplication}
 
 Dedup is the highest-leverage stage, and the clearest case for "shared infrastructure," because it pays off three ways. The foundational result (Lee et al., arXiv:2107.06499) reports that deduplicating training data makes models emit memorized text about 10x less often, reach equal or better accuracy in fewer steps, and, critically, **reduces train-test overlap, so dedup is also decontamination.** It also mitigates privacy risk by reducing memorization of repeated PII.
 
@@ -77,7 +77,7 @@ The production pattern composes them, MinHash first, then SemDeDup. State the th
 
 ---
 
-## PII, Consent, and Governance
+## PII, Consent, and Governance {#pii-consent-and-governance}
 
 **PII detection and redaction.** Microsoft Presidio (MIT) is the open standard: an Analyzer that detects entities via NER plus regex, checksums, and context words, and an Anonymizer that redacts, replaces, masks, hashes, or encrypts, across text, images (with OCR), and structured data, deployable at corpus scale. Because dedup reduces duplication-driven memorization, privacy and dedup are linked.
 
@@ -85,7 +85,7 @@ The production pattern composes them, MinHash first, then SemDeDup. State the th
 
 ---
 
-## Quality Filtering and Enrichment
+## Quality Filtering and Enrichment {#quality-filtering-and-enrichment}
 
 **Quality filtering** comes in two families. **Heuristic** rules (length, symbol-to-word ratio, repetition, stopword presence) are cheap but cannot catch complex content noise. **Model-based classifiers** score quality or educational value; FineWeb-Edu trained a lightweight classifier on LLM-generated quality annotations and reported large downstream gains, matching a larger corpus with far fewer tokens. The flagged caveat: classifier filtering is not a free lunch (the "data-quality illusion" work argues it can be miscalibrated), so **always ablate filters on a downstream eval, never trust them by reputation.**
 
@@ -97,7 +97,7 @@ The production pattern composes them, MinHash first, then SemDeDup. State the th
 
 ---
 
-## Pipelines and Orchestration
+## Pipelines and Orchestration {#pipelines-and-orchestration}
 
 **Batch vs streaming.** Pretraining-corpus prep and bulk RAG indexing are batch jobs (Spark or Ray over object storage). RAG *freshness* is incremental: as source documents change, re-ingest only the deltas. Change Data Capture captures row-level source changes in real time, which for RAG maps to "detect changed, new, and deleted documents, re-parse and re-embed only those, then upsert or delete in the vector store," avoiding a full re-index and preventing stale or orphaned vectors.
 
@@ -107,7 +107,7 @@ The production pattern composes them, MinHash first, then SemDeDup. State the th
 
 ---
 
-## Data for Fine-Tuning
+## Data for Fine-Tuning {#data-for-fine-tuning}
 
 The tail that diverges from RAG:
 - **Curation beats volume.** A small set of carefully curated examples often beats a large mediocre one; the quality triad is difficulty, quality, and diversity. (The exact "1,000 beats 10,000" figures are illustrative, not laws.)
@@ -116,7 +116,7 @@ The tail that diverges from RAG:
 
 ---
 
-## Failure Modes
+## Failure Modes {#failure-modes}
 
 1. **Trusting file extensions** instead of magic-byte detection (wrong parser, silent garbage).
 2. **Parsing scanned PDFs with a text-only path** (empty or partial extraction; route image PDFs to OCR or multimodal).
@@ -134,7 +134,7 @@ The tail that diverges from RAG:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is deduplication one of the most important stages in an AI data pipeline?
 
@@ -148,7 +148,7 @@ The trap is that simple n-gram decontamination is not enough. A well-known resul
 
 ---
 
-## References
+## References {#references}
 
 - Lee et al., "Deduplicating Training Data Makes Language Models Better" arXiv:2107.06499
 - Abbas et al., "SemDeDup" arXiv:2303.09540

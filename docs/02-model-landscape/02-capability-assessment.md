@@ -17,7 +17,7 @@ This chapter covers how to evaluate and compare model capabilities for your spec
 
 ---
 
-## Why Benchmarks Are Not Enough
+## Why Benchmarks Are Not Enough {#why-benchmarks-are-not-enough}
 
 ### The Benchmark Problem
 
@@ -44,7 +44,7 @@ customers' questions about our product documentation?"
 
 ---
 
-## Evaluation Dimensions
+## Evaluation Dimensions {#evaluation-dimensions}
 
 ### Dimension 1: Task Performance
 
@@ -101,7 +101,7 @@ Production systems use **Model Arbitration**: a small model (Gemini 3.1 Flash, C
 
 ---
 
-## Internal Elo-based Evaluation
+## Internal Elo-based Evaluation {#internal-elo-based-evaluation}
 
 **Moving beyond static rubrics.**
 Rubrics (1-5 scales) are prone to "judge fatigue" and "score drifting." Modern systems use **Pairwise Elo** for internal golden sets.
@@ -133,7 +133,7 @@ With 2M+ context windows, simple "needle-in-a-haystack" is no longer enough. We 
 
 ---
 
-## Building Custom Evaluations
+## Building Custom Evaluations {#building-custom-evaluations}
 
 ### Step 1: Define Evaluation Criteria
 
@@ -272,7 +272,7 @@ Output JSON:
 
 ---
 
-## Common Evaluation Pitfalls
+## Common Evaluation Pitfalls {#common-evaluation-pitfalls}
 
 ### Pitfall 1: Small Test Set
 
@@ -325,7 +325,7 @@ def quality_adjusted_cost(model_results):
 
 ---
 
-## Practical Assessment Process
+## Practical Assessment Process {#practical-assessment-process}
 
 ### Week 1: Setup and Initial Filtering
 
@@ -381,7 +381,7 @@ Model C (Llama 3.1 70B) for high-volume, cost-sensitive paths
 
 ---
 
-## A/B Testing Models
+## A/B Testing Models {#ab-testing-models}
 
 ### When to A/B Test
 
@@ -439,7 +439,7 @@ class ModelABTest:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How would you evaluate models for a customer support chatbot?
 
@@ -495,7 +495,7 @@ MMLU has several problems for specific use cases:
 
 ---
 
-## References
+## References {#references}
 
 - Zheng et al. "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena" (2023)
 - LMSYS Chatbot Arena: https://chat.lmsys.org/

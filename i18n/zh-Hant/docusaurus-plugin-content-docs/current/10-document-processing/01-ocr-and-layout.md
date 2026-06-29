@@ -14,7 +14,7 @@
 
 ---
 
-## 典範轉移：傳統 OCR 與 Vision-LLM 的對比
+## 典範轉移：傳統 OCR 與 Vision-LLM 的對比 {#shift}
 
 | 特性 | 傳統 OCR（Tesseract/AWS Textract） | Vision-LLM（Gemini 3.1 Pro、GPT-5.5、Claude Opus 4.7） |
 |---------|-------------------------------------------|--------------------------------------------------------|
@@ -26,7 +26,7 @@
 
 ---
 
-## Vision-LLM 版面擷取
+## Vision-LLM 版面擷取 {#layout-extraction}
 
 標準工作流程是 **Screenshot-to-Markdown**（截圖轉 Markdown）。
 1. **點陣化（Rasterize）**：將 PDF 頁面轉換成圖片。
@@ -35,7 +35,7 @@
 
 ---
 
-## 閱讀順序與邏輯結構
+## 閱讀順序與邏輯結構 {#reading-order}
 
 > [!IMPORTANT]
 > 在原始的 RAG 做法中，一個常見的失敗是把同一段落跨欄拆斷。
@@ -52,7 +52,7 @@
 
 ---
 
-## 成本與延遲的取捨
+## 成本與延遲的取捨 {#tradeoffs}
 
 | 模型層級 | 使用情境 | 延遲 | 成本（1K 頁） |
 |------------|----------|---------|-----------------|
@@ -62,7 +62,7 @@
 
 ---
 
-## 面試題
+## 面試題 {#interview-questions}
 
 ### Q：既然已經有 Vision LLM，為什麼還會繼續使用 AWS Textract 或 Azure AI Search（OCR）？
 
@@ -80,7 +80,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Google DeepMind. "Gemini 2.0: Understanding Multi-column Documents" (2025)
 - OpenAI. "Vision Models for Document Understanding" (2025)
 - Tesseract v6. "The Integration of Hybrid Transformer OCR" (2025)

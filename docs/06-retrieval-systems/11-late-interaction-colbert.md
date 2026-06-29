@@ -17,7 +17,7 @@ Late Interaction is a retrieval paradigm that sits between fast-but-imprecise **
 
 ---
 
-## The Retrieval Architecture Spectrum
+## The Retrieval Architecture Spectrum {#spectrum}
 
 There are three fundamental architectures for neural retrieval. Understanding where late interaction fits is the key to the entire chapter.
 
@@ -62,7 +62,7 @@ flowchart LR
 
 ---
 
-## ColBERT Architecture
+## ColBERT Architecture {#colbert-architecture}
 
 ColBERT encodes queries and documents into **matrices of token-level embeddings** (not single vectors) and scores them using fine-grained token interactions.
 
@@ -105,7 +105,7 @@ Token Embeddings:
 
 ---
 
-## MaxSim: The Core Scoring Mechanism
+## MaxSim: The Core Scoring Mechanism {#maxsim}
 
 MaxSim (Maximum Similarity) is the operator that makes late interaction work. It is conceptually simple but surprisingly powerful.
 
@@ -145,7 +145,7 @@ Dot-product scores between each query token (rows) and document token (columns).
 
 ---
 
-## ColBERTv2 and PLAID Indexing
+## ColBERTv2 and PLAID Indexing {#colbertv2}
 
 The original ColBERT (2020) had a critical limitation: **storage**. Storing 128-dim vectors for every token in every document is expensive. A corpus of 10M documents with 200 tokens each would require ~256 GB of vector storage.
 
@@ -202,7 +202,7 @@ flowchart TD
 
 ---
 
-## Late Interaction vs. Alternatives
+## Late Interaction vs. Alternatives {#comparison}
 
 ### Comprehensive Comparison
 
@@ -235,7 +235,7 @@ flowchart TD
 
 ---
 
-## Implementation with RAGatouille
+## Implementation with RAGatouille {#ragatouille}
 
 RAGatouille (by Answer.AI) is the standard Python library for using ColBERT in RAG pipelines. It wraps the Stanford ColBERT codebase with a simple, high-level API.
 
@@ -314,7 +314,7 @@ response = chain.invoke("What features does the Enterprise plan include?")
 
 ---
 
-## Production Deployment Patterns
+## Production Deployment Patterns {#production}
 
 ### Pattern 1: ColBERT as Primary Retriever
 
@@ -372,7 +372,7 @@ Best for: maximum accuracy at medium scale. Expensive but covers all retrieval m
 
 ---
 
-## When to Choose ColBERT
+## When to Choose ColBERT {#when-to-choose}
 
 ### Decision Framework
 
@@ -400,7 +400,7 @@ flowchart TD
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Explain the difference between bi-encoders, cross-encoders, and late interaction models. When would you choose each?
 
@@ -441,7 +441,7 @@ The one area I would supplement ColBERT is with a parallel BM25 index for exact-
 
 ---
 
-## References
+## References {#references}
 - Khattab & Zaharia. "ColBERT: Efficient and Effective Passage Search" (SIGIR 2020)
 - Santhanam et al. "ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction" (NAACL 2022)
 - Santhanam et al. "PLAID: An Efficient Engine for Late Interaction Retrieval" (CIKM 2022)

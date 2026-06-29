@@ -15,7 +15,7 @@ Deploying LLM applications requires adapting traditional CI/CD practices for AI-
 
 ---
 
-## LLM CI/CD Challenges
+## LLM CI/CD Challenges {#llm-cicd-challenges}
 
 ### What Makes LLM Deployments Different
 
@@ -39,7 +39,7 @@ Deploying LLM applications requires adapting traditional CI/CD practices for AI-
 
 ---
 
-## Pipeline Architecture
+## Pipeline Architecture {#pipeline-architecture}
 
 ### Full Pipeline
 
@@ -57,7 +57,7 @@ flowchart TD
 
 ---
 
-## Testing Stages
+## Testing Stages {#testing-stages}
 
 ### Stage 1: Static Validation
 
@@ -197,7 +197,7 @@ class LLMEvaluationStage:
 
 ---
 
-## Quality Gates
+## Quality Gates {#quality-gates}
 
 ### Gate Configuration
 
@@ -249,7 +249,7 @@ QUALITY_THRESHOLDS = {
 
 ---
 
-## Deployment Strategies
+## Deployment Strategies {#deployment-strategies}
 
 ### Canary Deployment
 
@@ -316,7 +316,7 @@ class ShadowDeployer:
 
 ---
 
-## Rollback Procedures
+## Rollback Procedures {#rollback-procedures}
 
 ### Automated Rollback
 
@@ -354,7 +354,7 @@ class AutoRollback:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you test prompt changes before production?
 
@@ -400,7 +400,7 @@ The key is fast detection and action. A bad prompt in production for 10 minutes 
 
 ---
 
-## References
+## References {#references}
 
 - ML Ops: https://ml-ops.org/
 - LangSmith: https://docs.smith.langchain.com/

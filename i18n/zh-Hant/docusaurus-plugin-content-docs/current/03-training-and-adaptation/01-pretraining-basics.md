@@ -14,7 +14,7 @@
 
 ---
 
-## 預訓練目標
+## 預訓練目標 {#the-pretraining-objective}
 
 大多數現代 LLM 都是 **Decoder-only**，並使用 **因果語言建模（Causal Language Modeling, CLM）**：
 
@@ -27,7 +27,7 @@ Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 
 ---
 
-## 資料課程與品質
+## 資料課程與品質 {#data-curriculum-and-quality}
 
 關注重點已經從「更多資料」轉向「更好的課程」。
 
@@ -66,7 +66,7 @@ Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 
 ---
 
-## 訓練穩定性
+## 訓練穩定性 {#training-stability}
 
 在「超大（Ultra）」規模（10 萬顆以上 GPU）下進行訓練，會面臨巨大的穩定性問題。
 
@@ -81,7 +81,7 @@ Loss = -sum(log P(token_i | token_1, ..., token_{i-1}))
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：如果 Chinchilla 說 160B tokens 才是最佳，為什麼還要用 15T tokens 去訓練一個 8B 模型？
 
@@ -98,7 +98,7 @@ Chinchilla 最佳化關注的是如何最有效運用一筆固定的 **訓練** 
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Kaplan et al. "Scaling Laws for Neural Language Models" (2020)
 - Hoffmann et al. "Training Compute-Optimal Large Language Models" (Chinchilla, 2022)
 - Meta AI. "The Llama 3/4 Herd of Models" (2024/2025)

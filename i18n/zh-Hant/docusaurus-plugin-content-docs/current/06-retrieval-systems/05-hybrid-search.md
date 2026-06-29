@@ -17,7 +17,7 @@
 
 ---
 
-## 為什麼要用混合搜尋
+## 為什麼要用混合搜尋 {#why-hybrid-search}
 
 稠密檢索與稀疏檢索沒有哪一種是全面勝出的。各自在不同的查詢類型上表現出色。
 
@@ -52,7 +52,7 @@ Dense search may miss this because:
 
 ---
 
-## 稠密 vs 稀疏檢索
+## 稠密 vs 稀疏檢索 {#dense-vs-sparse-retrieval}
 
 ### 稠密（語意）檢索
 
@@ -110,7 +110,7 @@ def sparse_search(query: str, top_k: int = 10) -> list[Result]:
 
 ---
 
-## 混合搜尋架構
+## 混合搜尋架構 {#hybrid-search-architectures}
 
 ### 架構 1：平行檢索搭配融合
 
@@ -173,7 +173,7 @@ flowchart TD
 
 ---
 
-## 融合方法
+## 融合方法 {#fusion-methods}
 
 ### 倒數排名融合（RRF）
 
@@ -285,7 +285,7 @@ def z_score_normalize(results: list[Result]) -> list[Result]:
 
 ---
 
-## 學習式稀疏嵌入（SPLADE）
+## 學習式稀疏嵌入（SPLADE） {#learned-sparse-embeddings-splade}
 
 在混合搜尋的稀疏這一端，生產環境的技術堆疊已經從 BM25（單純的詞頻）邁向**學習式稀疏嵌入**。
 
@@ -328,7 +328,7 @@ class SpladeEncoder:
 
 ---
 
-## 實作模式
+## 實作模式 {#implementation-patterns}
 
 ### 模式 1：Elasticsearch + 向量資料庫
 
@@ -398,7 +398,7 @@ def hybrid_search_weaviate(
 
 ---
 
-## 調校與最佳化
+## 調校與最佳化 {#tuning-and-optimization}
 
 ### Alpha 調校
 
@@ -474,7 +474,7 @@ def hybrid_search(query: str, final_k: int = 10):
 
 ---
 
-## 生產環境考量
+## 生產環境考量 {#production-considerations}
 
 ### 延遲預算
 
@@ -533,7 +533,7 @@ def hybrid_search_with_fallback(query: str, top_k: int = 10) -> list[Result]:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：什麼情況下你會選擇混合搜尋，而不是純稠密搜尋？
 
@@ -590,7 +590,7 @@ alpha 參數控制兩者的平衡（通常 alpha 代表稠密的權重）：
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Cormack et al. "Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods" (2009)
 - Formal et al. "SPLADE: Sparse Lexical and Expansion Model for First Stage Ranking" (2021/2025)

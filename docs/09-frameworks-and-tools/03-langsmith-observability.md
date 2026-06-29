@@ -14,7 +14,7 @@ In 2023, LLM observability was "logging strings." Now it is **Full Trajectory De
 
 ---
 
-## The Observability Pyramid
+## The Observability Pyramid {#pyramid}
 
 1. **Top (Value)**: Is the user task getting completed? (Success Rate)
 2. **Middle (Flow)**: Which agent node is the bottleneck? (Latency/Cost per node)
@@ -22,7 +22,7 @@ In 2023, LLM observability was "logging strings." Now it is **Full Trajectory De
 
 ---
 
-## Tracing and Trajectories
+## Tracing and Trajectories {#tracing}
 
 LangSmith automatically captures every node in a **LangGraph** or **Chain**.
 - **Metadata Tagging**: Tag every trace with `user_id`, `model_tier`, and `is_canary`.
@@ -30,7 +30,7 @@ LangSmith automatically captures every node in a **LangGraph** or **Chain**.
 
 ---
 
-## Unit Testing for LLMs (Datasets)
+## Unit Testing for LLMs (Datasets) {#datasets}
 
 Building an LLM app without a **Dataset** is "vibe-based development."
 - **Gold Standard Datasets**: A collection of `(Input, Expected_Output)` pairs.
@@ -55,7 +55,7 @@ LangSmith allows for **Experiment Branching**.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is "Trace Attribution" critical for Staff-level engineers?
 
@@ -69,7 +69,7 @@ The cost is offset by **Developer Productivity** and **Token Efficiency**. A sin
 
 ---
 
-## References
+## References {#references}
 - LangChain Team. "LangSmith: The Unified Evaluation Platform" (2025)
 - Microsoft. "Tracing and Debugging Multi-Agent Systems" (2025)
 - Weights & Biases. "Integrating LLOps into the CI/CD Pipeline" (2024/2025)

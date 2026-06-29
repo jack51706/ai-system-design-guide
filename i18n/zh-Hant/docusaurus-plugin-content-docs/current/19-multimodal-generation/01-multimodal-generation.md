@@ -15,7 +15,7 @@
 
 ---
 
-## 生產環境管線模式
+## 生產環境管線模式 {#production-pipeline-patterns}
 
 這是比任何模型都更為長久的部分。
 
@@ -31,7 +31,7 @@
 
 ---
 
-## 來源出處與安全
+## 來源出處與安全 {#provenance-and-safety}
 
 技術不斷翻新；但標示的義務，以及無法完美執行該義務這件事，是長久不變的。兩個互補的層級，**而且兩者都可被移除。**
 
@@ -45,7 +45,7 @@
 
 ---
 
-## 評估生成品質
+## 評估生成品質 {#evaluating-generative-quality}
 
 兩個無可迴避的事實：自動化指標很弱，而人類偏好才是真正的基準真相（ground truth），但很昂貴。
 
@@ -57,7 +57,7 @@
 
 ---
 
-## 模型版圖
+## 模型版圖 {#the-model-landscape}
 
 保持輕量且標註日期，因為它每個月都在翻新，而且流通中的規格表細節有許多來自低品質的來源。
 
@@ -67,7 +67,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：設計一個把腳本轉成有旁白、有配樂之影片的服務骨幹。難的部分是什麼？
 
@@ -81,7 +81,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - [C2PA specification](https://spec.c2pa.org/)（Content Credentials）
 - "Invisible Image Watermarks Are Provably Removable Using Generative AI"（NeurIPS 2024, arXiv:2306.01953）

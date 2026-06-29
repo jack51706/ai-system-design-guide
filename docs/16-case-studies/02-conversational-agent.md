@@ -16,7 +16,7 @@ This case study walks through designing a production customer support agent for 
 
 ---
 
-## Problem Statement
+## Problem Statement {#problem-statement}
 
 **Company:** B2B SaaS platform with 50K enterprise customers
 
@@ -34,7 +34,7 @@ This case study walks through designing a production customer support agent for 
 
 ---
 
-## Requirements Analysis
+## Requirements Analysis {#requirements-analysis}
 
 ### Functional Requirements
 
@@ -69,7 +69,7 @@ This case study walks through designing a production customer support agent for 
 
 ---
 
-## Architecture Design
+## Architecture Design {#architecture-design}
 
 ### High-Level Architecture
 
@@ -157,7 +157,7 @@ stateDiagram-v2
 
 ---
 
-## Component Deep Dives
+## Component Deep Dives {#component-deep-dives}
 
 ### Intent Classification (Dec 2025)
 
@@ -206,7 +206,7 @@ class ResponseGenerator:
 
 ---
 
-## Reliability Patterns
+## Reliability Patterns {#reliability-patterns}
 
 ### Confidence-Based Escalation
 
@@ -309,7 +309,7 @@ class ConversationMemory:
 
 ---
 
-## Evaluation and Monitoring
+## Evaluation and Monitoring {#evaluation-and-monitoring}
 
 ### Quality Metrics
 
@@ -353,7 +353,7 @@ class QualityMonitor:
 
 ---
 
-## Cost Analysis
+## Cost Analysis {#cost-analysis}
 
 ### Per-Conversation Cost Breakdown (Dec 2025)
 
@@ -378,7 +378,7 @@ class QualityMonitor:
 
 ---
 
-## Lessons Learned
+## Lessons Learned {#lessons-learned}
 
 ### What Worked
 
@@ -402,7 +402,7 @@ class QualityMonitor:
 
 ---
 
-## Interview Walkthrough
+## Interview Walkthrough {#interview-walkthrough}
 
 **Interviewer:** "Design an AI customer support system for a SaaS company."
 

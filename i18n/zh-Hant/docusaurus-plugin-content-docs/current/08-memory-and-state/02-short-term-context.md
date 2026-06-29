@@ -14,7 +14,7 @@
 
 ---
 
-## 上下文生命週期
+## 上下文生命週期 {#lifecycle}
 
 上下文會經歷三個階段：
 1. **接收（Intake）**：使用者查詢 + 近期歷史 + 系統指令。
@@ -40,7 +40,7 @@
 
 ---
 
-## 滑動視窗 vs. 摘要
+## 滑動視窗 vs. 摘要 {#sliding-vs-summary}
 
 | 方法 | 運作機制 | 優點 | 缺點 |
 |--------|-----------|-----|-----|
@@ -58,7 +58,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：「模型上下文視窗（Model Context Window）」與「應用程式上下文視窗（Application Context Window）」有什麼差別？
 
@@ -72,7 +72,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - vLLM Team. "PagedAttention: Software-Defined Memory for LLM Serving" (2024/2025)
 - NVIDIA. "Optimizing Inference with TensorRT-LLM" (2025)
 - Anthropic. "Prompt Caching: Scale while reducing costs" (2024/2025)

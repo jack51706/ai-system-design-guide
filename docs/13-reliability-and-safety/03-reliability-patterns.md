@@ -16,7 +16,7 @@ Production LLM systems need robust reliability patterns beyond basic retry logic
 
 ---
 
-## Reliability Challenges
+## Reliability Challenges {#reliability-challenges}
 
 ### LLM-Specific Failure Modes
 
@@ -39,7 +39,7 @@ Production LLM systems need robust reliability patterns beyond basic retry logic
 
 ---
 
-## Retry Patterns
+## Retry Patterns {#retry-patterns}
 
 ### Exponential Backoff with Jitter
 
@@ -133,7 +133,7 @@ class LLMRetryPolicy:
 
 ---
 
-## Circuit Breaker
+## Circuit Breaker {#circuit-breaker}
 
 ### Implementation
 
@@ -245,7 +245,7 @@ class ResilientLLMClient:
 
 ---
 
-## Bulkhead Pattern
+## Bulkhead Pattern {#bulkhead-pattern}
 
 ### Isolating Resources
 
@@ -315,7 +315,7 @@ class BulkheadedLLMClient:
 
 ---
 
-## Timeout Strategies
+## Timeout Strategies {#timeout-strategies}
 
 ### Layered Timeouts
 
@@ -395,7 +395,7 @@ class AdaptiveTimeout:
 
 ---
 
-## Graceful Degradation
+## Graceful Degradation {#graceful-degradation}
 
 ### Degradation Levels
 
@@ -455,7 +455,7 @@ class GracefulDegrader:
 
 ---
 
-## Multi-Provider Failover
+## Multi-Provider Failover {#multi-provider-failover}
 
 ### Provider Manager
 
@@ -546,7 +546,7 @@ class HedgedRequest:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you design for high availability in LLM systems?
 
@@ -589,7 +589,7 @@ With circuit breaker: after detecting the outage, requests fail fast. System rem
 
 ---
 
-## References
+## References {#references}
 
 - Microsoft Resilience Patterns: https://learn.microsoft.com/en-us/azure/architecture/patterns/
 - Netflix Hystrix: https://github.com/Netflix/Hystrix

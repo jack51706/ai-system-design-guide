@@ -14,7 +14,7 @@ Quantization is the process of reducing the precision of model weights (e.g., fr
 
 ---
 
-## The Precision-Performance Tradeoff
+## The Precision-Performance Tradeoff {#precision-performance}
 
 Traditional models use **BF16** (16-bit). Quantization seeks to reduce this to **8-bit (FP8)**, **4-bit (Int4/NF4)**, or even **1.5-bit (BitNet)**.
 
@@ -42,7 +42,7 @@ Hardware-native quantization supported by Nvidia's Transformer Engine.
 
 ---
 
-## GGUF vs. EXL2
+## GGUF vs. EXL2 {#formats}
 
 ### GGUF (llama.cpp)
 - **Deployment**: CPU + GPU offloading. 
@@ -56,7 +56,7 @@ Hardware-native quantization supported by Nvidia's Transformer Engine.
 
 ---
 
-## KV Cache Quantization (The VRAM Saver)
+## KV Cache Quantization (The VRAM Saver) {#kv-cache}
 
 In long-context RAG (1M+ tokens), the **KV Cache** often consumes more VRAM than the model weights themselves.
 
@@ -75,7 +75,7 @@ Instead of quantizing a model *after* it's trained (Post-training Quantization),
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why do we use NF4 instead of standard Float4 for QLoRA?
 
@@ -89,7 +89,7 @@ GPTQ is a "Layer-wise" quantization method that minimizes the mean squared error
 
 ---
 
-## References
+## References {#references}
 - Dettmers et al. "QLoRA: Efficient Finetuning of Quantized LLMs" (2023)
 - Frantar et al. "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers" (2022)
 - Lin et al. "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration" (2023)

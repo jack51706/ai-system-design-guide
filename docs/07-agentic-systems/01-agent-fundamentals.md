@@ -14,7 +14,7 @@ Agents are LLM-powered systems that move beyond "chat" into "autonomous problem 
 
 ---
 
-## The Agent Formula
+## The Agent Formula {#formula}
 
 Modern agency is often described as:
 `Agent = Reasoning Model + Tool Use + Persistent Memory + Environment Feedback`
@@ -48,7 +48,7 @@ Not every autonomous system is an "Agent." We categorize them by the **Level of 
 
 ---
 
-## Core Components
+## Core Components {#components}
 
 ### 1. The Reasoning Model (The Executive)
 The CPU of the agent. It determines the "Path to Success."
@@ -64,7 +64,7 @@ Interfaces (APIs, Browsers, DBs) that allow the agent to affect the world.
 
 ---
 
-## The Agent Lifecycle
+## The Agent Lifecycle {#lifecycle}
 
 1. **Intake**: Receive user goal.
 2. **Decomposition**: Break goal into sub-steps.
@@ -74,7 +74,7 @@ Interfaces (APIs, Browsers, DBs) that allow the agent to affect the world.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is a "Reasoning Model" (like Claude Opus 4.7 or GPT-5.5 with extended thinking) better for agency than a standard LLM?
 
@@ -88,7 +88,7 @@ Agentic Drift occurs when the sub-steps take the agent so far from the original 
 
 ---
 
-## References
+## References {#references}
 - Kahneman, D. "Thinking, Fast and Slow" (applied to AI, 2025)
 - OpenAI. "Learning to Reason with LLMs" (2024)
 - DeepSeek. "R1: Cold-Start Data for Reasoning" (2025)

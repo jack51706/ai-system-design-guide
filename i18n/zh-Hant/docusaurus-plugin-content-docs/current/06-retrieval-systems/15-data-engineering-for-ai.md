@@ -18,7 +18,7 @@
 
 ---
 
-## 共用管線
+## 共用管線 {#the-shared-pipeline}
 
 核心理念是：一條管線，兩種消費者。RAG 需要文件經過解析、清理、去重、分塊、豐富化與嵌入。微調需要範例經過解析、清理、去重、品質過濾、對評估集做去汙染、平衡，再格式化。前五個階段是**共用**的；兩者只在尾端分流。
 
@@ -42,7 +42,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## 擷取
+## 擷取 {#ingestion}
 
 輸入是一堆異質檔案（PDF、掃描檔、office 文件、HTML、email、圖片）。你必須偵測每個檔案是什麼，把它導向正確的解析器，並產出一份正規化的結構化表示。
 
@@ -52,7 +52,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## 清理與正規化
+## 清理與正規化 {#cleaning-and-normalization}
 
 共用的第一道品質關卡：
 - **樣板移除。** 移除導覽列、廣告、頁首、頁尾、cookie 橫幅。針對大規模 HTML，標準做法是使用內容抽取函式庫；FineWeb 專案發現，用這類工具從原始網頁封存檔中抽取，勝過使用預先抽取好的文字（後者「保留了過多樣板」），所以這屬於上游品質問題，而非表面修飾。
@@ -64,7 +64,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## 去重
+## 去重 {#deduplication}
 
 去重是槓桿最高的階段，也是「共用基礎設施」最清楚的範例，因為它能從三個面向帶來回報。奠基性的成果（Lee et al., arXiv:2107.06499）回報，對訓練資料去重能讓模型輸出記憶下來的文字的頻率降低約 10 倍，以更少的步數達到相等或更佳的準確率，而且關鍵在於，**它能減少訓練集與測試集的重疊，所以去重同時也是去汙染。** 它也藉由減少對重複 PII 的記憶來緩解隱私風險。
 
@@ -77,7 +77,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## PII、同意與治理
+## PII、同意與治理 {#pii-consent-and-governance}
 
 **PII 偵測與遮蔽。** Microsoft Presidio（MIT 授權）是開源標準：一個透過 NER 加上正規表示式、檢核碼與上下文詞彙來偵測實體的 Analyzer，以及一個能對文字、圖片（搭配 OCR）與結構化資料進行遮蔽、替換、遮罩、雜湊或加密的 Anonymizer，可在語料庫規模上部署。由於去重能減少重複所驅動的記憶，隱私與去重是連動的。
 
@@ -85,7 +85,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## 品質過濾與豐富化
+## 品質過濾與豐富化 {#quality-filtering-and-enrichment}
 
 **品質過濾**分成兩大類。**啟發式**規則（長度、符號對詞彙比、重複度、停用詞出現情況）便宜，但無法抓到複雜的內容雜訊。**模型式分類器**為品質或教育價值評分；FineWeb-Edu 在 LLM 生成的品質標註上訓練了一個輕量分類器，並回報了可觀的下游增益，能以遠少於原本的 token 量匹配上一個更大的語料庫。需要標註的警語是：分類器過濾不是免費的午餐（「資料品質錯覺」的研究主張它可能校準失準），所以**永遠要在下游評估上對過濾器做消融，絕不要憑名聲信任它們。**
 
@@ -97,7 +97,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## 管線與編排
+## 管線與編排 {#pipelines-and-orchestration}
 
 **批次 vs 串流。** 預訓練語料的準備與大量 RAG 索引建立屬於批次作業（在物件儲存上用 Spark 或 Ray）。RAG 的*新鮮度*是增量式的：當來源文件變動時，只重新擷取差異部分。Change Data Capture 即時捕捉資料列層級的來源變動，對 RAG 而言這對應到「偵測變動、新增與刪除的文件，只重新解析並重新嵌入那些文件，然後在向量資料庫中 upsert 或刪除」，避免整體重建索引，並防止陳舊或孤立的向量。
 
@@ -107,7 +107,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## 微調用資料
+## 微調用資料 {#data-for-fine-tuning}
 
 從 RAG 分流出去的尾端：
 - **精選勝過數量。** 一小組精心精選的範例，往往勝過一大堆平庸的範例；品質三要素是難度、品質與多樣性。（確切的「1,000 勝過 10,000」這類數字只是示意，並非定律。）
@@ -116,7 +116,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## 失效模式
+## 失效模式 {#failure-modes}
 
 1. **信任副檔名**而非魔術位元組偵測（用錯解析器，悄悄產出垃圾）。
 2. **用純文字路徑解析掃描型 PDF**（抽取結果為空或不完整；把圖片型 PDF 導向 OCR 或多模態）。
@@ -134,7 +134,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼去重是 AI 資料管線中最重要的階段之一？
 
@@ -148,7 +148,7 @@ CROSS-CUTTING   orchestration (Airflow/Dagster) · lineage (OpenLineage) · vers
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Lee et al., "Deduplicating Training Data Makes Language Models Better" arXiv:2107.06499
 - Abbas et al., "SemDeDup" arXiv:2303.09540

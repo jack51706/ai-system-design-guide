@@ -14,7 +14,7 @@
 
 ---
 
-## 教師-學生範式
+## 教師-學生範式 {#teacher-student-paradigm}
 
 小型模型（例如 Llama 4 8B、Gemini 3.1 Flash、Claude Haiku 4.5）並不是單純用原始網路資料訓練出來的。它們是用一個遠遠更大的模型（例如 GPT-5.5、Claude Opus 4.7 或 Llama 4 405B）所生成或篩選的**合成資料**（Synthetic Data）來訓練的。
 
@@ -25,7 +25,7 @@
 
 ---
 
-## 蒸餾如何運作
+## 蒸餾如何運作 {#how-distillation-works}
 
 ### 1. 硬標籤蒸餾（Hard Label Distillation）
 學生從教師的最終預測中學習（例如某個問題的答案）。
@@ -41,7 +41,7 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 
 ---
 
-## 特徵蒸餾 vs. 輸出蒸餾
+## 特徵蒸餾 vs. 輸出蒸餾 {#feature-vs-output}
 
 ### 輸出蒸餾（標準作法）
 學生去匹配教師的文字回應。
@@ -55,7 +55,7 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 
 ---
 
-## 從證明進行自我蒸餾（SDP）
+## 從證明進行自我蒸餾（SDP） {#self-distillation-proof}
 
 **推理能力的突破。**
 像 o1、DeepSeek-R1 和 Claude Opus 4.7 這類模型，利用 SDP 在沒有新的人類資料下持續進步。
@@ -68,14 +68,14 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 
 ---
 
-## 量化感知蒸餾
+## 量化感知蒸餾 {#quantization-aware-distillation}
 
 標準的量化（例如 16-bit 轉 4-bit）會造成準確率小幅下降。
 **解法**：在量化過程*當中*運用知識蒸餾。讓 16-bit 模型擔任教師，引導 4-bit 模型把誤差降到最低。這正是現代 4-bit 模型能達到 16-bit 表現水準的方法。
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：為什麼一個經過蒸餾的 8B 模型，會比一個用相同 tokens 從零開始訓練的 8B 模型更好？
 
@@ -91,7 +91,7 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Hinton et al. "Distilling the Knowledge in a Neural Network" (2015)
 - Gou et al. "Knowledge Distillation: A Survey" (2021)
 - DeepSeek. "DeepSeek-R1: Incentivizing Reasoning Capability" (2025)

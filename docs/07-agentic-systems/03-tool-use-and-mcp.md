@@ -20,7 +20,7 @@ Tools are the "hands" of an agent. The industry has standardized on the **Model 
 
 ---
 
-## The Tool-Use Mechanism
+## The Tool-Use Mechanism {#mechanism}
 
 Tool use occurs in a 3-step cycle:
 1. **Schema Presentation**: The model is given a JSON schema of the tools.
@@ -31,7 +31,7 @@ Tool use occurs in a 3-step cycle:
 
 ---
 
-## Model Context Protocol (MCP)
+## Model Context Protocol (MCP) {#mcp}
 
 Developed by Anthropic (released November 2024) and now the universal tool-integration standard across Anthropic, OpenAI, Google, Microsoft, and AWS, MCP allows models to interact with data and tools regardless of where they live. Governance moved to the Linux Foundation's Agentic AI Foundation in December 2025.
 
@@ -46,7 +46,7 @@ Developed by Anthropic (released November 2024) and now the universal tool-integ
 
 ---
 
-## Defining High-Precision Tools
+## Defining High-Precision Tools {#precision}
 
 A production-quality tool must include:
 
@@ -68,7 +68,7 @@ class ExecuteSQL(PydanticModel):
 
 ---
 
-## MCP vs. OpenAI Function Calling
+## MCP vs. OpenAI Function Calling {#mcp-vs-openai}
 
 | Feature | OpenAI Native | MCP |
 |---------|---------------|-----|
@@ -79,14 +79,14 @@ class ExecuteSQL(PydanticModel):
 
 ---
 
-## Streaming Tool Calls
+## Streaming Tool Calls {#streaming}
 
 Frontier models support **Partial Tool Speculation**.
 Instead of waiting for the full JSON to generate, the system starts "prefetching" tool results as soon as the tool name and critical IDs are visible in the stream. This reduces perceived latency by **400-800ms**.
 
 ---
 
-## MCP 2.0: Streamable HTTP & Auth
+## MCP 2.0: Streamable HTTP & Auth {#mcp-updates}
 
 The MCP 2.0 specification (ratified March 2026) introduced two major changes:
 
@@ -117,7 +117,7 @@ This enables enterprise MCP servers with fine-grained access control per tenant.
 
 ---
 
-## MCP Roadmap & Ecosystem
+## MCP Roadmap & Ecosystem {#mcp-roadmap}
 
 As of May 2026, over 2,300 public MCP servers exist and major AI tools (Claude, Cursor, Windsurf) support it natively. MCP has crossed from developer tooling into consumer hardware (e.g., Elgato Stream Deck 7.4 shipped with MCP support in March 2026). Microsoft adopted MCP as a primary integration standard for Windows AI Foundry and Microsoft 365 Copilot.
 
@@ -136,7 +136,7 @@ The MCP roadmap focuses on these pillars:
 
 ---
 
-## Agent-to-Agent Protocol (A2A)
+## Agent-to-Agent Protocol (A2A) {#a2a}
 
 Google introduced the **Agent2Agent (A2A)** protocol in April 2025 to solve a problem MCP does not address: how do **agents from different vendors** communicate with each other (not just with tools)?
 
@@ -174,7 +174,7 @@ A2A tasks support long-running operations with streaming status updates, making 
 
 ---
 
-## The Protocol Landscape: MCP + A2A + ACP
+## The Protocol Landscape: MCP + A2A + ACP {#protocol-landscape}
 
 In production enterprise systems, multiple protocols operate at different layers simultaneously:
 
@@ -282,7 +282,7 @@ The pipeline is deliberately conservative. Every layer can reject; only the resu
 
 ---
 
-## Computer-Use Tools (Anthropic)
+## Computer-Use Tools (Anthropic) {#computer-use}
 
 Claude 3.5+ introduced native **computer-use** tools - the model can directly control a desktop or web browser. These are available via the Anthropic API:
 
@@ -319,7 +319,7 @@ response = client.beta.messages.create(
 
 ---
 
-## Context7: Live Documentation MCP
+## Context7: Live Documentation MCP {#context7}
 
 One of the most practical MCP servers in 2026 is **Context7** - it resolves the "stale training data" problem for coding agents:
 
@@ -350,7 +350,7 @@ Claude automatically calls `resolve-library-id` and `get-library-docs` before wr
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How does MCP solve the "Too Many Tools" problem (Schema Overload)?
 
@@ -369,7 +369,7 @@ They address **different communication layers**. MCP is the agent-to-tool protoc
 
 ---
 
-## References
+## References {#references}
 - Anthropic. "The Model Context Protocol Specification" (2025)
 - Google. "Agent2Agent Protocol Specification v0.3" (2026)
 - Linux Foundation. "Agent2Agent Protocol Project" (2025)

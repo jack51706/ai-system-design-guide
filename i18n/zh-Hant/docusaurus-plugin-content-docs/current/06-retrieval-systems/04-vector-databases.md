@@ -19,7 +19,7 @@
 
 ---
 
-## 什麼是向量資料庫
+## 什麼是向量資料庫 {#what-is-a-vector-database}
 
 向量資料庫儲存嵌入（密集向量），並能對其進行快速的相似度搜尋。
 
@@ -49,7 +49,7 @@ Vector DB:           SELECT * FROM docs ORDER BY similarity(embedding, query_emb
 
 ---
 
-## 向量搜尋基礎
+## 向量搜尋基礎 {#vector-search-fundamentals}
 
 ### 精確搜尋 vs 近似搜尋
 
@@ -91,7 +91,7 @@ ANN 索引以部分準確度換取速度。請依你的需求進行調校。
 
 ---
 
-## 索引演算法
+## 索引演算法 {#indexing-algorithms}
 
 ### HNSW（Hierarchical Navigable Small World，階層式可導航小世界）
 
@@ -208,7 +208,7 @@ flowchart TD
 
 ---
 
-## 競爭格局
+## 競爭格局 {#competitive-landscape}
 
 ### 向量原生（專用）
 
@@ -229,7 +229,7 @@ flowchart TD
 
 ---
 
-## 資料庫詳細比較
+## 資料庫詳細比較 {#detailed-database-comparison}
 
 ### 功能矩陣
 
@@ -247,7 +247,7 @@ flowchart TD
 
 ---
 
-## 元資料過濾
+## 元資料過濾 {#metadata-filtering}
 
 對於多租戶與過濾用例至關重要。
 
@@ -281,7 +281,7 @@ results = client.search(
 
 ---
 
-## 查詢模式
+## 查詢模式 {#query-patterns}
 
 ### 模式 1：簡單語意搜尋
 
@@ -357,7 +357,7 @@ def multi_vector_search(queries: list[str], top_k: int = 5) -> list[Document]:
 
 ---
 
-## 生產環境營運
+## 生產環境營運 {#production-operations}
 
 ### 容量規劃
 
@@ -480,7 +480,7 @@ def alert_rules():
 
 ---
 
-## 託管 vs 自架（TCO 分析）
+## 託管 vs 自架（TCO 分析） {#managed-vs-self-hosted-tco-analysis}
 
 ### 成本比較
 
@@ -542,7 +542,7 @@ def estimate_self_hosted_cost(
 
 ---
 
-## 選型框架
+## 選型框架 {#selection-framework}
 
 ### 決策樹
 
@@ -584,7 +584,7 @@ flowchart TD
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你會如何在 Pinecone 與自架方案之間做選擇？
 
@@ -682,7 +682,7 @@ results = index.query(vector=query, namespace=tenant_id)
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Malkov and Yashunin. "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs" (HNSW, 2018)
 - Microsoft Research. "Vamana/DiskANN: A Disk-based Index for ANN Search" (2019/2023)

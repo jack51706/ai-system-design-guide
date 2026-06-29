@@ -20,7 +20,7 @@ Guardrails are systems that constrain LLM behavior to ensure safe, reliable outp
 
 ---
 
-## Why Guardrails Matter
+## Why Guardrails Matter {#why-guardrails-matter}
 
 ### The Reliability Challenge
 
@@ -45,7 +45,7 @@ LLMs are probabilistic and can produce:
 
 ---
 
-## Types of Guardrails
+## Types of Guardrails {#types-of-guardrails}
 
 ### Defense in Depth
 
@@ -60,7 +60,7 @@ flowchart TD
 
 ---
 
-## Input Guardrails
+## Input Guardrails {#input-guardrails}
 
 ### Topic Classification
 
@@ -177,7 +177,7 @@ class InputLimitsGuardrail:
 
 ---
 
-## Output Guardrails
+## Output Guardrails {#output-guardrails}
 
 ### Content Safety Filter
 
@@ -280,7 +280,7 @@ class FactualityGuardrail:
 
 ---
 
-## Prompt Injection Defense
+## Prompt Injection Defense {#prompt-injection-defense}
 
 ### Detection
 
@@ -384,7 +384,7 @@ Provide a helpful response.
 
 ---
 
-## Hallucination Mitigation
+## Hallucination Mitigation {#hallucination-mitigation}
 
 ### Multi-Layer Approach
 
@@ -496,7 +496,7 @@ class AbstentionDetector:
 
 ---
 
-## Structured Output Validation
+## Structured Output Validation {#structured-output-validation}
 
 ### JSON Schema Validation
 
@@ -578,7 +578,7 @@ class StructuredOutputRetry:
 
 ---
 
-## Action Safety
+## Action Safety {#action-safety}
 
 ### Action Validation
 
@@ -677,7 +677,7 @@ class SandboxedExecutor:
 
 ---
 
-## Fallback Strategies
+## Fallback Strategies {#fallback-strategies}
 
 ### Graceful Degradation
 
@@ -749,7 +749,7 @@ def handle_low_confidence(query: str, response: str, metadata: dict):
 
 ---
 
-## Guardrail Architecture
+## Guardrail Architecture {#guardrail-architecture}
 
 ### Layered Pipeline
 
@@ -843,7 +843,7 @@ class GuardrailMetrics:
 
 ---
 
-## Guardrail Frameworks
+## Guardrail Frameworks {#guardrail-frameworks}
 
 ### NeMo Guardrails (NVIDIA)
 
@@ -901,7 +901,7 @@ result = guard(
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you prevent hallucination in a production RAG system?
 
@@ -1001,7 +1001,7 @@ The balance is: enough guardrails to be safe, not so many that the bot is useles
 
 ---
 
-## References
+## References {#references}
 
 - NeMo Guardrails: https://github.com/NVIDIA/NeMo-Guardrails
 - Guardrails AI: https://github.com/guardrails-ai/guardrails

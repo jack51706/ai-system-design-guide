@@ -16,7 +16,7 @@
 
 ---
 
-## 問題陳述
+## 問題陳述 {#problem-statement}
 
 **公司：** 擁有 50K 企業客戶的 B2B SaaS 平台
 
@@ -34,7 +34,7 @@
 
 ---
 
-## 需求分析
+## 需求分析 {#requirements-analysis}
 
 ### 功能性需求
 
@@ -69,7 +69,7 @@
 
 ---
 
-## 架構設計
+## 架構設計 {#architecture-design}
 
 ### 高階架構
 
@@ -157,7 +157,7 @@ stateDiagram-v2
 
 ---
 
-## 元件深入剖析
+## 元件深入剖析 {#component-deep-dives}
 
 ### 意圖分類（2025 年 12 月）
 
@@ -206,7 +206,7 @@ class ResponseGenerator:
 
 ---
 
-## 可靠性模式
+## 可靠性模式 {#reliability-patterns}
 
 ### 以信心度為基礎的升級
 
@@ -309,7 +309,7 @@ class ConversationMemory:
 
 ---
 
-## 評估與監控
+## 評估與監控 {#evaluation-and-monitoring}
 
 ### 品質指標
 
@@ -353,7 +353,7 @@ class QualityMonitor:
 
 ---
 
-## 成本分析
+## 成本分析 {#cost-analysis}
 
 ### 每次對話成本明細（2025 年 12 月）
 
@@ -378,7 +378,7 @@ class QualityMonitor:
 
 ---
 
-## 經驗教訓
+## 經驗教訓 {#lessons-learned}
 
 ### 哪些做法有效
 
@@ -402,7 +402,7 @@ class QualityMonitor:
 
 ---
 
-## 面試演練
+## 面試演練 {#interview-walkthrough}
 
 **面試官：** 「為一家 SaaS 公司設計一套 AI 客戶支援系統。」
 

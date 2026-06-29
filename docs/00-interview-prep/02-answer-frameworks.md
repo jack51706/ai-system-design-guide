@@ -17,7 +17,7 @@ Strong interview answers follow consistent structures. This chapter provides fra
 
 ---
 
-## System Design Framework (SPIDER)
+## System Design Framework (SPIDER) {#system-design-framework-spider}
 
 Use this framework for any system design question involving AI components. The full motion with rough time budget per phase:
 
@@ -158,7 +158,7 @@ flowchart LR
 
 ---
 
-## Worked Example: SPIDER in a 45-Minute Session
+## Worked Example: SPIDER in a 45-Minute Session {#worked-example-spider-in-a-45-minute-session}
 
 A condensed transcript showing how the framework sounds in a real loop. The prompt: "Design a document Q&A system for a 10,000-employee company." Notes in brackets mark the framework step and the clock.
 
@@ -235,7 +235,7 @@ Anything else you'd like me to go deeper on?"
 
 ---
 
-## Concept Explanation Framework (ETA)
+## Concept Explanation Framework (ETA) {#concept-explanation-framework-eta}
 
 Use this for conceptual questions like "Explain RAG" or "What is speculative decoding?"
 
@@ -287,7 +287,7 @@ server-side KV cache persistence for shared prefixes."
 
 ---
 
-## Tradeoff Analysis Framework
+## Tradeoff Analysis Framework {#tradeoff-analysis-framework}
 
 When asked to compare options or justify a decision, use this structure.
 
@@ -336,7 +336,7 @@ abstracting the embedding interface."
 
 ---
 
-## Debugging and Troubleshooting Framework
+## Debugging and Troubleshooting Framework {#debugging-and-troubleshooting-framework}
 
 When asked "How would you debug X?" or "The system is doing Y, how do you fix it?" The 4-step diagnostic motion:
 
@@ -392,7 +392,7 @@ flowchart TD
 
 ---
 
-## Behavioral Questions Framework (STAR-L)
+## Behavioral Questions Framework (STAR-L) {#behavioral-questions-framework-star-l}
 
 For behavioral questions in AI roles, use STAR-L (STAR + Learnings).
 
@@ -446,7 +446,7 @@ launching. I also build evaluation suites earlier in the process."
 
 ---
 
-## Handling Unknown Topics
+## Handling Unknown Topics {#handling-unknown-topics}
 
 It is acceptable to not know everything. Handle unknowns professionally.
 
@@ -476,7 +476,7 @@ find them and what questions to ask when evaluating it."
 
 ---
 
-## Common Mistakes and How to Avoid Them
+## Common Mistakes and How to Avoid Them {#common-mistakes-and-how-to-avoid-them}
 
 ### Mistake 1: Jumping to Solutions
 

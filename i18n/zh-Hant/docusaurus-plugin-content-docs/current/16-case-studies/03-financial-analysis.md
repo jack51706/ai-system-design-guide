@@ -15,7 +15,7 @@
 
 ---
 
-## 問題陳述
+## 問題陳述 {#problem-statement}
 
 **公司：** 生成股票研究報告的投資機構
 
@@ -33,7 +33,7 @@
 
 ---
 
-## 需求分析
+## 需求分析 {#requirements-analysis}
 
 ### 準確性需求
 
@@ -55,7 +55,7 @@
 
 ---
 
-## 架構設計
+## 架構設計 {#architecture-design}
 
 ### 高層級管線
 
@@ -126,7 +126,7 @@ flowchart TD
 
 ---
 
-## 集成管線
+## 集成管線 {#ensemble-pipeline}
 
 ### 階段一：多模態資料萃取（Gemini 3 Pro）
 
@@ -276,7 +276,7 @@ Provide your verdict with evidence.
 
 ---
 
-## 品質關卡
+## 品質關卡 {#quality-gates}
 
 ### 自動化品質檢查
 
@@ -350,7 +350,7 @@ class HumanReviewQueue:
 
 ---
 
-## 成果與指標
+## 成果與指標 {#results-and-metrics}
 
 ### 效能比較
 
@@ -384,7 +384,7 @@ class HumanReviewQueue:
 
 ---
 
-## 面試逐步演練
+## 面試逐步演練 {#interview-walkthrough}
 
 **面試官：** 「請設計一套用於生成金融研究報告、且準確性要求極高的 AI 系統。」
 

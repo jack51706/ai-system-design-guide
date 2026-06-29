@@ -13,7 +13,7 @@ Inference is the process of generating predictions from a trained model. Inferen
 
 ---
 
-## The Two Phases of Inference
+## The Two Phases of Inference {#two-phases}
 
 LLM inference is not a single operation; it consists of two distinct computational phases.
 
@@ -31,7 +31,7 @@ The model generates tokens one by one, where each token depends on the previous 
 
 ---
 
-## Bottlenecks: Compute-Bound vs. Memory-Bound
+## Bottlenecks: Compute-Bound vs. Memory-Bound {#bottlenecks}
 
 Understanding where your system is bottlenecked is critical for choosing the right optimization.
 
@@ -56,7 +56,7 @@ As models grow larger, memory bandwidth (HBM3/HBM3e) has not scaled as fast as c
 
 ---
 
-## Hardware-Enabled Optimizations (FP8)
+## Hardware-Enabled Optimizations (FP8) {#hardware-optimizations}
 
 **FP8 (8-bit Floating Point)** is the native precision for inference on H100 and B200 GPUs.
 
@@ -67,7 +67,7 @@ As models grow larger, memory bandwidth (HBM3/HBM3e) has not scaled as fast as c
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is LLM generation slower than classification?
 
@@ -82,7 +82,7 @@ To optimize **TPOT**, you must optimize the Memory Bandwidth during Decode: use 
 
 ---
 
-## References
+## References {#references}
 - Pope et al. "Efficiently Scaling Transformer Inference" (2022)
 - NVIDIA. "Transformer Engine Documentation" (2024)
 - vLLM Blog. "Understanding LLM Inference Latency" (2023)

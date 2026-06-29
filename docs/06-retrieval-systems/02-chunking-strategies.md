@@ -14,7 +14,7 @@ Chunking is the process of splitting a document into discrete segments for retri
 
 ---
 
-## The Retrieval-Context Tension
+## The Retrieval-Context Tension {#tension}
 
 | Aspect | Small Chunks (100t) | Large Chunks (1000t) |
 |--------|---------------------|----------------------|
@@ -27,7 +27,7 @@ Chunking is the process of splitting a document into discrete segments for retri
 
 ---
 
-## Recursive Structure Splitting
+## Recursive Structure Splitting {#recursive}
 
 Instead of splitting at every 500 characters, we split at logical boundaries:
 `[Double Newline] > [Single Newline] > [Period] > [Space]`.
@@ -36,7 +36,7 @@ Instead of splitting at every 500 characters, we split at logical boundaries:
 
 ---
 
-## Semantic Chunking
+## Semantic Chunking {#semantic}
 
 Semantic chunking uses an embedding model to detect "topic shifts."
 
@@ -48,7 +48,7 @@ Semantic chunking uses an embedding model to detect "topic shifts."
 
 ---
 
-## Hierarchical (Parent-Child) Chunking
+## Hierarchical (Parent-Child) Chunking {#hierarchical}
 
 This is the industry standard for production RAG.
 
@@ -77,7 +77,7 @@ This is the industry standard for production RAG.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is fixed-size chunking with overlap problematic for production systems?
 
@@ -91,7 +91,7 @@ Contextual Retrieval involves prepending a 1-sentence global context to every ch
 
 ---
 
-## References
+## References {#references}
 - Anthropic. "Contextual Retrieval: Improving RAG Accuracy" (2024)
 - LlamaIndex. "Advanced Chunking Strategies for RAG" (2025)
 - LangChain. "RecursiveCharacterTextSplitter Benchmarks" (2024)

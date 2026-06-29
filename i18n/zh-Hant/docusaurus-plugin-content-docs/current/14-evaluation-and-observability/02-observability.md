@@ -17,7 +17,7 @@ LLM 系統的可觀測性，需要針對 AI 應用的獨特特性，調整日誌
 
 ---
 
-## 為什麼 LLM 可觀測性不一樣
+## 為什麼 LLM 可觀測性不一樣 {#why-llm-observability-is-different}
 
 傳統可觀測性聚焦於：
 - 請求／回應模式
@@ -34,7 +34,7 @@ LLM 系統額外加入：
 
 ---
 
-## 三大支柱
+## 三大支柱 {#the-three-pillars}
 
 ### 日誌（Logging）
 
@@ -174,7 +174,7 @@ async def rag_query(query: str) -> str:
 
 ---
 
-## 關鍵指標
+## 關鍵指標 {#key-metrics}
 
 ### 維運指標
 
@@ -209,7 +209,7 @@ async def rag_query(query: str) -> str:
 
 ---
 
-## 品質監控
+## 品質監控 {#quality-monitoring}
 
 ### 取樣策略
 
@@ -291,7 +291,7 @@ class QualityDriftDetector:
 
 ---
 
-## 成本追蹤
+## 成本追蹤 {#cost-tracking}
 
 ### 即時成本計算
 
@@ -364,7 +364,7 @@ class CostAttributor:
 
 ---
 
-## 告警策略
+## 告警策略 {#alerting-strategy}
 
 ### 告警設定
 
@@ -417,7 +417,7 @@ alerts:
 
 ---
 
-## 可觀測性工具
+## 可觀測性工具 {#observability-tools}
 
 ### LLM 專用工具
 
@@ -467,7 +467,7 @@ async def traced_rag_query(query: str) -> str:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你會為生產環境的 LLM 系統追蹤哪些指標？
 
@@ -521,7 +521,7 @@ async def traced_rag_query(query: str) -> str:
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - OpenTelemetry: https://opentelemetry.io/
 - Langfuse: https://langfuse.com/docs

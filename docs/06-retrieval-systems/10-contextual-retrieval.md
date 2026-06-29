@@ -18,7 +18,7 @@ Contextual Retrieval is an ingestion-time technique that solves the #1 cause of 
 
 ---
 
-## The Problem: Context Dilution
+## The Problem: Context Dilution {#context-dilution}
 
 When we chunk documents for RAG, individual chunks lose the surrounding context that gives them meaning.
 
@@ -44,7 +44,7 @@ Chunk 18: "The Enterprise plan includes SSO and audit
 
 ---
 
-## How Contextual Retrieval Works
+## How Contextual Retrieval Works {#how-it-works}
 
 The core idea is simple: **before embedding a chunk, prepend a short context string that explains what the chunk is about within the full document**.
 
@@ -99,7 +99,7 @@ Now the embedding of this chunk contains "Acme," "Standard plan," and "Product P
 
 ---
 
-## Contextual Embeddings
+## Contextual Embeddings {#contextual-embeddings}
 
 Contextual Embeddings is the first sub-technique: embedding the contextualized chunk instead of the raw chunk.
 
@@ -132,7 +132,7 @@ Contextual Embeddings is the first sub-technique: embedding the contextualized c
 
 ---
 
-## Contextual BM25
+## Contextual BM25 {#contextual-bm25}
 
 The second sub-technique applies the same contextualization to create a **BM25 keyword index** over the enriched chunks.
 
@@ -158,7 +158,7 @@ Dense embeddings excel at semantic similarity but fail on:
 
 ---
 
-## The Full Pipeline: Hybrid + Reranking
+## The Full Pipeline: Hybrid + Reranking {#full-pipeline}
 
 The production-grade Contextual Retrieval pipeline has four stages:
 
@@ -204,7 +204,7 @@ k = 60 (standard smoothing constant)
 
 ---
 
-## Implementation Patterns
+## Implementation Patterns {#implementation}
 
 ### Pattern 1: Basic Contextual Retrieval (Python)
 
@@ -361,7 +361,7 @@ contextualized = add_chunk_headers(
 
 ---
 
-## Cost Considerations
+## Cost Considerations {#cost}
 
 ### Contextualization Costs
 
@@ -390,7 +390,7 @@ For a knowledge base of 10,000 chunks (avg 400 tokens each):
 
 ---
 
-## Contextual Retrieval vs. Other Approaches
+## Contextual Retrieval vs. Other Approaches {#comparison}
 
 | Approach | How It Works | Retrieval Improvement | Cost | Complexity |
 |----------|-------------|----------------------|------|------------|
@@ -425,7 +425,7 @@ Late Chunking requires a long-context embedding model (e.g., Jina v3) and avoids
 
 ---
 
-## Production Architecture
+## Production Architecture {#production}
 
 ### Reference Architecture: Contextual RAG at Scale
 
@@ -470,7 +470,7 @@ flowchart TD
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Explain Anthropic's Contextual Retrieval. When would you use it and when would you skip it?
 
@@ -496,7 +496,7 @@ They solve different sides of the same problem. Contextual Retrieval enriches **
 
 ---
 
-## References
+## References {#references}
 - Anthropic. "Contextual Retrieval" (September 2024)
 - Jina AI. "Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models" (2024)
 - Voyage AI. "voyage-context-3: Contextualized Chunk Embeddings" (2025)

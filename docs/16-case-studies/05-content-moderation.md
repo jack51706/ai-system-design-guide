@@ -15,7 +15,7 @@ This case study covers designing an AI-powered content moderation system for a s
 
 ---
 
-## Problem Statement
+## Problem Statement {#problem-statement}
 
 **Company:** Social media platform with 50M daily active users
 
@@ -34,7 +34,7 @@ This case study covers designing an AI-powered content moderation system for a s
 
 ---
 
-## Requirements Analysis
+## Requirements Analysis {#requirements-analysis}
 
 ### Content Categories
 
@@ -59,7 +59,7 @@ This case study covers designing an AI-powered content moderation system for a s
 
 ---
 
-## Architecture Design
+## Architecture Design {#architecture-design}
 
 ### High-Level Architecture
 
@@ -115,7 +115,7 @@ flowchart TD
 
 ---
 
-## Classification Pipeline
+## Classification Pipeline {#classification-pipeline}
 
 ### Tier 1: Fast Filters
 
@@ -211,7 +211,7 @@ class NuanceReviewer:
 
 ---
 
-## Human-in-the-Loop
+## Human-in-the-Loop {#human-in-the-loop}
 
 ### Review Queue Management
 
@@ -324,7 +324,7 @@ class ModeratorDecision:
 
 ---
 
-## Adversarial Robustness
+## Adversarial Robustness {#adversarial-robustness}
 
 ### Evasion Techniques and Defenses
 
@@ -381,7 +381,7 @@ class AdversarialDefense:
 
 ---
 
-## Results and Metrics
+## Results and Metrics {#results-and-metrics}
 
 ### Performance Comparison
 
@@ -409,7 +409,7 @@ class AdversarialDefense:
 
 ---
 
-## Interview Walkthrough
+## Interview Walkthrough {#interview-walkthrough}
 
 **Interviewer:** "Design a content moderation system for a social media platform."
 

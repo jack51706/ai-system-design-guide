@@ -27,7 +27,7 @@ Two invariants run through everything in this chapter:
 
 ---
 
-## From Prompting to Loop Engineering
+## From Prompting to Loop Engineering {#from-prompting-to-loop-engineering}
 
 Each generation of practice wraps the previous one without replacing it. You still write prompts; you just stop driving the model by hand.
 
@@ -42,7 +42,7 @@ A useful mental model: **the model is the policy, the harness is the kernel.** I
 
 ---
 
-## The Lineage: ReAct to Loop Engineering
+## The Lineage: ReAct to Loop Engineering {#the-lineage-react-to-loop-engineering}
 
 ```mermaid
 flowchart LR
@@ -71,7 +71,7 @@ The key conceptual jump is Reflexion's outer loop. ReAct's inner loop learns wit
 
 ---
 
-## The Inner Agent Loop
+## The Inner Agent Loop {#the-inner-agent-loop}
 
 The narrow technical artifact is the **inner agent loop**: the cycle a harness runs within a single agent run. It iterates because long-horizon tasks cannot finish in one forward pass, and because tool results must feed back before a final answer.
 
@@ -105,7 +105,7 @@ The components below are where the engineering lives. Most of the work is in the
 
 ---
 
-## The Four Levels of Loops
+## The Four Levels of Loops {#the-four-levels-of-loops}
 
 Loop engineering is the art of stacking loops: nesting more sophisticated outer loops around the inner one, with human judgment inserted at natural checkpoints. The four levels below are a synthesis of the patterns the field has converged on, not a single canonical numbering.
 
@@ -137,7 +137,7 @@ When loops run in parallel (orchestrator-workers, or a tool DAG), give each bran
 
 ---
 
-## Loop Patterns
+## Loop Patterns {#loop-patterns}
 
 Match the loop architecture to the task. Use exploratory, high-variance loops where the environment is unpredictable; switch to planned, cheaper execution once a sequence has converged; drop back to exploration on errors.
 
@@ -161,7 +161,7 @@ A few patterns earn their place in almost every production loop:
 
 ---
 
-## Termination and Budget Control
+## Termination and Budget Control {#termination-and-budget-control}
 
 A natural stop signal (the model returns text with no tool calls) is **necessary but not sufficient**. The harness must separately verify goal completion. Every production loop should carry at least one criterion from each of three categories.
 
@@ -198,7 +198,7 @@ The reported failure cases are not hypothetical: an agent that called a broken t
 
 ---
 
-## Context and Memory in Long Loops
+## Context and Memory in Long Loops {#context-and-memory-in-long-loops}
 
 Long loops fail quietly through **context rot**: output quality degrades as the window fills with stale instructions, old tool output, and failed attempts. It sets in before the hard context limit, which makes it insidious. Long-context research finds that frontier models degrade with input length even when the answer is present. More raw context is not free reliability; curation beats stuffing.
 
@@ -215,7 +215,7 @@ Subagent isolation is the most robust structural defense against context rot in 
 
 ---
 
-## Verification and Grading
+## Verification and Grading {#verification-and-grading}
 
 The loop is only as trustworthy as the thing that grades it. Models grade themselves optimistically and reward-hack when the same model both produces and evaluates. Research on intrinsic self-correction is sobering: without an external signal, naive self-reflection can degrade reasoning rather than improve it.
 
@@ -236,7 +236,7 @@ For trajectory benchmarks and LLM-as-judge step scoring, see [Evaluating Agentic
 
 ---
 
-## Anti-Patterns
+## Anti-Patterns {#anti-patterns}
 
 | Failure mode | Root cause | Fix |
 |--------------|------------|-----|
@@ -255,7 +255,7 @@ For trajectory benchmarks and LLM-as-judge step scoring, see [Evaluating Agentic
 
 ---
 
-## Metrics That Matter
+## Metrics That Matter {#metrics-that-matter}
 
 The unit of measurement shifts from cost-per-token to **cost-per-task**. A loop that burns 15x the tokens but avoids a human escalation can be cheaper overall than a cheap chatbot that needs intervention.
 
@@ -272,7 +272,7 @@ When you tune the harness, change one knob at a time, average 3 to 6 runs to bea
 
 ---
 
-## The Maturity Ladder
+## The Maturity Ladder {#the-maturity-ladder}
 
 Take a loop from supervised to mostly autonomous in stages. Each phase earns the next.
 
@@ -287,7 +287,7 @@ The same loop design produces opposite outcomes depending on the engineer's enga
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Define the agent loop, and explain when a loop is actively harmful.
 
@@ -316,7 +316,7 @@ Context rot is silent quality degradation as the transcript grows with stale ins
 
 ---
 
-## References
+## References {#references}
 
 - Yao et al. "ReAct: Synergizing Reasoning and Acting in Language Models" (2022). https://arxiv.org/abs/2210.03629
 - Shinn et al. "Reflexion: Language Agents with Verbal Reinforcement Learning" (2023). https://arxiv.org/abs/2303.11366

@@ -14,7 +14,7 @@
 
 ---
 
-## 迴圈的演進
+## 迴圈的演進 {#evolution}
 
 | 年代 | 模式 | 核心理念 |
 |-----|---------|-----------------|
@@ -36,7 +36,7 @@
 
 ---
 
-## Self-Reflexion 迴圈
+## Self-Reflexion 迴圈 {#reflexion}
 
 Reflexion 在迴圈中加入了一個**「評論者（Critic）」**步驟。
 
@@ -77,7 +77,7 @@ graph TD
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你會在什麼情況下使用「推理迴圈」（ReAct），又會在什麼情況下使用「Plan-and-Solve」架構？
 
@@ -91,7 +91,7 @@ Inference-Time Scaling（通常與 OpenAI 的 o1 相關聯）指的是在*回應
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Yao et al. "ReAct: Synergizing Reasoning and Acting" (2022/2025 update)
 - Shinn et al. "Reflexion: Language Agents with Iterative Homeostatic Learning" (2024)
 - Wang et al. "Plan-and-Solve Prompting" (2023)

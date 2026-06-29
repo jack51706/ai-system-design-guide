@@ -23,7 +23,7 @@ This chapter is for engineers planning their next move, hiring managers building
 
 ---
 
-## The Three Headline Shifts
+## The Three Headline Shifts {#the-three-headline-shifts}
 
 If you read nothing else, internalize these three things.
 
@@ -47,7 +47,7 @@ FDE didn't exist as a discrete category at frontier labs in mid-2025. By May 202
 
 ---
 
-## Role Taxonomy in 2026
+## Role Taxonomy in 2026 {#role-taxonomy-in-2026}
 
 ### Established titles (still hiring strongly)
 
@@ -84,7 +84,7 @@ FDE didn't exist as a discrete category at frontier labs in mid-2025. By May 202
 
 ---
 
-## Skills by Career Level
+## Skills by Career Level {#skills-by-career-level}
 
 ### L4-L5 (Mid-level IC, 3-5 yrs)
 
@@ -126,7 +126,7 @@ FDE didn't exist as a discrete category at frontier labs in mid-2025. By May 202
 
 ---
 
-## What Job Listings Actually Require
+## What Job Listings Actually Require {#what-job-listings-actually-require}
 
 ### Must-Have (called out as required across 100+ postings)
 
@@ -182,7 +182,7 @@ Ranked by frequency:
 
 ---
 
-## Compensation Reality
+## Compensation Reality {#compensation-reality}
 
 > Public-source ranges only. Verify with [levels.fyi](https://www.levels.fyi/) for current data. All figures USD unless noted.
 
@@ -227,7 +227,7 @@ The gap between frontier-lab MTS comp (~$600-795K median at Anthropic/OpenAI) an
 
 ---
 
-## Geographic & Industry Distribution
+## Geographic & Industry Distribution {#geographic--industry-distribution}
 
 - **Concentration:** 65%+ of AI engineers are in SF + NYC
 - **Two-tier market:** Indeed Hiring Lab reports ~95% of hiring firms have NOT posted an AI job - adoption is concentrated among largest firms ([Indeed Hiring Lab Jan 2026](https://www.hiringlab.org/2026/01/16/ai-adoption-accelerating-still-concentrated-among-largest-firms/))
@@ -239,7 +239,7 @@ The gap between frontier-lab MTS comp (~$600-795K median at Anthropic/OpenAI) an
 
 ---
 
-## Interview Process Patterns
+## Interview Process Patterns {#interview-process-patterns}
 
 The May 2026 standard at AI-native companies:
 
@@ -266,7 +266,7 @@ The May 2026 standard at AI-native companies:
 
 ---
 
-## Emerging Roles to Watch
+## Emerging Roles to Watch {#emerging-roles-to-watch}
 
 These roles are growing fastest in May 2026 - bet on them if you're planning a 12-month career trajectory.
 
@@ -307,7 +307,7 @@ These roles are growing fastest in May 2026 - bet on them if you're planning a 1
 
 ---
 
-## Strategic Takeaways
+## Strategic Takeaways {#strategic-takeaways}
 
 For **engineers** planning the next move:
 
@@ -332,7 +332,7 @@ For **engineering leaders** doing org design:
 
 ---
 
-## References
+## References {#references}
 
 This chapter is sourced from 100+ public job listings, hiring reports, and recruiter signals as of May 17, 2026. Key sources:
 

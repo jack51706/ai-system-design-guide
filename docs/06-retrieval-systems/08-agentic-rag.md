@@ -14,7 +14,7 @@ Agentic RAG moves from a "Linear Pipeline" to a **"Reasoning Loop."** Instead of
 
 ---
 
-## Linear vs. Agentic RAG
+## Linear vs. Agentic RAG {#comparison}
 
 | Model | Linear RAG | Agentic RAG |
 |-------|------------|-------------|
@@ -27,7 +27,7 @@ Agentic RAG moves from a "Linear Pipeline" to a **"Reasoning Loop."** Instead of
 
 ---
 
-## Self-RAG (Self-Reflection)
+## Self-RAG (Self-Reflection) {#self-rag}
 
  popularized in 2024/2025, **Self-RAG** uses "Critic Tokens" to evaluate its own work.
 
@@ -38,7 +38,7 @@ Agentic RAG moves from a "Linear Pipeline" to a **"Reasoning Loop."** Instead of
 
 ---
 
-## Corrective RAG (CRAG)
+## Corrective RAG (CRAG) {#crag}
 
 CRAG adds a "Reliability Layer" between retrieval and generation.
 
@@ -49,7 +49,7 @@ CRAG adds a "Reliability Layer" between retrieval and generation.
 
 ---
 
-## Multi-Hop Reasoning Loops
+## Multi-Hop Reasoning Loops {#multi-hop}
 
 For questions like "Who is the CEO of the company that acquired Figma?", the system must:
 1. **Hop 1**: Search for "Who acquired Figma?" (Result: Adobe).
@@ -59,7 +59,7 @@ For questions like "Who is the CEO of the company that acquired Figma?", the sys
 
 ---
 
-## Agentic Filtering and Plan Revision
+## Agentic Filtering and Plan Revision {#planning}
 
 Modern agents use **Sub-Step Plans**.
 - Instead of one big retrieval, the agent writes a plan: "First I will check our internal database for X, then I will look at the public API for Y."
@@ -67,7 +67,7 @@ Modern agents use **Sub-Step Plans**.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: What is the "Reasoning-Retrieval Balance" in Agentic RAG?
 
@@ -81,7 +81,7 @@ Agentic RAG is non-deterministic because the model is "Deciding" its path at eve
 
 ---
 
-## References
+## References {#references}
 - Asai et al. "Self-RAG: Learning to Retrieve, Generate, and Critique" (2024/2025)
 - Yan et al. "Corrective Retrieval Augmented Generation (CRAG)" (2024)
 - LangChain. "Agentic RAG with LangGraph" (2025)

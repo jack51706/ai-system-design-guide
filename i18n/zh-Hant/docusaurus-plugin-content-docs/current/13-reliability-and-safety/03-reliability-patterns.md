@@ -16,7 +16,7 @@
 
 ---
 
-## 可靠性挑戰
+## 可靠性挑戰 {#reliability-challenges}
 
 ### LLM 特有的失效模式
 
@@ -39,7 +39,7 @@
 
 ---
 
-## 重試模式
+## 重試模式 {#retry-patterns}
 
 ### 帶抖動的指數退避
 
@@ -133,7 +133,7 @@ class LLMRetryPolicy:
 
 ---
 
-## 斷路器
+## 斷路器 {#circuit-breaker}
 
 ### 實作
 
@@ -245,7 +245,7 @@ class ResilientLLMClient:
 
 ---
 
-## 艙壁模式
+## 艙壁模式 {#bulkhead-pattern}
 
 ### 隔離資源
 
@@ -315,7 +315,7 @@ class BulkheadedLLMClient:
 
 ---
 
-## 逾時策略
+## 逾時策略 {#timeout-strategies}
 
 ### 分層逾時
 
@@ -395,7 +395,7 @@ class AdaptiveTimeout:
 
 ---
 
-## 優雅降級
+## 優雅降級 {#graceful-degradation}
 
 ### 降級層級
 
@@ -455,7 +455,7 @@ class GracefulDegrader:
 
 ---
 
-## 多供應商容錯移轉
+## 多供應商容錯移轉 {#multi-provider-failover}
 
 ### 供應商管理器
 
@@ -546,7 +546,7 @@ class HedgedRequest:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你如何為 LLM 系統設計高可用性？
 
@@ -589,7 +589,7 @@ class HedgedRequest:
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Microsoft Resilience Patterns: https://learn.microsoft.com/en-us/azure/architecture/patterns/
 - Netflix Hystrix: https://github.com/Netflix/Hystrix

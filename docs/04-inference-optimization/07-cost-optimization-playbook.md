@@ -14,7 +14,7 @@ AI costs are no longer "magic." They are measurable, predictable, and highly opt
 
 ---
 
-## The Unit Economics of AI
+## The Unit Economics of AI {#unit-economics}
 
 We measure success by **Tokens per Dollar ($)**.
 
@@ -27,7 +27,7 @@ We measure success by **Tokens per Dollar ($)**.
 
 ---
 
-## Model Cascading (Efficiency Tiers)
+## Model Cascading (Efficiency Tiers) {#model-cascading}
 
 The most effective cost-saving strategy is to use the **cheapest model capable of the task.**
 
@@ -54,7 +54,7 @@ DeepSeek V4 Flash (released April 24, 2026) reset the floor for cheap frontier-c
 
 ---
 
-## Spot Instance Strategies
+## Spot Instance Strategies {#spot-instances}
 
 For non-real-time workloads (batch processing, data extraction), use **GPU Spot Instances** (AWS Spot, Azure Spot, Lambda Labs).
 
@@ -63,7 +63,7 @@ For non-real-time workloads (batch processing, data extraction), use **GPU Spot 
 
 ---
 
-## The "Token Tax" Optimization
+## The "Token Tax" Optimization {#token-tax}
 
 - **System Prompt Caching**: Hard-code common prefixes to get 90% discounts.
 - **Output Truncation**: Strictly limit `max_tokens`.
@@ -71,7 +71,7 @@ For non-real-time workloads (batch processing, data extraction), use **GPU Spot 
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you justify the cost of an AI system to a CFO?
 
@@ -85,7 +85,7 @@ The "Crossover Point" usually happens at **constant high throughput.** If your a
 
 ---
 
-## References
+## References {#references}
 - Google Cloud. "Cost Optimization for Generative AI" (2024)
 - Anyscale. "LLM Inference: API vs. Self-Hosted Costs" (2024)
 

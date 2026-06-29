@@ -31,7 +31,7 @@ The load-bearing idea: **a benchmark's definition and known flaws are stable; it
 
 ---
 
-## How to Read This Page
+## How to Read This Page {#how-to-read-this-page}
 
 Each benchmark below lists **what it measures**, its **format**, its **saturation status** (does the frontier cluster sit so high that score deltas are noise?), and its **known flaws**. Where a current score is useful for orientation it is given with a source and a "verify" flag, because:
 
@@ -43,11 +43,11 @@ So: use the *measures* and *flaws* columns to reason about a benchmark, and trea
 
 ---
 
-## The Capability Map
+## The Capability Map {#the-capability-map}
 
 Benchmarks group by the capability they probe. Within each group, the field continuously retires saturated benchmarks and replaces them with harder successors, so the live separators move every year.
 
-### General Knowledge and Language
+### General Knowledge and Language {#general-knowledge-and-language}
 
 Mostly **saturated**: frontier models cluster above 88-90%, so deltas are noise. Keep these as historical baselines, not frontier discriminators.
 
@@ -62,7 +62,7 @@ Mostly **saturated**: frontier models cluster above 88-90%, so deltas are noise.
 | **BBH (BIG-Bench Hard)** | 23 hardest BIG-Bench tasks, multi-step reasoning | Saturated with CoT (>90%) | Superseded by **BIG-Bench Extra Hard (BBEH)**, built because BBH saturated. |
 | **GLUE / SuperGLUE** | Older NLU task suites | Retired | Models passed the human baseline on SuperGLUE in early 2021. |
 
-### Frontier Reasoning
+### Frontier Reasoning {#frontier-reasoning}
 
 The benchmarks that still separate the top of the field, in rough order of remaining headroom.
 
@@ -74,7 +74,7 @@ The benchmarks that still separate the top of the field, in rough order of remai
 | **FrontierMath** | Research-level math, problems that take expert mathematicians hours to days (~350 problems, private; Tier 4 is the hardest) | Live but climbing fast | Open-ended with auto-verifiable closed-form answers (guess-proof). v1 had errors in ~42% of problems (fixed in the June 2026 v2); it was partly OpenAI-funded, so single-lab numbers warrant a governance caveat. Epoch's own framing is that less than 70% is within reach, so be skeptical of aggregator scores far above that. |
 | **CritPt** | Research-grade physics reasoning across 11 domains, by 50+ physicists | Live, very low ceiling | Most frontier models score in single digits to ~45% on the full challenges, so it separates cleanly. Newer (late 2025) and becoming a standard scientific-reasoning component. |
 
-### Mathematics
+### Mathematics {#mathematics}
 
 The classic math benchmarks are solved; the live separators are the freshest competition years and research-level sets.
 
@@ -85,7 +85,7 @@ The classic math benchmarks are solved; the live separators are the freshest com
 | **AIME (2024/2025/2026)** | Olympiad short-answer, integer answers, 30 problems/year | Year N saturates once public | Valued because each year is fresh (low contamination) until released. Only 30 items, so single-year scores are high-variance; prefer averaged runs. Saturated for 2024/2025. |
 | **HMMT, Putnam** | Harder olympiad / undergraduate proof competitions | Putnam proofs not saturated | Proof grading is LLM-judge-dependent; final-answer shortcuts overstate true proof ability. |
 
-### Coding
+### Coding {#coding}
 
 Snippet benchmarks are dead for ranking; agentic, repository-scale benchmarks are the production signal.
 
@@ -103,7 +103,7 @@ Snippet benchmarks are dead for ranking; agentic, repository-scale benchmarks ar
 
 **Why agentic benchmarks displaced HumanEval:** HumanEval/MBPP saturated at 90%+ for every frontier model, are small and memorized, and a single-function docstring-to-code task does not predict real engineering. The proof: SWE-bench launched at under 2% resolved for the same model generation that aced HumanEval. Reading a repo, running tests, reading a stack trace, and iterating a patch is a different skill, so the field moved to issue-resolution and terminal benchmarks.
 
-### Agentic and Tool Use
+### Agentic and Tool Use {#agentic-and-tool-use}
 
 The fastest-moving area, because agents are where 2026 production value is. Most of these are not saturated.
 
@@ -117,7 +117,7 @@ The fastest-moving area, because agents are where 2026 production value is. Most
 | **GDPval** | Real economically valuable knowledge work across 44 occupations, graded by human experts | Active, not saturated | The forward-looking "can it do a day of real work" signal; frontier approaches expert deliverable quality at ~100x lower cost. Pairwise Elo variants (GDPval-AA) differ from the win-rate version. |
 | **METR time-horizon** | The task length (in human-minutes) a model completes at 50% reliability | Active research standard | Not a leaderboard but a trend: the horizon doubles roughly every 7 months overall and faster on coding. The cleanest way to talk about agent autonomy growth. |
 
-### Long Context
+### Long Context {#long-context}
 
 The headline finding: **advertised context windows overstate usable context.** Lead with that, not with the window size on the spec sheet.
 
@@ -131,7 +131,7 @@ The headline finding: **advertised context windows overstate usable context.** L
 
 A defensible one-liner for design docs: *advertised context windows routinely overstate usable context; on RULER, many models claiming 128K maintain quality only to ~32-64K, though the frontier is improving quickly.* The "context rot" work (degradation that kicks in well before the window limit, sometimes with the counterintuitive result that a shuffled haystack beats a coherent document) reinforces designing for a smaller effective budget. See [Context Engineering](../05-prompting-and-context/05-context-engineering.md).
 
-### Multimodal
+### Multimodal {#multimodal}
 
 Image multiple-choice benchmarks are saturating; video reasoning is the genuinely unsolved frontier.
 
@@ -141,7 +141,7 @@ Image multiple-choice benchmarks are saturating; video reasoning is the genuinel
 | **MathVista, DocVQA, ChartQA, MMBench** | Visual math, document QA, chart QA, broad multimodal | Largely saturated at the frontier | DocVQA/ChartQA near-solved; relaxed-accuracy scoring hides numeric errors. |
 | **Video-MME / Video-MME-v2** | Video understanding | v1 approaching saturation, v2 far from it | Video-MME-v2 (2026) uses non-linear group scoring and shows a large model-vs-human gap, so it is the live multimodal separator. |
 
-### Factuality and Instruction Following
+### Factuality and Instruction Following {#factuality-and-instruction-following}
 
 | Benchmark | Measures | Status | Notes |
 |-----------|----------|--------|-------|
@@ -150,7 +150,7 @@ Image multiple-choice benchmarks are saturating; video reasoning is the genuinel
 | **TruthfulQA** | Resistance to common misconceptions | Aging / partly saturated | Static and well-known, so contaminated; "truth" labels debatable; gameable by hedging. |
 | **FACTS Grounding** | Whether long-form answers are fully supported by a provided source (no ungrounded claims) | Not saturated (~0.88 top) | Judged by an ensemble of LLMs that share lineage with contestants; entries are self-reported. The right benchmark family for RAG faithfulness. |
 
-### Human Preference
+### Human Preference {#human-preference}
 
 | Benchmark | Measures | Status | Notes |
 |-----------|----------|--------|-------|
@@ -160,39 +160,39 @@ Image multiple-choice benchmarks are saturating; video reasoning is the genuinel
 
 ---
 
-## Reading Benchmarks Critically
+## Reading Benchmarks Critically {#reading-benchmarks-critically}
 
 This is the part that actually matters. Anyone can read a leaderboard; reading it *correctly* is the skill.
 
-### Saturation
+### Saturation {#saturation}
 
 A benchmark is saturated when the frontier clusters so near the ceiling that score deltas are within noise. MMLU is the canonical case: GPT-4 hit ~86% in early 2023, and the frontier has sat at 86-93% since, so a 2-point "win" is often just a prompt artifact (MMLU scores vary 4-5% across prompt phrasings). The working signal: **when leaders cluster within ~3 points, the rank order is statistical noise, not capability.**
 
 When a benchmark saturates the field responds with (1) harder successors (MMLU then MMLU-Pro then HLE), (2) private or held-out sets, (3) time-gated "live" benchmarks, and (4) composite indices. The median useful lifespan of a static public benchmark is under ~2 years.
 
-### Contamination
+### Contamination {#contamination}
 
 Benchmarks are public and get scraped into pretraining, so models can score high by memorization rather than capability. The evidence is direct: re-deriving HumanEval-style problems (EvoEval) dropped scores ~39% across 51 models; on LiveCodeBench, a model's pass rate fell from ~60% on problems before its cutoff to ~0% after; OpenAI found SWE-bench Verified solutions reproducible verbatim from the task ID. Across multiple-choice QA benchmarks, measured contamination ranges from 1% to 45%, and larger models benefit more from it.
 
 Contamination-resistant designs: **time-gating** (score only on problems released after the model's cutoff, as LiveCodeBench and SWE-rebench do), **private held-out sets** (FrontierMath, ARC-AGI-2; the cost is non-reproducibility), and **canary strings** (a unique token planted in a dataset that flags contamination if a model recites it). Detection methods (n-gram overlap, membership inference, the TS-Guessing quiz) all have failure modes; membership-inference attacks in particular barely beat random on real pretrained models. The practical move: for any static public benchmark, assume some contamination and discount the absolute number.
 
-### Harness and Scaffold Variance
+### Harness and Scaffold Variance {#harness-and-scaffold-variance}
 
 The same model weights score 10-20 points differently depending on the prompt, whether tools are available, the reasoning effort level, and the agent scaffold. Anthropic measured that infrastructure configuration *alone* (RAM, concurrency, even time-of-day API latency) moved Terminal-Bench results ~6 points. This is why **provider self-reports run higher than independent leaderboards**: labs report the best harness and effort they found for their own model, on uncapped infrastructure. The hard rule that follows: **never compare a provider's number to another provider's number, or to an independent leaderboard.** Only same-harness numbers are comparable. And reasoning effort is not monotonic, more thinking lowered accuracy in 21 of 36 settings in one large agent study, so "high effort" provider numbers are not even comparable to that same model's default-effort independent run.
 
-### The Leaderboard Illusion
+### The Leaderboard Illusion {#the-leaderboard-illusion}
 
 The central critique of LMArena (Cohere et al., audit of ~2M battles, 243 models) found four problems: providers privately test many variants and publish only the best (Meta tested 27 variants before Llama-4), which violates the unbiased-sampling assumption behind the Elo math; proprietary providers get far more battle data than open models; you can train *to* the Arena distribution for large win-rate gains; and silently deprecated models distort the rankings. LMArena's rebuttal disputes the magnitude (their estimate of the private-testing boost is ~11 Elo, decaying as fresh votes accumulate) and notes the overfitting figure was measured on a static proxy, not the live human board. Present this as **contested but substantiated.**
 
 Either way, the practical guidance is the same: treat Arena Elo as a measure of **general chat preference, not correctness, factuality, or hard reasoning**; always use the style-controlled board (Arena rewards longer, prettier answers); read the confidence intervals (the top ~15 are statistically near-tied); and use it as one of three signals, never alone.
 
-### The Benchmark-to-Production Gap
+### The Benchmark-to-Production Gap {#the-benchmark-to-production-gap}
 
 A public score predicts your production performance only when three conditions hold at once: the benchmark tests tasks similar to yours, the test set is clean of contamination, and the benchmark has not saturated. In practice all three rarely hold. A principal-components analysis of benchmark scores found that a single "general capability" factor explains only ~50% of the variance; the rest is model-family idiosyncrasy and noise, which is why two models with equal general capability can differ sharply on *your* task. High GPQA does not guarantee performance on your domain.
 
 For coding and agents, the best public proxies are GPQA-Diamond and SWE-bench Verified (Aider Polyglot and AIME-style sets also load cleanly on general capability), but only when harness-matched. The conclusion every practitioner reaches: **for your decision, ignore the leaderboard and build evals on your data.** Construct a gold set partitioned across features, scenarios, and personas; use a binary LLM-as-judge calibrated to a domain expert (measured by precision and recall, not raw agreement); and price capability against cost, because no public benchmark contains a cost signal. See [LLM Evaluation](01-llm-evaluation.md) and the eval-pipeline whiteboard exercise in [Whiteboard Exercises](../00-interview-prep/04-whiteboard-exercises.md).
 
-### Composite Indices
+### Composite Indices {#composite-indices}
 
 Because any single benchmark saturates within a year or two, the field ranks frontier models with weighted composites that keep discriminating as components max out and that resist overfitting to one test:
 
@@ -204,7 +204,7 @@ Composites are the right tool for "which model is generally best," but they stil
 
 ---
 
-## A Practical Checklist
+## A Practical Checklist {#a-practical-checklist}
 
 When you read any benchmark claim:
 
@@ -218,7 +218,7 @@ When you read any benchmark claim:
 
 ---
 
-## Which Benchmarks Matter in 2026
+## Which Benchmarks Matter in 2026 {#which-benchmarks-matter-in-2026}
 
 For orienting on **frontier general capability**: HLE, GPQA-Diamond (with the caveat it is thinning), CritPt, and the composite indices (Artificial Analysis Intelligence Index, Epoch ECI). Ignore MMLU, MMLU-Pro, HellaSwag, ARC-Challenge.
 
@@ -234,7 +234,7 @@ And for **your product**: none of the above. Build your own gold set and judge. 
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: A vendor says their model scores 90% on SWE-bench Verified. What questions do you ask before believing it predicts your coding-agent quality?
 
@@ -253,7 +253,7 @@ As one signal of general chat preference, never as a measure of correctness or r
 
 ---
 
-## References
+## References {#references}
 
 - Hendrycks et al. "Measuring Massive Multitask Language Understanding (MMLU)" arXiv:2009.03300
 - Wang et al. "MMLU-Pro" arXiv:2406.01574

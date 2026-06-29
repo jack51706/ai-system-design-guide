@@ -17,7 +17,7 @@
 
 ---
 
-## 為什麼需要重排序
+## 為什麼需要重排序 {#why-reranking}
 
 ### 品質落差
 
@@ -55,7 +55,7 @@ Cross-encoder 看得出查詢中的「CUDA memory」與 Doc 1 中的「GPU memor
 
 ---
 
-## 重排序架構
+## 重排序架構 {#reranking-architectures}
 
 ### Bi-Encoder 與 Cross-Encoder 的比較
 
@@ -118,7 +118,7 @@ flowchart TD
 
 ---
 
-## 重排序模型
+## 重排序模型 {#reranking-models}
 
 ### Cross-Encoder 模型
 
@@ -200,7 +200,7 @@ def cohere_rerank(
 
 ---
 
-## 實作模式
+## 實作模式 {#implementation-patterns}
 
 ### 模式 1：基本重排序
 
@@ -304,7 +304,7 @@ class AsyncReranker:
 
 ---
 
-## 何時該重排序
+## 何時該重排序 {#when-to-rerank}
 
 ### 成本效益分析
 
@@ -382,7 +382,7 @@ def optimize_candidate_count(test_set, retriever, reranker):
 
 ---
 
-## 以 LLM 為基礎的重排序
+## 以 LLM 為基礎的重排序 {#llm-based-reranking}
 
 ### 把 LLM 當作重排序器使用
 
@@ -469,7 +469,7 @@ def sliding_window_rerank(
 
 ---
 
-## SLM 蒸餾
+## SLM 蒸餾 {#slm-distillation}
 
 為了解決以 LLM 為基礎的重排序的延遲問題，我們現在會使用 **經過蒸餾的小型語言模型（Distilled Small Language Models，SLMs）**。
 
@@ -479,7 +479,7 @@ def sliding_window_rerank(
 
 ---
 
-## 生產環境考量
+## 生產環境考量 {#production-considerations}
 
 ### 延遲優化
 
@@ -563,7 +563,7 @@ def rerank_with_fallback(
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼 Cross-Encoder 本質上比 Bi-Encoder 更準確？
 
@@ -621,7 +621,7 @@ LLM 重排序在以下情況下是合理的：
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Nogueira and Cho. "Passage Re-ranking with BERT" (2019)
 - Nogueira et al. "Multi-Stage Document Ranking with BERT" (2019/2025 update)

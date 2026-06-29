@@ -15,7 +15,7 @@
 
 ---
 
-## 資料框架的設計哲學
+## 資料框架的設計哲學 {#philosophy}
 
 LlamaIndex 建立在一個信念之上：**資料比模型更重要**。
 - **節點（The Node）**：每一個資料區塊都是一個「節點」，帶有豐富的中繼資料（關聯關係、摘要，以及親子連結）。
@@ -23,7 +23,7 @@ LlamaIndex 建立在一個信念之上：**資料比模型更重要**。
 
 ---
 
-## LlamaIndex Workflows
+## LlamaIndex Workflows {#workflows}
 
 在 2024 年底，LlamaIndex 推出了 **Workflows**，作為它對 LangGraph 的回應。
 - **事件驅動架構（Event-Driven Architecture）**：節點之間透過發出 `Events` 來溝通。
@@ -48,7 +48,7 @@ class RAGWorkflow(Workflow):
 
 ---
 
-## LlamaCloud 與託管式擷取
+## LlamaCloud 與託管式擷取 {#llamacloud}
 
 為了因應企業級規模，LlamaIndex 聚焦於 **LlamaCloud**。
 - **託管式擷取（Managed Ingestion）**：以服務的形式，處理 PDF 解析、OCR 與表格擷取。
@@ -56,7 +56,7 @@ class RAGWorkflow(Workflow):
 
 ---
 
-## 代理即工具
+## 代理即工具 {#agents-as-tools}
 
 LlamaIndex 把代理視為 **高階檢索器（high-level retrievers）**。
 - 你可以把一個複雜的 LlamaIndex 查詢引擎「包裝」成一個工具，再交給 LangGraph 代理使用。
@@ -64,7 +64,7 @@ LlamaIndex 把代理視為 **高階檢索器（high-level retrievers）**。
 
 ---
 
-## LlamaIndex Workflows：事件驅動的應用框架
+## LlamaIndex Workflows：事件驅動的應用框架 {#llamaindex-workflows-event-driven-application-framework}
 
 2024 年的定位是「Workflows 就是我們的 LangGraph」。如今的定位則不同：Workflows 是一個通用型、事件驅動的框架，適用於任何 AI 應用，而 RAG 只是其中一種可能的用途。今天 `llama-index-core` 把 Workflows 作為主要的應用層介面，而索引／檢索器類別則已移到圍繞它的整合套件之中（[LlamaIndex workflows docs](https://developers.llamaindex.ai/python/framework/understanding/workflows/)）。有一個值得釐清的命名細節：**Workflows** 套件在 2025 年中期達到了 1.0，現在以獨立套件的形式進入 2.x 系列，而核心的 `llama-index` 框架本身則仍維持在 0.x 系列（在 2026 年中期約為 0.14.x）。關於這類版本變動如何讓教學文件失效，以及如何在其中存活下來，請參閱 [駕馭框架變動](12-navigating-framework-churn.md)。
 
@@ -160,7 +160,7 @@ flowchart LR
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：LangChain 與 LlamaIndex 現在都有「圖譜／工作流」功能，你會怎麼選？
 
@@ -174,7 +174,7 @@ flowchart LR
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - LlamaIndex. "The Workflows Framework: Event-Driven Agents" (2025)
 - Jerry Liu. "Data-Centric AI in the LLM Era" (2024/2025)
 - LlamaHub. "The Repository of 1000+ Data Loaders" (2025)

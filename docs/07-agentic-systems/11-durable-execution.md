@@ -15,7 +15,7 @@ An agent run is not a request/response handler. It calls tools, reads documents,
 
 ---
 
-## Why Agents Break the Normal Failure Model
+## Why Agents Break the Normal Failure Model {#why-agents-break-the-normal-failure-model}
 
 Agents are long-running, stateful, side-effecting processes, which breaks three assumptions:
 
@@ -27,7 +27,7 @@ Naive retries re-run side effects; naive checkpoints that save state only betwee
 
 ---
 
-## The Durable-Execution Model
+## The Durable-Execution Model {#the-durable-execution-model}
 
 The core pattern is **workflows-as-code plus an append-only event history plus deterministic replay.** Systems like Temporal record an immutable event history for each workflow; if a worker crashes at step 5 of 10, another worker replays the history to reconstruct in-memory state and resumes at step 6.
 
@@ -43,7 +43,7 @@ The cost of replay-based determinism is **versioning**: because long-running wor
 
 ---
 
-## Tools
+## Tools {#tools}
 
 | Tool | Where state lives | Footprint | Notes |
 |------|-------------------|-----------|-------|
@@ -57,7 +57,7 @@ The approaches differ in where they put the durability boundary. Temporal trades
 
 ---
 
-## Mapping Durable Execution onto Agent Loops
+## Mapping Durable Execution onto Agent Loops {#mapping-durable-execution-onto-agent-loops}
 
 The core mapping: the **agent loop becomes a workflow, and each model call and tool call becomes a durable activity.** On a crash, completed model calls and tool invocations replay from the log rather than re-execute, so you do not re-pay tokens or re-fire side effects, and you can even fix a bug and resume a running app.
 
@@ -73,7 +73,7 @@ The canonical pattern that ties it together: when a proposed action is risky, th
 
 ---
 
-## When You Need It
+## When You Need It {#when-you-need-it}
 
 Durable execution is the emerging answer to *production* agent reliability, and the 2026 traction is real: Temporal raised a large Series D at a reported multi-billion-dollar valuation, and major AI products build agents on it. A widely cited vendor case study describes a deep-research agent that **migrated from a framework prototype to a durable-execution engine** after hitting race conditions, fragile custom retry logic, and stale-state bugs that became costly to support (a vendor-published account, so read the direction as real and the framing as theirs).
 
@@ -81,7 +81,7 @@ But it is a deliberate complexity trade. The constraints (determinism, versionin
 
 ---
 
-## Do You Need Durable Execution?
+## Do You Need Durable Execution? {#do-you-need-durable-execution}
 
 Walk these in order:
 
@@ -94,7 +94,7 @@ It is overkill for simple CRUD, sub-millisecond hot paths, pure high-throughput 
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why are naive retries and checkpoints insufficient for a production agent with side effects?
 
@@ -108,7 +108,7 @@ It is overkill when the agent has no irreversible side effects, runs short enoug
 
 ---
 
-## References
+## References {#references}
 
 - Resonate, ["From where do deterministic constraints come?"](https://journal.resonatehq.io/p/from-where-do-deterministic-constraints)
 - Restate, ["What is durable execution?"](https://www.restate.dev/what-is-durable-execution)

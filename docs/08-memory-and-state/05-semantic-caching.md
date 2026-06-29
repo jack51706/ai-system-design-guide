@@ -14,7 +14,7 @@ Caching has evolved from exact string matching to **Semantic Matching**. Semanti
 
 ---
 
-## Exact Cache vs. Semantic Cache
+## Exact Cache vs. Semantic Cache {#vs}
 
 | Feature | Exact Cache (Redis/Memcached) | Semantic Cache (RedisVL/Qdrant) |
 |---------|-------------------------------|---------------------------------|
@@ -25,7 +25,7 @@ Caching has evolved from exact string matching to **Semantic Matching**. Semanti
 
 ---
 
-## The Semantic Matching Pipeline
+## The Semantic Matching Pipeline {#pipeline}
 
 1. **Embed**: The incoming query is converted into a vector (e.g., using `text-embedding-3-small`).
 2. **Search**: Search the cache for the nearest neighbor.
@@ -35,7 +35,7 @@ Caching has evolved from exact string matching to **Semantic Matching**. Semanti
 
 ---
 
-## RedisVL and GPTCache
+## RedisVL and GPTCache {#tech-stack}
 
 Standard stack:
 - **RedisVL**: Provides low-latency vector search directly within a Redis instance.
@@ -44,7 +44,7 @@ Standard stack:
 
 ---
 
-## Multimodal Semantic Caching
+## Multimodal Semantic Caching {#multimodal}
 
 With native multimodal frontier models (Gemini 3.1 Pro, GPT-5.5, Claude Opus 4.7), we now cache **Image and Audio queries**.
 - **Visual Similarity**: Caching the description of an image if a semantically similar image was processed before.
@@ -52,7 +52,7 @@ With native multimodal frontier models (Gemini 3.1 Pro, GPT-5.5, Claude Opus 4.7
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: What is "Semantic Drift" in caching, and how do you prevent it?
 
@@ -66,7 +66,7 @@ Because a semantic cache requires its own **Embedding API call** and **Vector Se
 
 ---
 
-## References
+## References {#references}
 - Redis. "RedisVL: Python Client for Redis Vector Library" (2025)
 - Akiba et al. "GPTCache: A Library for Creating Semantic Cache" (2024/2025)
 - Google Cloud. "Generative AI Caching Patterns" (2025)

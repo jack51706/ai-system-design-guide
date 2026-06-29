@@ -15,7 +15,7 @@
 
 ---
 
-## 存取控制需求
+## 存取控制需求 {#access-control-requirements}
 
 ### 安全面向
 
@@ -37,7 +37,7 @@
 
 ---
 
-## 身分驗證模式
+## 身分驗證模式 {#authentication-patterns}
 
 ### API 金鑰驗證
 
@@ -107,7 +107,7 @@ class JWTAuthenticator:
 
 ---
 
-## 授權模型
+## 授權模型 {#authorization-models}
 
 ### 角色型存取控制（RBAC）
 
@@ -180,7 +180,7 @@ class ModelAccessControl:
 
 ---
 
-## 租戶隔離
+## 租戶隔離 {#tenant-isolation}
 
 ### 資料隔離模式
 
@@ -264,7 +264,7 @@ class TenantIsolatedCache:
 
 ---
 
-## API 金鑰管理
+## API 金鑰管理 {#api-key-management}
 
 ### 金鑰生命週期
 
@@ -349,7 +349,7 @@ class KeyRotator:
 
 ---
 
-## 稽核與合規
+## 稽核與合規 {#audit-and-compliance}
 
 ### 稽核日誌
 
@@ -410,7 +410,7 @@ class ComplianceReporter:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你如何在 RAG 系統中實作多租戶隔離？
 
@@ -476,7 +476,7 @@ class ComplianceReporter:
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - OAuth 2.0: https://oauth.net/2/
 - OWASP API Security: https://owasp.org/API-Security/

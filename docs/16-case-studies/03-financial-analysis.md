@@ -15,7 +15,7 @@ This case study covers designing a high-reliability AI system for generating equ
 
 ---
 
-## Problem Statement
+## Problem Statement {#problem-statement}
 
 **Company:** Investment firm generating equity research reports
 
@@ -33,7 +33,7 @@ This case study covers designing a high-reliability AI system for generating equ
 
 ---
 
-## Requirements Analysis
+## Requirements Analysis {#requirements-analysis}
 
 ### Accuracy Requirements
 
@@ -55,7 +55,7 @@ This case study covers designing a high-reliability AI system for generating equ
 
 ---
 
-## Architecture Design
+## Architecture Design {#architecture-design}
 
 ### High-Level Pipeline
 
@@ -126,7 +126,7 @@ flowchart TD
 
 ---
 
-## Ensemble Pipeline
+## Ensemble Pipeline {#ensemble-pipeline}
 
 ### Stage 1: Multimodal Data Extraction (Gemini 3 Pro)
 
@@ -276,7 +276,7 @@ Provide your verdict with evidence.
 
 ---
 
-## Quality Gates
+## Quality Gates {#quality-gates}
 
 ### Automated Quality Checks
 
@@ -350,7 +350,7 @@ class HumanReviewQueue:
 
 ---
 
-## Results and Metrics
+## Results and Metrics {#results-and-metrics}
 
 ### Performance Comparison
 
@@ -384,7 +384,7 @@ class HumanReviewQueue:
 
 ---
 
-## Interview Walkthrough
+## Interview Walkthrough {#interview-walkthrough}
 
 **Interviewer:** "Design an AI system for generating financial research reports with very high accuracy requirements."
 

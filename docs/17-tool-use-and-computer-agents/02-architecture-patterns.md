@@ -19,7 +19,7 @@ Every tool-use agent in 2026 -- from OpenClaw to Claude Code to Cursor's Backgro
 
 ---
 
-## Pattern 1: Function/Tool Calling
+## Pattern 1: Function/Tool Calling {#pattern-1-functiontool-calling}
 
 The most widely deployed pattern in production. The LLM decides which tool to call and with what arguments; a framework executes the call; results are fed back into the conversation for the next reasoning step.
 
@@ -93,7 +93,7 @@ if response.stop_reason == "tool_use":
 
 ---
 
-## Pattern 2: Vision-Based Automation
+## Pattern 2: Vision-Based Automation {#pattern-2-vision-based-automation}
 
 The model sees a screenshot of the screen, reasons about what to do, and emits a low-level action (click, type, scroll). The environment executes the action, takes a new screenshot, and the loop repeats. This is how Claude Computer Use and Open Interpreter's Computer API work.
 
@@ -173,7 +173,7 @@ while True:  # The vision-action loop
 
 ---
 
-## Pattern 3: Local Code Execution
+## Pattern 3: Local Code Execution {#pattern-3-local-code-execution}
 
 The user describes a task in natural language. The LLM generates code. The code runs on the local machine (or in a sandbox). The output is observed, and the LLM either generates more code or provides the final answer. This is how Open Interpreter and parts of Claude Code work.
 
@@ -245,7 +245,7 @@ class CodeExecutionAgent:
 
 ---
 
-## Pattern 4: Multi-Agent Tool Orchestration
+## Pattern 4: Multi-Agent Tool Orchestration {#pattern-4-multi-agent-tool-orchestration}
 
 Instead of one agent with many tools, you have multiple specialized agents that each own a subset of tools. An orchestrator routes tasks to the right agent. This is the "microservices revolution" for agents.
 
@@ -286,7 +286,7 @@ The 2026 trend is treating agent cost optimization as a first-class concern, sim
 
 ---
 
-## Sandboxed vs. Unsandboxed Execution
+## Sandboxed vs. Unsandboxed Execution {#sandboxed-vs-unsandboxed-execution}
 
 This is the most consequential architecture decision for any tool-use agent.
 
@@ -314,7 +314,7 @@ Sandboxed-by-default with escape hatches. The OpenClaw security crisis (135,000 
 
 ---
 
-## State Management Across Tool Calls
+## State Management Across Tool Calls {#state-management-across-tool-calls}
 
 Agents need to maintain state between tool calls. The strategy depends on the agent's lifecycle and use case.
 
@@ -355,7 +355,7 @@ class AgentSession:
 
 ---
 
-## Error Handling and Retry Patterns
+## Error Handling and Retry Patterns {#error-handling-and-retry-patterns}
 
 Tool calls fail. Networks time out. APIs return errors. Code throws exceptions. A production agent needs systematic error handling.
 
@@ -417,7 +417,7 @@ This is how Claude Code, OpenHands, and Cline handle test failures: run tests, s
 
 ---
 
-## MCP Integration Patterns
+## MCP Integration Patterns {#mcp-integration-patterns}
 
 MCP has become the standard protocol for tool integration in 2026. Here are the key patterns for integrating MCP into agent architectures.
 
@@ -464,7 +464,7 @@ These are on the 2026 roadmap but not yet ratified.
 
 ---
 
-## Architecture Decision Tree
+## Architecture Decision Tree {#architecture-decision-tree}
 
 Use this decision tree to select the right pattern for your use case:
 
@@ -493,7 +493,7 @@ The key is to default to the simplest pattern (function calling) and only add co
 
 ---
 
-## System Design Interview Angle
+## System Design Interview Angle {#system-design-interview-angle}
 
 When discussing tool-use architecture in interviews, structure your answer around these five dimensions:
 
@@ -519,7 +519,7 @@ Address economics: "For the orchestrator, I would use the Plan-and-Execute patte
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Design a system that lets a customer support agent answer questions using data from Zendesk, Salesforce, and an internal knowledge base.
 
@@ -538,7 +538,7 @@ API-based is faster (50-200ms vs. 1-3s per step), cheaper (text vs. image tokens
 
 ---
 
-## References
+## References {#references}
 
 - Anthropic. "Computer Use Tool Documentation" (2024-2026)
 - Anthropic. "Model Context Protocol Specification" (2025-2026)

@@ -17,7 +17,7 @@ This chapter provides detailed walkthroughs of system design exercises commonly 
 
 ---
 
-## Exercise 1: Enterprise RAG System
+## Exercise 1: Enterprise RAG System {#exercise-1-enterprise-rag-system}
 
 ### Problem Statement
 
@@ -296,7 +296,7 @@ Total:                 2000ms (buffer for P95)
 
 ---
 
-## Exercise 2: Customer Support Chatbot
+## Exercise 2: Customer Support Chatbot {#exercise-2-customer-support-chatbot}
 
 ### Problem Statement
 
@@ -390,7 +390,7 @@ Zendesk integration:
 
 ---
 
-## Exercise 3: Code Review Assistant
+## Exercise 3: Code Review Assistant {#exercise-3-code-review-assistant}
 
 ### Problem Statement
 
@@ -471,7 +471,7 @@ Strategy:
 
 ---
 
-## Exercise 4: Document Processing Pipeline
+## Exercise 4: Document Processing Pipeline {#exercise-4-document-processing-pipeline}
 
 ### Problem Statement
 
@@ -565,7 +565,7 @@ HIPAA/SOC2 requirements:
 
 ---
 
-## Exercise 5: Real-Time Content Moderation
+## Exercise 5: Real-Time Content Moderation {#exercise-5-real-time-content-moderation}
 
 ### Problem Statement
 
@@ -645,7 +645,7 @@ thresholds = {
 
 ---
 
-## Exercise 6: Multi-Tenant AI Platform
+## Exercise 6: Multi-Tenant AI Platform {#exercise-6-multi-tenant-ai-platform}
 
 ### Problem Statement
 
@@ -725,7 +725,7 @@ async def track_usage(tenant_id: str, operation: Usage):
 
 ---
 
-## Exercise 7: Semantic Search at Scale
+## Exercise 7: Semantic Search at Scale {#exercise-7-semantic-search-at-scale}
 
 ### Problem Statement
 
@@ -822,7 +822,7 @@ Reindexing (description changes):
 
 ---
 
-## Exercise 8: Evaluation Pipeline for a Production LLM Product
+## Exercise 8: Evaluation Pipeline for a Production LLM Product {#exercise-8-evaluation-pipeline-for-a-production-llm-product}
 
 ### Problem Statement
 
@@ -923,7 +923,7 @@ dominant cost and it is what keeps the judge honest.
 
 ---
 
-## Exercise 9: Memory and State for a Long-Running Agent
+## Exercise 9: Memory and State for a Long-Running Agent {#exercise-9-memory-and-state-for-a-long-running-agent}
 
 ### Problem Statement
 
@@ -1005,7 +1005,7 @@ Cost: extraction pass on session close is the main LLM cost;
 
 ---
 
-## Tips for Whiteboard Exercises
+## Tips for Whiteboard Exercises {#tips-for-whiteboard-exercises}
 
 ### Drawing Tips
 

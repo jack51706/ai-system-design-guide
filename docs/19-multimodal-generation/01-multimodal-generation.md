@@ -15,7 +15,7 @@ Generating images, video, and audio is a different engineering problem from unde
 
 ---
 
-## Production Pipeline Patterns
+## Production Pipeline Patterns {#production-pipeline-patterns}
 
 This is the part that outlives any model.
 
@@ -31,7 +31,7 @@ This is the part that outlives any model.
 
 ---
 
-## Provenance and Safety
+## Provenance and Safety {#provenance-and-safety}
 
 The technology churns; the obligation to label and the inability to perfectly enforce it are durable. Two complementary layers, **and both are removable.**
 
@@ -45,7 +45,7 @@ The technology churns; the obligation to label and the inability to perfectly en
 
 ---
 
-## Evaluating Generative Quality
+## Evaluating Generative Quality {#evaluating-generative-quality}
 
 Two unavoidable facts: automated metrics are weak, and human preference is the real ground truth but expensive.
 
@@ -57,7 +57,7 @@ Two unavoidable facts: automated metrics are weak, and human preference is the r
 
 ---
 
-## The Model Landscape
+## The Model Landscape {#the-model-landscape}
 
 Kept light and dated, because it churns monthly and much of the circulating spec-sheet detail comes from low-quality sources.
 
@@ -67,7 +67,7 @@ Kept light and dated, because it churns monthly and much of the circulating spec
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Design the backbone of a service that turns a script into a narrated, music-backed video. What are the hard parts?
 
@@ -81,7 +81,7 @@ You give up exact match and test perceptually and statistically. I keep a versio
 
 ---
 
-## References
+## References {#references}
 
 - [C2PA specification](https://spec.c2pa.org/) (Content Credentials)
 - "Invisible Image Watermarks Are Provably Removable Using Generative AI" (NeurIPS 2024, arXiv:2306.01953)

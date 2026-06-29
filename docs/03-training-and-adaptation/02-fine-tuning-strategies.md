@@ -15,7 +15,7 @@ Fine-tuning adapts a pretrained model to specific tasks, domains, or styles. Tod
 
 ---
 
-## When to Fine-Tune
+## When to Fine-Tune {#when-to-fine-tune}
 
 Before fine-tuning, ask: **Can this be solved with Prompt Engineering or RAG?**
 
@@ -29,7 +29,7 @@ Before fine-tuning, ask: **Can this be solved with Prompt Engineering or RAG?**
 
 ---
 
-## Supervised Fine-Tuning (SFT)
+## Supervised Fine-Tuning (SFT) {#supervised-fine-tuning}
 
 The first step after pretraining. The model is trained on `(Prompt, Response)` pairs.
 
@@ -40,7 +40,7 @@ The first step after pretraining. The model is trained on `(Prompt, Response)` p
 
 ---
 
-## Continued Pretraining (Domain Adaptation)
+## Continued Pretraining (Domain Adaptation) {#continued-pretraining}
 
 Also known as "Second-stage Pretraining."
 - **How**: Train on raw text from a specific domain (e.g., all SEC filings for a finance model).
@@ -49,7 +49,7 @@ Also known as "Second-stage Pretraining."
 
 ---
 
-## PEFT vs. Full-Parameter
+## PEFT vs. Full-Parameter {#peft-vs-full-parameter}
 
 | Feature | Full-Parameter FT | PEFT (LoRA, QLoRA) |
 |---------|-------------------|--------------------|
@@ -61,7 +61,7 @@ Also known as "Second-stage Pretraining."
 
 ---
 
-## Hyperparameter Tuning
+## Hyperparameter Tuning {#hyperparameter-tuning}
 
 ### 1. Learning Rate (LR)
 - **SFT**: `1e-5` to `5e-5` is standard.
@@ -78,7 +78,7 @@ To maximize throughput, we "pack" multiple short examples into a single 4k or 8k
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why use Continued Pretraining instead of just putting domain data in the SFT set?
 
@@ -94,7 +94,7 @@ This is "Catastrophic Forgetting." Two main mitigations:
 
 ---
 
-## References
+## References {#references}
 - Hu et al. "LoRA: Low-Rank Adaptation of Large Language Models" (2021)
 - Ouyang et al. "Training language models to follow instructions" (InstructGPT, 2022)
 - Dettmers et al. "QLoRA: Efficient Finetuning of Quantized LLMs" (2023)

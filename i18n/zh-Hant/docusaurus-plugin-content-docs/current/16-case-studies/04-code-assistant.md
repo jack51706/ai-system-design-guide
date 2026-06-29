@@ -15,7 +15,7 @@
 
 ---
 
-## 問題陳述
+## 問題陳述 {#problem-statement}
 
 **公司：** 開發者工具公司，正在打造 IDE 擴充套件
 
@@ -33,7 +33,7 @@
 
 ---
 
-## 需求分析
+## 需求分析 {#requirements-analysis}
 
 ### 功能需求
 
@@ -57,7 +57,7 @@
 
 ---
 
-## 架構設計
+## 架構設計 {#architecture-design}
 
 ### 高層架構
 
@@ -195,7 +195,7 @@ flowchart TD
 
 ---
 
-## 程式碼生成管線
+## 程式碼生成管線 {#code-generation-pipeline}
 
 ### 補全服務（2025 年 12 月）
 
@@ -241,7 +241,7 @@ class AgenticGeneration:
 
 ---
 
-## 品質保證
+## 品質保證 {#quality-assurance}
 
 ### 多階段驗證
 
@@ -375,7 +375,7 @@ class AcceptanceOptimizer:
 
 ---
 
-## 效能優化
+## 效能優化 {#performance-optimization}
 
 ### 延遲優化
 
@@ -434,7 +434,7 @@ class CompletionCache:
 
 ---
 
-## 成果與指標
+## 成果與指標 {#results-and-metrics}
 
 ### 效能成果
 
@@ -461,7 +461,7 @@ class CompletionCache:
 
 ---
 
-## 面試逐步講解
+## 面試逐步講解 {#interview-walkthrough}
 
 **面試官：** 「為 IDE 設計一套 AI 程式碼助理。」
 

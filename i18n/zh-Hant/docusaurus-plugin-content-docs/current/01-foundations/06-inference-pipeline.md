@@ -20,7 +20,7 @@
 
 ---
 
-## 生成基礎
+## 生成基礎 {#generation-basics}
 
 LLM 以自迴歸方式生成文字：一次一個 token，使用所有先前的 token 作為上下文。
 
@@ -56,7 +56,7 @@ def generate(prompt: str, max_tokens: int, model) -> str:
 
 ---
 
-## Prefill 與 Decode 階段
+## Prefill 與 Decode 階段 {#prefill-and-decode-phases}
 
 推論有兩個特性各異的明確階段：
 
@@ -118,7 +118,7 @@ Decode step 2:
 
 ---
 
-## 採樣策略
+## 採樣策略 {#sampling-strategies}
 
 計算出 logits 之後，我們需要選擇下一個 token。不同策略會產生不同的輸出。
 
@@ -221,7 +221,7 @@ def apply_repetition_penalty(logits, generated_tokens, penalty=1.2):
 
 ---
 
-## 停止條件
+## 停止條件 {#stopping-conditions}
 
 生成會持續進行，直到滿足某個停止條件：
 
@@ -340,7 +340,7 @@ Throughput = concurrent_requests * TPS / average_output_tokens
 
 ---
 
-## 記憶體與運算需求
+## 記憶體與運算需求 {#memory-and-compute-requirements}
 
 ### 模型權重
 
@@ -396,7 +396,7 @@ At 40 tokens/sec:
 
 ---
 
-## 串流
+## 串流 {#streaming}
 
 對於互動式應用，隨著 token 生成即時串流：
 
@@ -433,7 +433,7 @@ async for event in sse_client.stream("/generate"):
 
 ---
 
-## 生產環境考量
+## 生產環境考量 {#production-considerations}
 
 ### 為吞吐量而批次處理
 
@@ -449,7 +449,7 @@ batch = collect_requests(timeout=10ms, max_batch=32)
 responses = model.generate_batch(batch)
 ```
 
-### 連續批次處理與前綴快取
+### 連續批次處理與前綴快取 {#continuous-batching-and-prefix-caching}
 
 **連續批次處理（迭代層級排程，Iteration-level Scheduling）：**
 與靜態批次處理不同，連續批次處理會在批次中任一請求遇到 EOS token 時立即注入新請求。這可將吞吐量提升最多 20 倍。
@@ -459,7 +459,7 @@ responses = model.generate_batch(batch)
 - **TTFT 降低**：90%
 - **機制**：使用前綴的雜湊值，在 GPU 記憶體的 LRU 快取中查找 KV 張量。
 
-### Multi-LoRA 服務
+### Multi-LoRA 服務 {#multi-lora-serving}
 
 **情境：** 在單一基礎模型上服務 1000 個不同的微調模型（adapter）。
 **挑戰：** 載入 1000 個獨立模型會佔用數 TB 的 VRAM。
@@ -541,7 +541,7 @@ def calculate_cost(metrics: RequestMetrics) -> float:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：說明 prefill 與 decode 階段的差異。
 
@@ -642,7 +642,7 @@ Llama 70B 服務的範例：
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Holtzman et al. "The Curious Case of Neural Text Degeneration"（nucleus 採樣，2020）
 - Kwon et al. "Efficient Memory Management for Large Language Model Serving with PagedAttention"（vLLM，2023）

@@ -17,7 +17,7 @@ Observability for LLM systems requires adapting the three pillars of logs, metri
 
 ---
 
-## Why LLM Observability is Different
+## Why LLM Observability is Different {#why-llm-observability-is-different}
 
 Traditional observability focuses on:
 - Request/response patterns
@@ -34,7 +34,7 @@ LLM systems add:
 
 ---
 
-## The Three Pillars
+## The Three Pillars {#the-three-pillars}
 
 ### Logging
 
@@ -174,7 +174,7 @@ async def rag_query(query: str) -> str:
 
 ---
 
-## Key Metrics
+## Key Metrics {#key-metrics}
 
 ### Operational Metrics
 
@@ -209,7 +209,7 @@ async def rag_query(query: str) -> str:
 
 ---
 
-## Quality Monitoring
+## Quality Monitoring {#quality-monitoring}
 
 ### Sampling Strategy
 
@@ -291,7 +291,7 @@ class QualityDriftDetector:
 
 ---
 
-## Cost Tracking
+## Cost Tracking {#cost-tracking}
 
 ### Real-Time Cost Calculation
 
@@ -364,7 +364,7 @@ class CostAttributor:
 
 ---
 
-## Alerting Strategy
+## Alerting Strategy {#alerting-strategy}
 
 ### Alert Configuration
 
@@ -417,7 +417,7 @@ alerts:
 
 ---
 
-## Observability Tools
+## Observability Tools {#observability-tools}
 
 ### LLM-Specific Tools
 
@@ -467,7 +467,7 @@ async def traced_rag_query(query: str) -> str:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: What metrics would you track for a production LLM system?
 
@@ -521,7 +521,7 @@ I also maintain a golden test set of queries with expected behaviors that I run 
 
 ---
 
-## References
+## References {#references}
 
 - OpenTelemetry: https://opentelemetry.io/
 - Langfuse: https://langfuse.com/docs

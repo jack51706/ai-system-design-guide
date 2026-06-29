@@ -17,7 +17,7 @@ Complex systems are rarely one agent. They are teams of specialized agents. Orch
 
 ---
 
-## Why Multi-Agent?
+## Why Multi-Agent? {#why}
 
 A single agent with 50 tools experiences **Cognitive Load**.
 1. **Specialization**: A "Code Agent" can use a model optimized for Python, while a "Search Agent" uses a model optimized for RAG.
@@ -48,7 +48,7 @@ The most common enterprise pattern as of 2026.
 
 ---
 
-## Graph-Based Orchestration (2026 Dominant Pattern)
+## Graph-Based Orchestration (2026 Dominant Pattern) {#graph-orchestration}
 
 The architectural momentum in 2026 has shifted decisively toward **graph-based orchestration**, where agent workflows are modeled as directed graphs with typed state.
 
@@ -75,7 +75,7 @@ A notable 2026 development is **Paperclip** (44,900 GitHub stars within three we
 
 ---
 
-## Cross-Vendor Agent Orchestration via A2A
+## Cross-Vendor Agent Orchestration via A2A {#cross-vendor}
 
 The **Agent-to-Agent (A2A) protocol** (see [Tool Use and MCP](03-tool-use-and-mcp.md#a2a)) enables a new multi-agent pattern: **cross-vendor orchestration**. Before A2A, multi-agent systems required all agents to share the same framework and runtime. Now:
 
@@ -90,7 +90,7 @@ The **Agent-to-Agent (A2A) protocol** (see [Tool Use and MCP](03-tool-use-and-mc
 
 ---
 
-## The 2026 Framework Landscape for Multi-Agent
+## The 2026 Framework Landscape for Multi-Agent {#framework-landscape}
 
 Every major AI lab now ships an agent framework. The multi-agent orchestration landscape as of May 2026:
 
@@ -131,7 +131,7 @@ For high-accuracy tasks (e.g., Legal or Medical), we use **Agentic Debate**.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: What are the main failure modes of a "Supervisor" multi-agent architecture?
 
@@ -150,7 +150,7 @@ I keep agents in a single framework when the team owns all agents, they share th
 
 ---
 
-## References
+## References {#references}
 - Wu et al. "AutoGPT: An Autonomous GPT-4 Experiment" (Historical/2025 update)
 - Li et al. "Camel: Communicative Agents for 'Mind' Exploration" (2023/2025)
 - OpenAI. "Swarms Framework" (2024/2025)

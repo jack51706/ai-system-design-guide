@@ -21,7 +21,7 @@
 
 ---
 
-## 什麼是電腦使用代理？
+## 什麼是電腦使用代理？ {#what-are-computer-use-agents}
 
 電腦使用代理是一種 LLM，它透過解讀截圖並發出低階輸入指令（滑鼠移動、點擊、鍵盤輸入）來控制圖形介面。它取代了人機互動迴圈中的人類角色。
 
@@ -61,7 +61,7 @@ flowchart TD
 
 ---
 
-## 截圖、推理、執行的迴圈
+## 截圖、推理、執行的迴圈 {#the-screenshot-reason-act-loop}
 
 每個電腦使用代理都遵循相同的核心迴圈，通常稱為「代理迴圈（agent loop）」或「動作迴圈（action loop）」：
 
@@ -86,7 +86,7 @@ flowchart TD
 
 ---
 
-## Claude Computer Use：工具與 API
+## Claude Computer Use：工具與 API {#claude-computer-use-tools-and-api}
 
 Claude 為電腦使用提供三個內建工具。這些是 Anthropic 定義的工具，你不需要撰寫實作，Claude 知道如何產生對這些工具的呼叫，而你的執行環境會在環境中執行它們。
 
@@ -161,7 +161,7 @@ response = client.messages.create(
 
 ---
 
-## 架構：沙箱化環境
+## 架構：沙箱化環境 {#architecture-sandboxed-environments}
 
 電腦使用代理必須在隔離的環境中執行。模型擁有滑鼠與鍵盤的完整控制權，你絕對不會想讓它在你的生產環境工作站上動作。
 
@@ -201,7 +201,7 @@ flowchart TD
 
 ---
 
-## 瀏覽器自動化 vs 桌面自動化
+## 瀏覽器自動化 vs 桌面自動化 {#browser-vs-desktop-automation}
 
 | 面向 | 僅限瀏覽器 | 完整桌面 |
 |-----------|-------------|--------------|
@@ -215,7 +215,7 @@ flowchart TD
 
 ---
 
-## 與傳統自動化的比較
+## 與傳統自動化的比較 {#comparison-with-traditional-automation}
 
 Selenium、Playwright 與 Puppeteer 透過直接存取 DOM 來自動化瀏覽器。電腦使用代理則處理像素。兩者在生產環境中都有其用武之地。
 
@@ -232,7 +232,7 @@ Selenium、Playwright 與 Puppeteer 透過直接存取 DOM 來自動化瀏覽器
 
 ---
 
-## 何時電腦使用會勝過 API 呼叫
+## 何時電腦使用會勝過 API 呼叫 {#when-computer-use-beats-api-calls}
 
 **在以下情況使用電腦使用：** 沒有 API 存在（舊有系統）、反機器人保護封鎖了 Selenium、需要視覺判斷（圖表驗證、PDF 版面）、UI 變動的速度快過選擇器能維護的速度，或工作流程橫跨多個桌面應用程式。
 
@@ -240,7 +240,7 @@ Selenium、Playwright 與 Puppeteer 透過直接存取 DOM 來自動化瀏覽器
 
 ---
 
-## 錯誤處理與復原
+## 錯誤處理與復原 {#error-handling-and-recovery}
 
 電腦使用代理的失敗方式與基於 API 的工具不同。主要的失敗模式：
 
@@ -280,7 +280,7 @@ Cookie 橫幅、彈出視窗、權限對話框會在意料之外出現：
 
 ---
 
-## 效能：延遲、成本、吞吐量
+## 效能：延遲、成本、吞吐量 {#performance-latency-cost-throughput}
 
 ### 延遲拆解
 
@@ -316,7 +316,7 @@ Cookie 橫幅、彈出視窗、權限對話框會在意料之外出現：
 
 ---
 
-## 真實世界應用
+## 真實世界應用 {#real-world-applications}
 
 | 應用 | 運作方式 | 為何使用電腦使用 |
 |------------|--------------|------------------|
@@ -327,7 +327,7 @@ Cookie 橫幅、彈出視窗、權限對話框會在意料之外出現：
 
 ---
 
-## 安全性考量
+## 安全性考量 {#security-considerations}
 
 | 風險 | 會發生什麼 | 緩解措施 |
 |------|-------------|------------|
@@ -340,7 +340,7 @@ Cookie 橫幅、彈出視窗、權限對話框會在意料之外出現：
 
 ---
 
-## 程式碼範例
+## 程式碼範例 {#code-examples}
 
 ### 最小化的代理迴圈
 
@@ -420,7 +420,7 @@ CMD Xvfb :1 -screen 0 1280x800x24 & sleep 1 && mutter & tint2 & \
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：某客戶每天有 500 份保險理賠 PDF，必須登錄到一個沒有 API 的舊有網頁入口網站。請使用電腦使用代理設計一套系統。
 
@@ -444,7 +444,7 @@ Selenium 直接與 DOM 互動，它快速、具決定性，且成本低。但它
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Anthropic. "Computer Use Tool" API Documentation (2025)
 - Anthropic. "Bash Tool" and "Text Editor Tool" API Documentation (2025)

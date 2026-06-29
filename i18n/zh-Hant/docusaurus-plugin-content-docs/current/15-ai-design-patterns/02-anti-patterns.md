@@ -14,7 +14,7 @@
 
 ---
 
-## 架構反模式
+## 架構反模式 {#architecture-anti-patterns}
 
 ### 萬能提示（The God Prompt）
 
@@ -111,7 +111,7 @@ Consider fine-tuning (with 500+ examples)
 
 ---
 
-## RAG 反模式
+## RAG 反模式 {#rag-anti-patterns}
 
 ### 全部檢索（Retrieve Everything）
 
@@ -204,7 +204,7 @@ results = vector_db.search(
 
 ---
 
-## 代理反模式
+## 代理反模式 {#agent-anti-patterns}
 
 ### 無窮迴圈風險
 
@@ -309,7 +309,7 @@ async def handle_message(session_id: str, message: str) -> str:
 
 ---
 
-## 提示反模式
+## 提示反模式 {#prompting-anti-patterns}
 
 ### 模糊的指令
 
@@ -382,7 +382,7 @@ response = await llm.generate(prompt, response_format={"type": "json_object"})
 
 ---
 
-## 評估反模式
+## 評估反模式 {#evaluation-anti-patterns}
 
 ### 憑感覺評估（Vibes-Based Evaluation）
 
@@ -454,7 +454,7 @@ final_accuracy = evaluate(test_set)
 
 ---
 
-## 生產環境反模式
+## 生產環境反模式 {#production-anti-patterns}
 
 ### 沒有速率限制
 
@@ -515,7 +515,7 @@ async def answer_faq(question: str) -> str:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：在 LLM 應用中，你見過最嚴重的反模式是什麼？
 

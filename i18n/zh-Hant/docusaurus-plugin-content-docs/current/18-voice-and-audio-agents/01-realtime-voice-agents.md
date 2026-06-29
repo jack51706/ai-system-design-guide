@@ -17,7 +17,7 @@
 
 ---
 
-## 兩種架構
+## 兩種架構 {#the-two-architectures}
 
 每個語音代理都是兩種形態之一。
 
@@ -41,7 +41,7 @@
 
 ---
 
-## 管線逐個元件解析
+## 管線逐個元件解析 {#the-pipeline-component-by-component}
 
 **語音活動偵測（Voice Activity Detection，VAD）。** 第一層即時地把每個音訊幀分類為語音或靜音。Silero VAD 是事實上的開源標準，已原生整合進主要框架，而且只增加約 10-50ms。VAD 本身無法分辨句中停頓與一個回合的結束，這正是下一個問題。
 
@@ -57,7 +57,7 @@
 
 ---
 
-## 延遲預算
+## 延遲預算 {#latency-budgets}
 
 在自然的人類對話中，一個人說完到另一個人開始說之間的間隙平均約為 **~200ms**。在端到端大約 700ms 以下，代理感覺像真人；超過這個數字，來電者就會開始打斷與重複。一個全串流級聯的實際每回合預算如下：
 
@@ -75,7 +75,7 @@
 
 ---
 
-## 2026 年的技術堆疊
+## 2026 年的技術堆疊 {#the-2026-stack}
 
 請把具體的名稱、版本與價格當成某個時間點的快照。
 
@@ -87,7 +87,7 @@
 
 ---
 
-## 生產環境考量
+## 生產環境考量 {#production-concerns}
 
 **ASR 錯誤是主要的失效。** 值得內化的基準測試發現是：身分驗證是瓶頸，因為一旦代理聽錯一個姓名、電子郵件或確認碼，下游的一切就全部失敗。防禦手段：用信賴閾值把低信賴度的片段導向一個澄清問題（「你是說……嗎？」），以及針對姓名、SKU 與英數字串的自訂詞彙／關鍵字加權。
 
@@ -103,7 +103,7 @@
 
 ---
 
-## 誠實看待成熟度
+## 誠實看待成熟度 {#honest-maturity}
 
 2026 年運作良好的部分：在調校過的級聯堆疊與 S2S 上，達到次秒級、感覺自然的單回合延遲；勝過靜音閾值的學習式輪替偵測；級聯執行期中的確定性插話；S2S 中富有表現力的韻律；以及成熟的工具生態系。
 
@@ -111,7 +111,7 @@
 
 ---
 
-## 面試題
+## 面試題 {#interview-questions}
 
 ### Q：帶我走過一個語音代理的延遲預算。毫秒都花到哪裡去了，而單一最大的槓桿是什麼？
 
@@ -125,7 +125,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Sierra, "tau-Voice: advancing agent benchmarking to knowledge and voice" arXiv:2603.13686, and [blog](https://sierra.ai/blog/bench-advancing-agent-benchmarking-to-knowledge-and-voice)
 - OpenAI, [Introducing the Realtime API](https://openai.com/index/introducing-the-realtime-api/)

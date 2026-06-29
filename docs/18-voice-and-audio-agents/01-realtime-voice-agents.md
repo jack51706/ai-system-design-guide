@@ -17,7 +17,7 @@ A scoping note: read this if you are building telephony, support, or voice-first
 
 ---
 
-## The Two Architectures
+## The Two Architectures {#the-two-architectures}
 
 Every voice agent is one of two shapes.
 
@@ -41,7 +41,7 @@ A reality check that applies to both: neither wins latency by default. WebSocket
 
 ---
 
-## The Pipeline, Component by Component
+## The Pipeline, Component by Component {#the-pipeline-component-by-component}
 
 **Voice Activity Detection (VAD).** The first layer classifies each audio frame as speech or silence in real time. Silero VAD is the de-facto open-source standard, integrated natively in the major frameworks, and adds only about 10-50ms. VAD alone cannot tell a mid-sentence pause from the end of a turn, which is the next problem.
 
@@ -57,7 +57,7 @@ A reality check that applies to both: neither wins latency by default. WebSocket
 
 ---
 
-## Latency Budgets
+## Latency Budgets {#latency-budgets}
 
 In natural human conversation, the gap between one person finishing and the other starting averages **~200ms**. Below roughly 700ms end-to-end an agent feels human; above it, callers start interrupting and repeating. A realistic per-turn budget for a fully-streaming cascade:
 
@@ -75,7 +75,7 @@ Naive non-streaming stacks run 1000-2000ms or worse. The levers, in order of imp
 
 ---
 
-## The 2026 Stack
+## The 2026 Stack {#the-2026-stack}
 
 Treat specific names, versions, and prices as a point-in-time snapshot.
 
@@ -87,7 +87,7 @@ Treat specific names, versions, and prices as a point-in-time snapshot.
 
 ---
 
-## Production Concerns
+## Production Concerns {#production-concerns}
 
 **ASR errors are the dominant failure.** The benchmark finding worth internalizing: authentication is the bottleneck, because once the agent mishears a name, email, or confirmation code, everything downstream fails. Defenses: confidence thresholds that route low-confidence spans to a clarifying question ("did you say...?"), and custom vocabulary / keyword boosting for names, SKUs, and alphanumerics.
 
@@ -103,7 +103,7 @@ Treat specific names, versions, and prices as a point-in-time snapshot.
 
 ---
 
-## Honest Maturity
+## Honest Maturity {#honest-maturity}
 
 What works well in 2026: sub-second, natural-feeling single-turn latency on tuned cascaded stacks and on S2S; learned turn detection that beats silence thresholds; deterministic barge-in in cascaded runtimes; expressive prosody in S2S; and a mature tooling ecosystem.
 
@@ -111,7 +111,7 @@ What is still hard: full-duplex naturalness (graceful overlap, backchanneling, r
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Walk me through the latency budget of a voice agent. Where do the milliseconds go, and what is the single biggest lever?
 
@@ -125,7 +125,7 @@ Cascaded for anything needing auditability, compliance, provider flexibility, de
 
 ---
 
-## References
+## References {#references}
 
 - Sierra, "tau-Voice: advancing agent benchmarking to knowledge and voice" arXiv:2603.13686, and [blog](https://sierra.ai/blog/bench-advancing-agent-benchmarking-to-knowledge-and-voice)
 - OpenAI, [Introducing the Realtime API](https://openai.com/index/introducing-the-realtime-api/)

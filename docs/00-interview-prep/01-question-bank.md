@@ -67,7 +67,7 @@ mindmap
 
 ---
 
-## RAG Architecture Questions
+## RAG Architecture Questions {#rag-architecture-questions}
 
 A canonical production RAG pipeline maps to questions Q1-Q10. The diagram below is the architecture most strong candidates draw on the whiteboard; the questions probe each stage in turn.
 
@@ -484,7 +484,7 @@ I choose the isolation level based on compliance requirements and customer sensi
 
 ---
 
-## Agentic Systems Questions
+## Agentic Systems Questions {#agentic-systems-questions}
 
 Q11-Q17 explore reasoning loops, tool use, and multi-agent design. The canonical ReAct loop below is the mental model strong candidates anchor their answers to:
 
@@ -867,7 +867,7 @@ flowchart TD
 
 ---
 
-## Model Selection Questions
+## Model Selection Questions {#model-selection-questions}
 
 ### Q18: How do you choose between Claude Sonnet 4.6, GPT-5.5, and Gemini 3.1 Pro for a production workload?
 
@@ -1040,7 +1040,7 @@ I never rely solely on benchmark scores. A model that ranks lower on a public le
 
 ---
 
-## Optimization Questions
+## Optimization Questions {#optimization-questions}
 
 ### Q22: Explain the KV cache and why it matters
 
@@ -1287,7 +1287,7 @@ I set alerts for cost spikes and A/B test any optimization to ensure quality is 
 
 ---
 
-## Evaluation Questions
+## Evaluation Questions {#evaluation-questions}
 
 ### Q27: How do you evaluate LLM outputs when there is no ground truth?
 
@@ -1487,7 +1487,7 @@ The key insight is that hallucination cannot be fully eliminated. I design syste
 
 ---
 
-## Production and MLOps Questions
+## Production and MLOps Questions {#production-and-mlops-questions}
 
 ### Q30: How do you implement observability for LLM applications?
 
@@ -1711,7 +1711,7 @@ async def call_llm_with_retry(prompt):
 
 ---
 
-## Tooling and Lifecycle Questions
+## Tooling and Lifecycle Questions {#tooling-and-lifecycle-questions}
 
 ### Q34: Explain the tradeoffs between different vector database options
 
@@ -1977,7 +1977,7 @@ The key is automation. Every change runs through this pipeline before reaching u
 
 ---
 
-## Ensemble Methods Questions
+## Ensemble Methods Questions {#ensemble-methods-questions}
 
 ### Q40: When would you use Self-Consistency vs Best-of-N sampling?
 
@@ -2336,7 +2336,7 @@ Users perceive streaming responses as 2-3x faster than waiting for complete resp
 
 ---
 
-## System Design Scenarios
+## System Design Scenarios {#system-design-scenarios}
 
 ### Scenario 1: Design a customer support chatbot
 
@@ -2504,7 +2504,7 @@ Users perceive streaming responses as 2-3x faster than waiting for complete resp
 
 ---
 
-## Advanced Questions (December 2025)
+## Advanced Questions (December 2025) {#advanced-questions-december-2025}
 
 This section covers cutting-edge topics that are increasingly common in staff+ interviews.
 
@@ -3051,7 +3051,7 @@ The key insight: Assume code execution will be exploited. Design so that exploit
 
 ---
 
-## Advanced Questions - March 2026
+## Advanced Questions - March 2026 {#advanced-questions--march-2026}
 
 *New questions surfaced from Glassdoor, Reddit r/MachineLearning, Blind, and MLOps community forums - November 2025 through March 2026. Topics: Extended Thinking, agentic coding, open-weight cost shock, prompt caching, evals, MCP security.*
 
@@ -3710,7 +3710,7 @@ Error analysis is discovery. Automated evals are measurement. Discovery must pre
 
 ---
 
-## Advanced Questions - May 2026
+## Advanced Questions - May 2026 {#advanced-questions--may-2026}
 
 *New questions surfaced from Glassdoor, Blind, LinkedIn interview write-ups, Latent Space, Anthropic / OpenAI / Sierra / Cursor / Mistral / Perplexity / Forward Deployed loops, and AI-native hiring rubrics published April-June 2026. Themes: GPT-5.5 vs Claude Opus 4.8, the May AI-security inflection (Mythos, Daybreak, MDASH, first AI-built zero-day in the wild) and its June resolution (Fable 5 brought Mythos-class capability to general availability), DeepSeek V4 economics, Llama 4 Scout's 10M-context reality, A2A v1.0 vs MCP, computer-use agents, Forward Deployed Engineering, distillation as a budgeted line item, EU AI Act enforcement, and agent-as-judge eval evolution. Designed for senior+ candidates and engineering leaders.*
 
@@ -4854,7 +4854,7 @@ Hallucination is now a P0 incident class, like a security breach. Treat it accor
 
 ---
 
-## Advanced Questions - June 2026
+## Advanced Questions - June 2026 {#advanced-questions--june-2026}
 
 *Fresh questions reflecting the June 2026 landscape: the Claude Fable 5 launch and its safeguard architecture, agentic context engineering becoming standard interview vocabulary, computer-use agents in production, Agent Skills, eval gaming, and cost-aware multi-provider routing. Designed for senior+ candidates.*
 

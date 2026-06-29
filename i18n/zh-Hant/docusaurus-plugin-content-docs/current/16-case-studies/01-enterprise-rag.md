@@ -15,7 +15,7 @@
 
 ---
 
-## 問題陳述
+## 問題陳述 {#problem-statement}
 
 ### 情境
 
@@ -35,7 +35,7 @@
 
 ---
 
-## 需求分析
+## 需求分析 {#requirements-analysis}
 
 ### 功能性需求
 
@@ -66,7 +66,7 @@
 
 ---
 
-## 系統架構
+## 系統架構 {#system-architecture}
 
 ### 高階架構
 
@@ -146,7 +146,7 @@ flowchart TD
 
 ---
 
-## 元件深入剖析
+## 元件深入剖析 {#component-deep-dives}
 
 ### 文件匯入管線
 
@@ -436,7 +436,7 @@ class GeminiGenerator:
 
 ---
 
-## 擴展考量
+## 擴展考量 {#scaling-considerations}
 
 ### 處理 500K 份文件
 
@@ -521,7 +521,7 @@ class QueryCache:
 
 ---
 
-## 成本分析
+## 成本分析 {#cost-analysis}
 
 ### 每月成本估算（500 名使用者，每名使用者每天 100 次查詢）
 
@@ -544,7 +544,7 @@ class QueryCache:
 
 ---
 
-## 經驗教訓
+## 經驗教訓 {#lessons-learned}
 
 ### 哪些做得好
 
@@ -569,7 +569,7 @@ class QueryCache:
 
 ---
 
-## 面試演練
+## 面試演練 {#interview-walkthrough}
 
 ### 如何在面試中呈現這套設計
 

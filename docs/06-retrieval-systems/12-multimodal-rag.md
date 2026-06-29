@@ -18,7 +18,7 @@ Multi-modal RAG extends retrieval-augmented generation beyond plain text to hand
 
 ---
 
-## Why Text-Only RAG Fails
+## Why Text-Only RAG Fails {#why-text-only-rag-fails}
 
 Traditional RAG pipelines parse documents into text chunks, embed them, and retrieve against a text query. This breaks on real-world documents:
 
@@ -34,7 +34,7 @@ Traditional RAG pipelines parse documents into text chunks, embed them, and retr
 
 ---
 
-## Architecture Patterns
+## Architecture Patterns {#architecture-patterns}
 
 There are three dominant patterns for multi-modal RAG, each with distinct trade-offs:
 
@@ -100,7 +100,7 @@ flowchart LR
 
 ---
 
-## Multi-Modal Embedding Strategies
+## Multi-Modal Embedding Strategies {#multi-modal-embedding-strategies}
 
 ### CLIP (Contrastive Language-Image Pretraining)
 
@@ -140,7 +140,7 @@ flowchart TD
 
 ---
 
-## Vision-Language Models for Document Understanding
+## Vision-Language Models for Document Understanding {#vision-language-models}
 
 VLMs serve two roles in multi-modal RAG: (1) as the **generator** that synthesizes answers from retrieved multi-modal context, and (2) as the **indexing engine** that extracts structured information at ingestion time.
 
@@ -177,7 +177,7 @@ This "describe-then-embed" approach converts visual content into searchable text
 
 ---
 
-## ColPali and Vision-Based Retrieval
+## ColPali and Vision-Based Retrieval {#colpali}
 
 ColPali represents a paradigm shift: instead of building complex OCR + layout + table extraction pipelines, treat each document page as a single image and let a vision-language model handle everything.
 
@@ -221,7 +221,7 @@ ColPali excels on visually complex benchmarks like InfographicVQA, ArxivQA, and 
 
 ---
 
-## Table Extraction and Structured Data Retrieval
+## Table Extraction and Structured Data Retrieval {#table-extraction}
 
 Tables are the hardest modality for traditional RAG. Flattening a table row-by-row destroys the column-header relationships that give each cell meaning.
 
@@ -266,7 +266,7 @@ flowchart TD
 
 ---
 
-## Chart and Diagram Understanding
+## Chart and Diagram Understanding {#chart-understanding}
 
 ### Chart Types and Extraction Approaches
 
@@ -295,7 +295,7 @@ This ensures the chart is retrievable by both text queries ("what was APAC reven
 
 ---
 
-## Production Architecture
+## Production Architecture {#production-architecture}
 
 ### Full Multi-Modal RAG Pipeline
 
@@ -335,7 +335,7 @@ flowchart TD
 
 ---
 
-## Implementation Example
+## Implementation Example {#implementation-example}
 
 ### End-to-End Multi-Modal RAG with ColPali + VLM
 
@@ -465,7 +465,7 @@ def generate_answer(query: str, retrieved_context: list) -> str:
 
 ---
 
-## System Design Interview Angle
+## System Design Interview Angle {#system-design-interview-angle}
 
 ### Q: Design a RAG system for a financial research platform that needs to answer questions about earnings reports containing text, tables, and charts.
 
@@ -501,7 +501,7 @@ The key insight is that cross-modal questions are inherently multi-hop. The syst
 
 ---
 
-## References
+## References {#references}
 
 - Faysse et al. "ColPali: Efficient Document Retrieval with Vision Language Models" (ICLR 2025)
 - Google. "SigLIP 2: Multilingual Vision-Language Encoders" (2025)

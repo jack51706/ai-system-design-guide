@@ -17,7 +17,7 @@ Once you depend on multiple models and your traffic is non-trivial, a single pro
 
 ---
 
-## What an AI Gateway Is
+## What an AI Gateway Is {#what-an-ai-gateway-is}
 
 An AI gateway (also LLM gateway, LLM proxy, or LLM router) is a **control plane between your applications and model providers**, exposing one consistent (almost always OpenAI-compatible) API and centralizing the cross-cutting concerns that would otherwise be smeared across every service.
 
@@ -39,7 +39,7 @@ The mental model: a gateway converts an `N providers x M concerns` glue problem 
 
 ---
 
-## Routing Strategies
+## Routing Strategies {#routing-strategies}
 
 Routing strategies form a ladder of increasing complexity and overhead. As a rough sense of scale (vendor/practitioner figures, order-of-magnitude only): rule-based routing adds under ~1ms, embedding/semantic routing ~5ms, and heavier ML classifiers or an LLM-as-router ~50-100ms, all against typical model latencies of 500-2000ms.
 
@@ -60,7 +60,7 @@ Routing and fallback compose: route for cost/quality/latency on the happy path, 
 
 ---
 
-## Fallback and Reliability
+## Fallback and Reliability {#fallback-and-reliability}
 
 This is the section that answers the Datadog data directly: rate limits cause most production failures, and fallback machinery is the antidote.
 
@@ -76,7 +76,7 @@ The caution to internalize: **blind retries amplify outages** by adding load dur
 
 ---
 
-## The 2026 Tool Landscape
+## The 2026 Tool Landscape {#the-2026-tool-landscape}
 
 Treat versions and exact feature claims as point-in-time, and note that several comparison figures below come from vendor marketing.
 
@@ -92,7 +92,7 @@ Treat versions and exact feature claims as point-in-time, and note that several 
 
 ---
 
-## Architecture Patterns
+## Architecture Patterns {#architecture-patterns}
 
 - **Where it sits:** between application services and providers, as a horizontally scaled service or sidecar. All LLM traffic flows through it, so it inherits the reliability requirements of any critical-path infrastructure.
 - **The network-hop tax:** the gateway adds one hop. Mitigate by co-locating it with your app (same region/VPC/cluster) so the hop is sub-millisecond, keeping the proxy thin, and caching aggressively so hits skip the provider entirely. The hop is modest against 500-2000ms model latency, but real under load.
@@ -102,7 +102,7 @@ Treat versions and exact feature claims as point-in-time, and note that several 
 
 ---
 
-## Do You Need a Gateway Yet?
+## Do You Need a Gateway Yet? {#do-you-need-a-gateway-yet}
 
 **Probably not** (use a thin in-app abstraction) when you have a single provider, a prototype, or one or two providers behind a small wrapper that still fits in your head. Direct SDK calls are simpler with fewer moving parts. This is the same thin-layer idea argued in [Navigating Framework Churn](../09-frameworks-and-tools/12-navigating-framework-churn.md).
 
@@ -114,7 +114,7 @@ Treat versions and exact feature claims as point-in-time, and note that several 
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Rate-limit errors are your top production failure. How does a gateway help, and how could it make things worse?
 
@@ -128,7 +128,7 @@ For a single provider or a prototype, a gateway is overkill; it adds a network h
 
 ---
 
-## References
+## References {#references}
 
 - Datadog, [State of AI Engineering 2026](https://www.datadoghq.com/state-of-ai-engineering/) and the [press release](https://www.datadoghq.com/about/latest-news/press-releases/datadog-state-of-ai-engineering-report-2026/)
 - [LiteLLM routing docs](https://docs.litellm.ai/docs/routing) and [load balancing](https://docs.litellm.ai/docs/proxy/load_balancing)

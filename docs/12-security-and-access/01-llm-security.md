@@ -16,7 +16,7 @@ Security in LLM systems is fundamentally different from traditional application 
 
 ---
 
-## LLM Security Landscape
+## LLM Security Landscape {#llm-security-landscape}
 
 ### New Threat Categories
 
@@ -47,7 +47,7 @@ LLMs introduce unique security challenges:
 
 ---
 
-## Prompt Injection
+## Prompt Injection {#prompt-injection}
 
 ### What Is Prompt Injection
 
@@ -177,7 +177,7 @@ def filter_output(response: str) -> str:
 
 ---
 
-## Data Leakage
+## Data Leakage {#data-leakage}
 
 ### Sources of Leakage
 
@@ -259,7 +259,7 @@ def check_system_prompt_leak(response: str, system_prompt: str) -> bool:
 
 ---
 
-## Output Security
+## Output Security {#output-security}
 
 ### Insecure Output Handling
 
@@ -338,7 +338,7 @@ class OutputValidator:
 
 ---
 
-## Access Control
+## Access Control {#access-control}
 
 ### Multi-Tenant Security
 
@@ -436,7 +436,7 @@ class SecureToolExecutor:
 
 ---
 
-## Defense in Depth
+## Defense in Depth {#defense-in-depth}
 
 ### Layered Security Architecture
 
@@ -495,7 +495,7 @@ class SecureLLMPipeline:
 
 ---
 
-## Security Testing
+## Security Testing {#security-testing}
 
 ### Prompt Injection Tests
 
@@ -655,7 +655,7 @@ Two design principles deserve emphasis. First, the trust level is data, not meta
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you defend against prompt injection?
 
@@ -711,7 +711,7 @@ Tenant isolation at every layer:
 
 ---
 
-## References
+## References {#references}
 
 - OWASP Top 10 for LLMs: https://owasp.org/www-project-top-10-for-large-language-model-applications/
 - Prompt Injection Defenses: https://learnprompting.org/docs/prompt_hacking/defensive_measures

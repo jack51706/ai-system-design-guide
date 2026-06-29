@@ -14,7 +14,7 @@ Structured Generation is the process of forcing an LLM to produce output in a ma
 
 ---
 
-## The JSON Mode Revolution
+## The JSON Mode Revolution {#json-mode}
 
 Historically, getting JSON was a struggle of "only return JSON, no other text."
 **Standard approach**: Use native `response_format: { type: "json_schema" }` (OpenAI/Gemini) or tool-output schemas (Anthropic).
@@ -24,7 +24,7 @@ Historically, getting JSON was a struggle of "only return JSON, no other text."
 
 ---
 
-## Function Calling & Tool Use
+## Function Calling & Tool Use {#function-calling}
 
 Function calling is structured generation where the LLM "picks" a function and populates its arguments.
 
@@ -40,7 +40,7 @@ Function calling is structured generation where the LLM "picks" a function and p
 
 ---
 
-## Constrained Decoding (CFG & Regex)
+## Constrained Decoding (CFG & Regex) {#constrained-decoding}
 
 For self-hosted models (Llama-cpp, vLLM via Outlines), we use **Context-Free Grammars (CFG)** or **Regex**.
 
@@ -53,7 +53,7 @@ generator = outlines.generate.regex(model, r"(\d{3})-\d{3}-\d{4}")
 
 ---
 
-## Multi-Stage Extraction Pattern
+## Multi-Stage Extraction Pattern {#multi-stage}
 
 For complex data extraction (e.g., 50 fields from a medical record), don't do it in one pass.
 - **Stage 1 (Text-to-Text)**: Extract a "messy" but complete set of facts in natural language.
@@ -62,7 +62,7 @@ For complex data extraction (e.g., 50 fields from a medical record), don't do it
 
 ---
 
-## Validation & Formatting Errors
+## Validation & Formatting Errors {#validation}
 
 Even with "JSON mode," the **Logic** inside the JSON might be wrong (e.g., a field is missing or a date is in the wrong format).
 
@@ -74,7 +74,7 @@ Even with "JSON mode," the **Logic** inside the JSON might be wrong (e.g., a fie
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is "JSON Mode" more reliable than prompt-based JSON requests?
 
@@ -88,7 +88,7 @@ There is a trade-off between **Schema Complexity** and **Information Integrity**
 
 ---
 
-## References
+## References {#references}
 - OpenAI. "Structured Outputs Documentation" (August 2024 update)
 - Outlines Project. "Context-Free Grammar Guided Generation" (2024)
 - Willard et al. "Efficient Guided Generation for LLMs" (2023)

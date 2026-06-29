@@ -14,7 +14,7 @@ State management in AI systems has moved from simple "sessions" to **Stateful Ag
 
 ---
 
-## The State Object
+## The State Object {#state-object}
 
 The "State" is the **Single Source of Truth** for an agent session.
 ```python
@@ -38,7 +38,7 @@ Industry has converged on **Cyclic Graphs** (State Machines).
 
 ---
 
-## Checkpointing and Resume
+## Checkpointing and Resume {#checkpointing}
 
 In production, agents can run for minutes or hours.
 - **Persistence Layer**: Every state update is saved to a DB (Postgres/Redis).
@@ -55,14 +55,14 @@ For complex tasks, we **Fork** the state.
 
 ---
 
-## Time-Travel (State Rewriting)
+## Time-Travel (State Rewriting) {#time-travel}
 
 As covered in the HITL chapter, state management allows for **Human Intervention**.
 - A developer can browse the session history, find a "bad turn," edit the state object at that specific timestamp, and **Re-run** the graph from that point.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why use a "Graph-based" State Machine (LangGraph) instead of a simple "While loop" for agents?
 
@@ -76,7 +76,7 @@ We use **State Pruning** and **Message Summarization**. Instead of carrying the 
 
 ---
 
-## References
+## References {#references}
 - LangChain. "LangGraph: Multi-Agent Workflows" (2024/2025)
 - Temporal.io. "Stateful AI Agents at Scale" (2025)
 - AWS Bedrock. "Managing Long-Running Agent Sessions" (2025)

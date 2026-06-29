@@ -13,7 +13,7 @@ This chapter covers frequent mistakes candidates make in AI system design interv
 
 ---
 
-## Architecture Pitfalls
+## Architecture Pitfalls {#architecture-pitfalls}
 
 ### Pitfall 1: Skipping the Data Pipeline
 
@@ -182,7 +182,7 @@ LLM providers have outages. Rate limits get hit. Failure handling separates prod
 
 ---
 
-## Technical Knowledge Pitfalls
+## Technical Knowledge Pitfalls {#technical-knowledge-pitfalls}
 
 ### Pitfall 6: Confusing Embedding and Generation Models
 
@@ -343,7 +343,7 @@ Naming two or three of these unprompted moves a prompting answer from junior to 
 
 ---
 
-## Communication Pitfalls
+## Communication Pitfalls {#communication-pitfalls}
 
 ### Pitfall 11: Monologuing Without Interaction
 
@@ -418,7 +418,7 @@ Let me revise my approach..."
 
 ---
 
-## Interview Strategy Pitfalls
+## Interview Strategy Pitfalls {#interview-strategy-pitfalls}
 
 ### Pitfall 15: Solving a Different Problem
 
@@ -468,7 +468,7 @@ Draw boxes and arrows as you explain. Label clearly. Use the diagram as a refere
 
 ---
 
-## AI-Specific Pitfalls
+## AI-Specific Pitfalls {#ai-specific-pitfalls}
 
 ### Pitfall 18: Treating AI Components as Black Boxes
 
@@ -523,7 +523,7 @@ passes through a content filter before reaching the user."
 
 ---
 
-## Checklists for Self-Review
+## Checklists for Self-Review {#checklists-for-self-review}
 
 ### Before the Interview
 

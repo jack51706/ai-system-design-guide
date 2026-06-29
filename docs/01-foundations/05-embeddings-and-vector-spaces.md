@@ -19,7 +19,7 @@ Embeddings are dense vector representations of text that capture semantic meanin
 
 ---
 
-## What Are Embeddings
+## What Are Embeddings {#what-are-embeddings}
 
 Embeddings map discrete text (words, sentences, documents) to continuous vector spaces where semantic similarity corresponds to geometric proximity.
 
@@ -33,7 +33,7 @@ Think of embeddings as coordinates in a very high-dimensional space. Dimensional
 
 ---
 
-## Embedding Model Architectures
+## Embedding Model Architectures {#embedding-model-architectures}
 
 ### Word Embeddings (Historical)
 
@@ -104,7 +104,7 @@ Alternative that processes query and document together:
 
 ---
 
-## Training Objectives
+## Training Objectives {#training-objectives}
 
 ### Contrastive Learning
 
@@ -151,7 +151,7 @@ This improves performance by specifying the intended use.
 
 ---
 
-## Distance Metrics
+## Distance Metrics {#distance-metrics}
 
 ### Cosine Similarity
 
@@ -207,7 +207,7 @@ def euclidean_distance(a, b):
 
 ---
 
-## Embedding Model Comparison
+## Embedding Model Comparison {#embedding-model-comparison}
 
 ### Current Top Models (December 2025)
 
@@ -242,7 +242,7 @@ def euclidean_distance(a, b):
 
 ---
 
-## Matryoshka and Adaptive Dimensions
+## Matryoshka and Adaptive Dimensions {#matryoshka-and-adaptive-dimensions}
 
 ### The Idea
 
@@ -413,7 +413,7 @@ def get_embedding(text: str, cache: dict) -> np.array:
 
 ---
 
-## Embedding Drift and Versioning
+## Embedding Drift and Versioning {#embedding-drift-and-versioning}
 
 ### The Problem
 
@@ -461,7 +461,7 @@ Query -> Both indexes -> Merge or switch
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do embedding models learn semantic similarity?
 
@@ -530,7 +530,7 @@ For most applications, 768-1024 dimensions provide good balance. The exception i
 
 ---
 
-## References
+## References {#references}
 
 - Reimers and Gurevych. "Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks" (2019)
 - Khattab and Zaharia. "ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT" (2020)

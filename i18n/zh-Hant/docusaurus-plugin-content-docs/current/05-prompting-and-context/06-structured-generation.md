@@ -14,7 +14,7 @@
 
 ---
 
-## JSON 模式的革命
+## JSON 模式的革命 {#json-mode}
 
 過去要取得 JSON 是一場「只回傳 JSON、不要其他文字」的苦戰。
 **標準做法**：使用原生的 `response_format: { type: "json_schema" }`（OpenAI/Gemini）或工具輸出 schema（Anthropic）。
@@ -24,7 +24,7 @@
 
 ---
 
-## 函式呼叫與工具使用
+## 函式呼叫與工具使用 {#function-calling}
 
 函式呼叫是一種結構化生成，由 LLM「挑選」一個函式並填入它的參數。
 
@@ -40,7 +40,7 @@
 
 ---
 
-## 約束式解碼（CFG 與 Regex）
+## 約束式解碼（CFG 與 Regex） {#constrained-decoding}
 
 對於自架（self-hosted）模型（透過 Outlines 使用的 Llama-cpp、vLLM），我們會使用 **上下文無關文法（Context-Free Grammars，CFG）** 或 **Regex**。
 
@@ -53,7 +53,7 @@ generator = outlines.generate.regex(model, r"(\d{3})-\d{3}-\d{4}")
 
 ---
 
-## 多階段擷取模式
+## 多階段擷取模式 {#multi-stage}
 
 對於複雜的資料擷取（例如從一份病歷中擷取 50 個欄位），不要一次完成。
 - **階段 1（Text-to-Text）**：以自然語言擷取一組「凌亂」但完整的事實。
@@ -62,7 +62,7 @@ generator = outlines.generate.regex(model, r"(\d{3})-\d{3}-\d{4}")
 
 ---
 
-## 驗證與格式錯誤
+## 驗證與格式錯誤 {#validation}
 
 即使有了「JSON 模式」，JSON 內部的 **邏輯** 仍可能是錯的（例如某個欄位遺漏，或日期格式錯誤）。
 
@@ -74,7 +74,7 @@ generator = outlines.generate.regex(model, r"(\d{3})-\d{3}-\d{4}")
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼「JSON 模式」比以提示為基礎的 JSON 請求更可靠？
 
@@ -88,7 +88,7 @@ generator = outlines.generate.regex(model, r"(\d{3})-\d{3}-\d{4}")
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - OpenAI. "Structured Outputs Documentation"（2024 年 8 月更新）
 - Outlines Project. "Context-Free Grammar Guided Generation"（2024）
 - Willard et al. "Efficient Guided Generation for LLMs"（2023）

@@ -22,7 +22,7 @@ Production RAG is no longer a weekend project. It is a distributed system with r
 
 ---
 
-## RAG vs Long Context
+## RAG vs Long Context {#rag-vs-long-context}
 
 With every major frontier family now supporting 1M+ token context windows (Claude Opus 4.7, Claude Sonnet 4.6, GPT-5.5, Gemini 3.1 Pro, Qwen 3.6 Plus, Llama 4 Maverick), the question is no longer "RAG or long context?" but "When does each win?"
 
@@ -65,7 +65,7 @@ flowchart TD
 
 ---
 
-## Query Routing and Classification
+## Query Routing and Classification {#query-routing}
 
 Not every query needs retrieval. A production system classifies incoming queries and routes them to the optimal handling path.
 
@@ -169,7 +169,7 @@ class DomainRouter:
 
 ---
 
-## Semantic Caching for RAG
+## Semantic Caching for RAG {#semantic-caching}
 
 Semantic caching recognizes when a new query has essentially the same meaning as a prior query and reuses the cached result. Production systems report up to 68% cost reduction and 65x latency improvement with well-tuned semantic caches.
 
@@ -261,7 +261,7 @@ async def on_document_updated(doc_id: str):
 
 ---
 
-## Multi-Index Strategies
+## Multi-Index Strategies {#multi-index}
 
 A single monolithic index does not scale. Production systems partition their vector indexes by domain, tenant, or document type to improve retrieval precision and operational isolation.
 
@@ -311,7 +311,7 @@ flowchart TD
 
 ---
 
-## RAG Pipeline Optimization
+## RAG Pipeline Optimization {#pipeline-optimization}
 
 A naive sequential RAG pipeline adds latency at every step. Production pipelines use parallelism, batching, and async processing to meet sub-second SLAs.
 
@@ -448,7 +448,7 @@ Without speculation:
 
 ---
 
-## Corrective RAG: Self-Checking Retrieval
+## Corrective RAG: Self-Checking Retrieval {#corrective-rag}
 
 Corrective RAG (CRAG) adds a verification layer between retrieval and generation. The system evaluates whether retrieved documents actually answer the query before generating a response.
 
@@ -543,7 +543,7 @@ If any critic check fails, the model loops back to an earlier step.
 
 ---
 
-## Adaptive Retrieval
+## Adaptive Retrieval {#adaptive-retrieval}
 
 Not every query benefits from retrieval. Adaptive retrieval decides dynamically whether to retrieve, how much to retrieve, and from which sources.
 
@@ -627,7 +627,7 @@ def plan_retrieval_budget(query: str, max_budget_tokens: int = 4000):
 
 ---
 
-## Cost Optimization Patterns
+## Cost Optimization Patterns {#cost-optimization}
 
 At scale, RAG costs compound across embedding, retrieval, reranking, and generation. Unoptimized systems can spend 10-50x more than necessary.
 
@@ -718,7 +718,7 @@ class CostGuard:
 
 ---
 
-## Failure Modes and Debugging
+## Failure Modes and Debugging {#failure-modes}
 
 Production RAG systems have compounding failure probabilities. With 95% reliability at each of three stages, overall reliability drops to 0.95 x 0.95 x 0.95 = 0.86. Understanding failure modes is essential.
 
@@ -778,7 +778,7 @@ Agentic RAG introduces three additional failure patterns:
 
 ---
 
-## Monitoring and Alerting
+## Monitoring and Alerting {#monitoring}
 
 Production RAG requires dedicated monitoring beyond standard application metrics. Roughly 60% of new RAG deployments now include systematic evaluation from day one (up sharply from the "ship first, eval later" pattern of earlier RAG generations).
 
@@ -866,7 +866,7 @@ async def nightly_quality_check(sample_size: int = 200):
 
 ---
 
-## Scaling to Millions of Documents
+## Scaling to Millions of Documents {#scaling}
 
 Moving from thousands to millions of documents introduces challenges in indexing throughput, retrieval latency, and index management.
 
@@ -964,7 +964,7 @@ flowchart LR
 
 ---
 
-## Multi-Tenant RAG Isolation
+## Multi-Tenant RAG Isolation {#multi-tenant}
 
 Multi-tenant RAG is the most common production pattern for SaaS products. Getting isolation wrong means data leaks between tenants, which is a critical security failure.
 
@@ -1080,7 +1080,7 @@ class TenantRateLimiter:
 
 ---
 
-## Real-World Architecture Examples
+## Real-World Architecture Examples {#architectures}
 
 ### Example 1: Customer Support RAG
 
@@ -1143,7 +1143,7 @@ flowchart TD
 
 ---
 
-## System Design Interview Angle
+## System Design Interview Angle {#interview}
 
 ### Q: Design a RAG system that serves 10,000 queries per second across 500 tenants with a p99 latency of 2 seconds.
 
@@ -1191,7 +1191,7 @@ The fix depends on the root cause, but common interventions are: tune the semant
 
 ---
 
-## References
+## References {#references}
 
 - Asai et al. "Self-RAG: Learning to Retrieve, Generate, and Critique" (2024)
 - Yan et al. "Corrective Retrieval Augmented Generation (CRAG)" (2024)

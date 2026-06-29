@@ -17,7 +17,7 @@ Tokenization is the process of converting text into discrete units (tokens) that
 
 ---
 
-## Why Tokenization Matters
+## Why Tokenization Matters {#why-tokenization-matters}
 
 ### For System Design
 
@@ -34,7 +34,7 @@ Because "strawberry" is tokenized as multiple subwords. The model never sees ind
 
 ---
 
-## Tokenization Algorithms
+## Tokenization Algorithms {#tokenization-algorithms}
 
 ### Byte Pair Encoding (BPE)
 
@@ -109,7 +109,7 @@ Used by T5, ALBERT, some multilingual models.
 
 ---
 
-## Vocabulary Design Tradeoffs
+## Vocabulary Design Tradeoffs {#vocabulary-design-tradeoffs}
 
 ### Vocabulary Size
 
@@ -151,7 +151,7 @@ text = "cafe"  # Becomes bytes, then BPE operates on bytes
 
 ---
 
-## Special Tokens
+## Special Tokens {#special-tokens}
 
 Special tokens handle structural information outside normal text:
 
@@ -193,7 +193,7 @@ Hi there!<|im_end|>
 
 ---
 
-## Multilingual Tokenization
+## Multilingual Tokenization {#multilingual-tokenization}
 
 ### The Challenge
 
@@ -243,7 +243,7 @@ Images are split into patches (e.g., 14x14 pixels). Each patch is passed through
 
 ---
 
-## Token Counting for Cost Estimation
+## Token Counting for Cost Estimation {#token-counting-for-cost-estimation}
 
 ### Quick Estimation Rules
 
@@ -301,7 +301,7 @@ def calculate_cost(input_text: str, output_text: str, model: str) -> float:
 
 ---
 
-## Common Tokenization Issues
+## Common Tokenization Issues {#common-tokenization-issues}
 
 ### Issue 1: Token Boundary Misalignment
 
@@ -364,7 +364,7 @@ text = "Hello world"
 
 ---
 
-## Practical Tokenization Patterns
+## Practical Tokenization Patterns {#practical-tokenization-patterns}
 
 ### Pattern 1: Context Window Management
 
@@ -453,7 +453,7 @@ budget.allocate("output_reserve", 2000)
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why does GPT-4 struggle with simple character counting?
 
@@ -525,7 +525,7 @@ for chunk in ranked_chunks:
 
 ---
 
-## References
+## References {#references}
 
 - Sennrich et al. "Neural Machine Translation of Rare Words with Subword Units" (BPE, 2016)
 - Wu et al. "Google's Neural Machine Translation System" (WordPiece, 2016)

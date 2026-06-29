@@ -13,7 +13,7 @@
 
 ---
 
-## 推論的兩個階段
+## 推論的兩個階段 {#two-phases}
 
 LLM 推論並非單一操作，它由兩個截然不同的運算階段組成。
 
@@ -31,7 +31,7 @@ LLM 推論並非單一操作，它由兩個截然不同的運算階段組成。
 
 ---
 
-## 瓶頸：受限於運算 vs. 受限於記憶體
+## 瓶頸：受限於運算 vs. 受限於記憶體 {#bottlenecks}
 
 了解系統的瓶頸所在，對於選擇正確的最佳化方式至關重要。
 
@@ -56,7 +56,7 @@ LLM 推論並非單一操作，它由兩個截然不同的運算階段組成。
 
 ---
 
-## 硬體支援的最佳化 (FP8)
+## 硬體支援的最佳化 (FP8) {#hardware-optimizations}
 
 **FP8 (8 位元浮點數)** 是 H100 與 B200 GPU 上推論的原生精度。
 
@@ -67,7 +67,7 @@ LLM 推論並非單一操作，它由兩個截然不同的運算階段組成。
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼 LLM 生成比分類慢？
 
@@ -82,7 +82,7 @@ LLM 推論並非單一操作，它由兩個截然不同的運算階段組成。
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Pope et al. "Efficiently Scaling Transformer Inference" (2022)
 - NVIDIA. "Transformer Engine Documentation" (2024)
 - vLLM Blog. "Understanding LLM Inference Latency" (2023)

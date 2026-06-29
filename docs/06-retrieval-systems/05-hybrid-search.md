@@ -17,7 +17,7 @@ Hybrid search combines dense (semantic) and sparse (keyword) retrieval to get th
 
 ---
 
-## Why Hybrid Search
+## Why Hybrid Search {#why-hybrid-search}
 
 Neither dense nor sparse retrieval is universally better. Each excels at different query types.
 
@@ -52,7 +52,7 @@ Sparse search (BM25) finds this immediately because of exact token match.
 
 ---
 
-## Dense vs Sparse Retrieval
+## Dense vs Sparse Retrieval {#dense-vs-sparse-retrieval}
 
 ### Dense (Semantic) Retrieval
 
@@ -110,7 +110,7 @@ def sparse_search(query: str, top_k: int = 10) -> list[Result]:
 
 ---
 
-## Hybrid Search Architectures
+## Hybrid Search Architectures {#hybrid-search-architectures}
 
 ### Architecture 1: Parallel Retrieval with Fusion
 
@@ -173,7 +173,7 @@ flowchart TD
 
 ---
 
-## Fusion Methods
+## Fusion Methods {#fusion-methods}
 
 ### Reciprocal Rank Fusion (RRF)
 
@@ -285,7 +285,7 @@ def z_score_normalize(results: list[Result]) -> list[Result]:
 
 ---
 
-## Learned Sparse Embeddings (SPLADE)
+## Learned Sparse Embeddings (SPLADE) {#learned-sparse-embeddings-splade}
 
 Production stacks have moved beyond BM25 (simple word frequency) to **Learned Sparse Embeddings** for the sparse arm of hybrid search.
 
@@ -328,7 +328,7 @@ class SpladeEncoder:
 
 ---
 
-## Implementation Patterns
+## Implementation Patterns {#implementation-patterns}
 
 ### Pattern 1: Elasticsearch + Vector DB
 
@@ -398,7 +398,7 @@ def hybrid_search_weaviate(
 
 ---
 
-## Tuning and Optimization
+## Tuning and Optimization {#tuning-and-optimization}
 
 ### Alpha Tuning
 
@@ -474,7 +474,7 @@ def hybrid_search(query: str, final_k: int = 10):
 
 ---
 
-## Production Considerations
+## Production Considerations {#production-considerations}
 
 ### Latency Budget
 
@@ -533,7 +533,7 @@ def hybrid_search_with_fallback(query: str, top_k: int = 10) -> list[Result]:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: When would you use hybrid search over pure dense search?
 
@@ -590,7 +590,7 @@ The alpha parameter controls the balance (typically alpha for dense weight):
 
 ---
 
-## References
+## References {#references}
 
 - Cormack et al. "Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods" (2009)
 - Formal et al. "SPLADE: Sparse Lexical and Expansion Model for First Stage Ranking" (2021/2025)

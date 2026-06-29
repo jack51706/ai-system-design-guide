@@ -17,7 +17,7 @@ This chapter is time-sensitive. Dates and enforcement status are given **as of J
 
 ---
 
-## The EU AI Act
+## The EU AI Act {#the-eu-ai-act}
 
 Regulation (EU) 2024/1689 is the world's first comprehensive AI law, structured by **risk tier**:
 
@@ -45,7 +45,7 @@ The delay of high-risk obligations is the **"Digital Omnibus"** simplification p
 
 ---
 
-## NIST AI RMF and the GenAI Profile
+## NIST AI RMF and the GenAI Profile {#nist-ai-rmf-and-the-genai-profile}
 
 The **NIST AI Risk Management Framework** (AI 100-1, Jan 2023) is voluntary but the de-facto US baseline, built on four functions: **Govern** (org-level policy and accountability, cross-cutting), **Map** (establish context and categorize the system), **Measure** (benchmark and track risks), and **Manage** (prioritize, treat, monitor, respond).
 
@@ -53,13 +53,13 @@ The **Generative AI Profile** (NIST AI 600-1, Jul 2024) is a companion that enum
 
 ---
 
-## ISO 42001 and Assurance
+## ISO 42001 and Assurance {#iso-42001-and-assurance}
 
 **ISO/IEC 42001:2023** is the first certifiable AI Management System standard, structured like ISO 27001 (Plan-Do-Check-Act, leadership, risk and impact assessments, a set of AI controls). It certifies *organizational governance* ("do you have a system?"), not a per-model technical property, and is increasingly used as due-diligence evidence toward the EU AI Act and as a procurement signal. **SOC 2** remains the dominant US assurance attestation for security and operational controls but does not cover AI-specific risk by itself. The common 2026 pattern for AI vendors selling into regulated buyers is **SOC 2 plus ISO/IEC 42001**, with controls harmonized to avoid duplicate work.
 
 ---
 
-## The US Landscape
+## The US Landscape {#the-us-landscape}
 
 There is **no comprehensive federal AI statute** as of June 2026, and the federal posture is deregulatory: Executive Order 14365 (Dec 2025) directs a DOJ task force to challenge state AI laws on preemption grounds, but a proposed federal moratorium on state laws did not pass. NIST AI RMF remains the voluntary federal touchstone.
 
@@ -67,7 +67,7 @@ That leaves a **state patchwork**. The Colorado AI Act (the first comprehensive 
 
 ---
 
-## What Engineers Actually Implement
+## What Engineers Actually Implement {#what-engineers-actually-implement}
 
 The practical core. Map each regulatory concept to a concrete artifact or control you already understand.
 
@@ -86,7 +86,7 @@ The unifying idea: security gives you the OWASP controls and data governance, ev
 
 ---
 
-## A Compliance Checklist
+## A Compliance Checklist {#a-compliance-checklist}
 
 - [ ] Classify each system: EU tier, your role, applicable US regimes; record the rationale.
 - [ ] Produce the cards stack (model, system, data) and, for high-risk, the Annex IV file.
@@ -102,7 +102,7 @@ The unifying idea: security gives you the OWASP controls and data governance, ev
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you make a production LLM system EU AI Act ready without building a separate compliance stack?
 
@@ -116,7 +116,7 @@ The EU AI Act is binding law with risk tiers, hard deadlines, and fines up to 7%
 
 ---
 
-## References
+## References {#references}
 
 - [EU AI Act, European Commission](https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai) and the [implementation timeline](https://artificialintelligenceact.eu/implementation-timeline/)
 - [Digital Omnibus, European Parliament Legislative Train](https://www.europarl.europa.eu/legislative-train/package-digital-package/file-digital-omnibus-on-ai)

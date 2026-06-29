@@ -25,7 +25,7 @@ Effective prompting is about maximizing **Intent Disclosure** while minimizing *
 
 ---
 
-## The Instruction Hierarchy
+## The Instruction Hierarchy {#instruction-hierarchy}
 
 Production systems use a tiered message structure:
 
@@ -38,7 +38,7 @@ Production systems use a tiered message structure:
 
 ---
 
-## Role Prompting
+## Role Prompting {#role-prompting}
 
 Assigning a persona is no longer just "You are a teacher." It is a **Capabilities Anchor**.
 
@@ -49,7 +49,7 @@ Assigning a persona is no longer just "You are a teacher." It is a **Capabilitie
 
 ---
 
-## Instruction Clarity and Delimiters
+## Instruction Clarity and Delimiters {#clarity}
 
 Current frontier models process massive contexts. Delimiters help the model distinguish between instructions and data.
 
@@ -70,7 +70,7 @@ $USER_INPUT_HERE
 
 ---
 
-## Zero-Shot vs. Few-Shot Efficiency
+## Zero-Shot vs. Few-Shot Efficiency {#zero-vs-few}
 
 | Aspect | Zero-Shot | Few-Shot |
 |--------|-----------|----------|
@@ -82,7 +82,7 @@ $USER_INPUT_HERE
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why do system prompts carry more weight than user prompts in modern LLMs?
 
@@ -96,7 +96,7 @@ In 2022, "Think step by step" was a magic phrase to trigger Chain-of-Thought (Co
 
 ---
 
-## References
+## References {#references}
 - OpenAI. "Prompt Engineering Guide" (2024-2025)
 - Anthropic. "Claude Prompt Engineering Documentation" (2024)
 - Google DeepMind. "The Power of Prompting" (2023)

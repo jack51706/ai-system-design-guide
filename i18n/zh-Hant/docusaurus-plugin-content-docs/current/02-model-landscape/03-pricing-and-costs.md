@@ -16,7 +16,7 @@
 
 ---
 
-## 定價模式
+## 定價模式 {#pricing-models}
 
 ### 以 Token 計費的定價
 
@@ -52,7 +52,7 @@ Committed (1-year): $2.00 / 1M input tokens (20% savings)
 
 ---
 
-## 當前 API 定價
+## 當前 API 定價 {#current-api-pricing}
 
 ### 2026 年 5 月定價
 
@@ -140,7 +140,7 @@ Committed (1-year): $2.00 / 1M input tokens (20% savings)
 
 ---
 
-## 成本計算
+## 成本計算 {#cost-calculation}
 
 ### 基本成本公式
 
@@ -233,7 +233,7 @@ costs = project_monthly_cost(
 
 ---
 
-## 成本最佳化策略
+## 成本最佳化策略 {#cost-optimization-strategies}
 
 ### 策略 1：模型路由
 
@@ -374,7 +374,7 @@ response = model.generate(
 
 ---
 
-## 上下文快取的經濟效益
+## 上下文快取的經濟效益 {#context-caching-economics}
 
 **RAG 的「黃金法則」（在 2026 年依然成立）。**
 如果你有固定的 system prompt，或共用的知識庫（前綴）大於 10,000 個 token，那麼**上下文快取**是必備的。
@@ -390,7 +390,7 @@ response = model.generate(
 
 ---
 
-## 自架與 GPU 雲端套利
+## 自架與 GPU 雲端套利 {#self-hosting-economics}
 
 **保留型 vs. 無伺服器的取捨：**
 
@@ -463,7 +463,7 @@ Choose self-hosting when:
 
 ---
 
-## 總體擁有成本
+## 總體擁有成本 {#total-cost-of-ownership}
 
 ### TCO 組成
 
@@ -532,7 +532,7 @@ def calculate_tco(scenario: dict) -> dict:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你會如何為高用量的 RAG 應用最佳化成本？
 
@@ -593,7 +593,7 @@ Savings: 44%
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - OpenAI Pricing: https://developers.openai.com/api/docs/pricing
 - Anthropic Pricing: https://platform.claude.com/docs/en/about-claude/pricing

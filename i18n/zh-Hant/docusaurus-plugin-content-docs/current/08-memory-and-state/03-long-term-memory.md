@@ -34,7 +34,7 @@
 
 ---
 
-## 混合式 Vector-Graph 儲存
+## 混合式 Vector-Graph 儲存 {#hybrid}
 
 資深（Staff）等級的工程師會使用 **GraphRAG 風格的記憶**。
 - **Vector 搜尋**找出「相關（Related）」的節點。
@@ -43,7 +43,7 @@
 
 ---
 
-## 記憶修剪與衰減
+## 記憶修剪與衰減 {#pruning}
 
 如果記憶毫無節制地增長，它就是一種負擔。
 - **時間衰減（Temporal Decay）**：較舊的記憶若沒有被頻繁存取，其「相關性分數」就會降低。
@@ -52,7 +52,7 @@
 
 ---
 
-## 隱私與多租戶
+## 隱私與多租戶 {#privacy}
 
 > [!CAUTION]
 > **跨工作階段洩漏（Cross-Session Leakage）**是全域記憶中排名第一的安全風險。
@@ -60,7 +60,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：對於長期記憶，你會如何在向量資料庫與知識圖譜之間做選擇？
 
@@ -74,7 +74,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Neo4j. "Knowledge Graphs for Generative AI" (2025)
 - Pinecone. "The Managed Memory Layer" (2025)
 - GraphRAG. "Reasoning over Relationships" (2024/2025)

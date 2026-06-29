@@ -20,7 +20,7 @@ This chapter covers the practical engineering of tool-use agents: designing tool
 
 ---
 
-## Designing Tool Schemas for LLMs
+## Designing Tool Schemas for LLMs {#designing-tool-schemas-for-llms}
 
 The tool schema is the contract between the LLM and your system. A well-designed schema reduces hallucinated arguments, prevents misuse, and makes the model's tool selection more reliable.
 
@@ -72,7 +72,7 @@ The tool schema is the contract between the LLM and your system. A well-designed
 
 ---
 
-## MCP Server Creation
+## MCP Server Creation {#mcp-server-creation}
 
 An MCP server is a standalone process that exposes tools, resources, and prompts to any MCP-compatible client (Claude, GPT, Llama-based agents). You write the server once and any LLM can use it.
 
@@ -144,7 +144,7 @@ Both SDKs follow the same pattern: create a server, register tools with typed sc
 
 ---
 
-## Tool Registration and Discovery
+## Tool Registration and Discovery {#tool-registration-and-discovery}
 
 In production, agents need to discover available tools dynamically rather than hardcoding them.
 
@@ -162,7 +162,7 @@ MCP clients discover capabilities via standard JSON-RPC methods: `tools/list` re
 
 ---
 
-## Input Validation and Output Formatting
+## Input Validation and Output Formatting {#input-validation-and-output-formatting}
 
 ### Input Validation Layers
 
@@ -225,7 +225,7 @@ return "Found Jane Smith (ACC-123, jane@acme.com) and John Doe (ACC-456, john@ac
 
 ---
 
-## Tool Composition: Chaining Tools
+## Tool Composition: Chaining Tools {#tool-composition-chaining-tools}
 
 Real tasks require multiple tools called in sequence. There are two composition patterns:
 
@@ -276,7 +276,7 @@ Compose tools inside the MCP server itself -- a single `resolve_customer_issue` 
 
 ---
 
-## Building Custom Agent Skills
+## Building Custom Agent Skills {#building-custom-agent-skills}
 
 Agent Skills (Anthropic, 2025) are bundled sets of instructions, tools, and resources that an agent loads dynamically. A skill is a folder:
 
@@ -292,13 +292,13 @@ At runtime, a SkillManager registers available skills and activates them on dema
 
 ---
 
-## Creating Function-Calling Endpoints
+## Creating Function-Calling Endpoints {#creating-function-calling-endpoints}
 
 To make your API callable by any LLM, expose it via FastAPI with Pydantic models. The auto-generated OpenAPI spec (`/openapi.json`) doubles as a tool schema for function calling. Alternatively, wrap the same logic in an MCP server for direct integration with Claude, GPT, or other MCP-compatible clients.
 
 ---
 
-## Testing Tool-Use Agents
+## Testing Tool-Use Agents {#testing-tool-use-agents}
 
 ### Three Testing Layers
 
@@ -338,7 +338,7 @@ For each case, measure: tool selection accuracy (right tool?), argument quality 
 
 ---
 
-## Observability for Tool Use
+## Observability for Tool Use {#observability-for-tool-use}
 
 Every tool call should log: trace/span IDs, timestamp, tool name, input args, output size, latency, status, model used, token usage, and session ID.
 
@@ -372,7 +372,7 @@ flowchart TD
 
 ---
 
-## Common Mistakes and Anti-Patterns
+## Common Mistakes and Anti-Patterns {#common-mistakes-and-anti-patterns}
 
 | Anti-Pattern | Problem | Fix |
 |-------------|---------|-----|
@@ -387,7 +387,7 @@ flowchart TD
 
 ---
 
-## Tool Versioning and Backwards Compatibility
+## Tool Versioning and Backwards Compatibility {#tool-versioning-and-backwards-compatibility}
 
 As tools evolve, you must maintain compatibility with agents that depend on them.
 
@@ -398,7 +398,7 @@ As tools evolve, you must maintain compatibility with agents that depend on them
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: You need to give an LLM agent access to 200 internal tools. How do you handle schema overload?
 
@@ -422,7 +422,7 @@ I would run evals on every model version change and every tool schema change. A 
 
 ---
 
-## References
+## References {#references}
 
 - Anthropic. "Tool Use with Claude" API Documentation (2025)
 - Model Context Protocol. "Build an MCP Server" (2025)

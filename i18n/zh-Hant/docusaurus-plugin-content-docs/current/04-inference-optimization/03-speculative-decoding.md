@@ -14,14 +14,14 @@
 
 ---
 
-## 核心概念
+## 核心概念 {#the-core-concept}
 
 LLM 解碼屬於記憶體受限（memory-bound）：載入 140GB 的權重（70B 模型）只為產生一個 2 byte 的 token，效率非常低落。
 **推測解碼**改用一種成本較低的方法去「猜測」接下來的 $N$ 個 token，再用大型模型在單次平行的「Prefill 風格」傳遞中一次驗證全部結果。
 
 ---
 
-## Draft-Verify 範式
+## Draft-Verify 範式 {#draft-verify}
 
 1. **草擬（Drafting）**：一個小而快的「Draft Model」（例如 1B 或 7B）生成 $K$ 個候選 token。
 2. **驗證（Verification）**：大型的「Target Model」一次處理全部 $K$ 個 token。
@@ -37,7 +37,7 @@ LLM 解碼屬於記憶體受限（memory-bound）：載入 140GB 的權重（70B
 
 ---
 
-## Medusa 與多 Token 預測頭
+## Medusa 與多 Token 預測頭 {#medusa}
 
 業界已逐漸捨棄獨立的 draft model（會增加 VRAM 開銷），轉向採用 **Medusa Heads**。
 
@@ -47,14 +47,14 @@ LLM 解碼屬於記憶體受限（memory-bound）：載入 140GB 的權重（70B
 
 ---
 
-## 前瞻解碼（Lookahead Decoding）
+## 前瞻解碼（Lookahead Decoding） {#lookahead-decoding}
 
 另一種替代做法，它利用模型自身過去的隱藏狀態（hidden states）來尋找重複出現的模式（n-grams），藉此「向前看」並預測未來的 token。
 - **最適用於**：結構化資料、程式碼，以及高度重複的技術寫作。
 
 ---
 
-## 硬體感知推測
+## 硬體感知推測 {#hardware-aware}
 
 前沿的服務框架（vLLM、TensorRT-LLM）現在會採用**動態草擬長度（Dynamic Draft Lengths）**。
 - 若 GPU 使用率偏低（小批次），系統會增加 draft token 的數量（$K$）。
@@ -62,7 +62,7 @@ LLM 解碼屬於記憶體受限（memory-bound）：載入 140GB 的權重（70B
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：為什麼推測解碼在高溫度（high-temperature）的創意寫作上效果不佳？
 
@@ -76,7 +76,7 @@ LLM 解碼屬於記憶體受限（memory-bound）：載入 140GB 的權重（70B
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Chen et al. "Accelerating Transformer Decoding via Speculative Decoding" (2023)
 - Cai et al. "Medusa: Simple LLM Acceleration via Multiple Decoding Heads" (2024)
 - Fu et al. "Lookahead Decoding" (2024)

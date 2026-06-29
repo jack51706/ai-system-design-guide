@@ -14,7 +14,7 @@
 
 ---
 
-## 代理失敗的分類
+## 代理失敗的分類 {#fail-types}
 
 1. **幻覺工具（Hallucinated Tools）**：呼叫一個根本不存在的工具。
 2. **schema 違規（Schema Violation）**：傳遞錯誤的引數給一個真實存在的工具。
@@ -23,7 +23,7 @@
 
 ---
 
-## 自我修正迴圈
+## 自我修正迴圈 {#correction}
 
 現在錯誤被視為**資訊的 token（Tokens of Information）**。
 
@@ -32,7 +32,7 @@
 
 ---
 
-## 具狀態的回滾（Checkpointing）
+## 具狀態的回滾（Checkpointing） {#rollbacks}
 
 對於長時間運行的代理而言，第 9 步發生的錯誤不應該讓整個專案崩潰。
 
@@ -41,7 +41,7 @@
 
 ---
 
-## 「卡在迴圈裡」的修復方法
+## 「卡在迴圈裡」的修復方法 {#stuck}
 
 無限迴圈是代理式系統中第一大的成本黑洞。
 
@@ -51,7 +51,7 @@
 
 ---
 
-## 優雅降級
+## 優雅降級 {#degradation}
 
 如果高推理能力的代理（Claude Opus 4.7、GPT-5.5 reasoning）一直失敗，我們會退而求其次，採用：
 - **簡化代理（Simplified Agent）**：一個較小的模型，搭配數量更少、更可靠的工具。
@@ -60,7 +60,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼傳統的「例外處理（Exception Handling，Try/Catch）」對代理式系統來說並不足夠？
 
@@ -74,7 +74,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - LangGraph. "Persistence and Checkpointing" (2025)
 - Shinn et al. "Reflexion: Learning from Errors" (2024 update)
 - Microsoft. "Managing Hallucinations in Agentic Systems" (2025)

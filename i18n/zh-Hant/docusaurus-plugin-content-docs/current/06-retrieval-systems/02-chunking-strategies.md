@@ -14,7 +14,7 @@
 
 ---
 
-## 檢索與上下文之間的張力
+## 檢索與上下文之間的張力 {#tension}
 
 | 面向 | 小區塊（100t） | 大區塊（1000t） |
 |--------|---------------------|----------------------|
@@ -27,7 +27,7 @@
 
 ---
 
-## 遞迴結構切分
+## 遞迴結構切分 {#recursive}
 
 我們不在每 500 個字元就硬切一刀，而是在邏輯邊界處進行切分：
 `[Double Newline] > [Single Newline] > [Period] > [Space]`。
@@ -36,7 +36,7 @@
 
 ---
 
-## 語意分塊
+## 語意分塊 {#semantic}
 
 語意分塊會運用一個嵌入模型來偵測「主題轉移」。
 
@@ -48,7 +48,7 @@
 
 ---
 
-## 階層式（父子）分塊
+## 階層式（父子）分塊 {#hierarchical}
 
 這是生產環境 RAG 的業界標準做法。
 
@@ -77,7 +77,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼帶重疊的固定大小分塊對生產系統而言是有問題的？
 
@@ -91,7 +91,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Anthropic. "Contextual Retrieval: Improving RAG Accuracy" (2024)
 - LlamaIndex. "Advanced Chunking Strategies for RAG" (2025)
 - LangChain. "RecursiveCharacterTextSplitter Benchmarks" (2024)

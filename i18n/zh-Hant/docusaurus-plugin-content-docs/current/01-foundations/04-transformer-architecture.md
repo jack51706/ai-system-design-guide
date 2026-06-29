@@ -17,7 +17,7 @@
 
 ---
 
-## 架構總覽
+## 架構總覽 {#architecture-overview}
 
 純解碼器（decoder-only）的 Transformer（GPT、Claude、Llama 採用的架構）由以下部分組成：
 
@@ -43,7 +43,7 @@ flowchart TD
 
 ---
 
-## 輸入處理
+## 輸入處理 {#input-processing}
 
 ### Token 嵌入
 
@@ -89,7 +89,7 @@ x = token_embeddings + position_embeddings(positions)
 
 ---
 
-## Transformer 區塊
+## Transformer 區塊 {#the-transformer-block}
 
 ### 前置正規化（Pre-Norm）結構
 
@@ -202,7 +202,7 @@ class RMSNorm(nn.Module):
 
 ---
 
-## 輸出處理
+## 輸出處理 {#output-processing}
 
 ### 最終正規化
 
@@ -226,7 +226,7 @@ class LMHead(nn.Module):
         return self.linear(x)  # Returns logits
 ```
 
-## 非綁定嵌入與綁定嵌入的比較
+## 非綁定嵌入與綁定嵌入的比較 {#untied-vs-tied-embeddings}
 
 **標準模式（GPT-3、Llama 2）：** 權重綁定（Weight Tying）
 - 輸出頭與輸入嵌入共用權重。
@@ -292,7 +292,7 @@ loss = cross_entropy(logits, targets)
 
 ---
 
-## 擴展特性
+## 擴展特性 {#scaling-properties}
 
 ### 參數量
 
@@ -329,7 +329,7 @@ D (data tokens) ≈ 20 * N (parameters)
 
 ---
 
-## 架構比較表
+## 架構比較表 {#architecture-comparison-table}
 
 | 模型 | 參數量 | 層數 | d_model | 頭數 | KV 頭數 | FFN | 上下文視窗 |
 |-------|--------|--------|---------|-------|----------|-----|---------|
@@ -343,7 +343,7 @@ D (data tokens) ≈ 20 * N (parameters)
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：帶我走一遍 Transformer 的前向傳播流程。
 
@@ -444,7 +444,7 @@ KV cache 在生成過程中為所有位置儲存 K 和 V。以 Llama 70B 在 8K 
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Vaswani et al. "Attention Is All You Need" (2017)
 - Touvron et al. "Llama: Open and Efficient Foundation Language Models" (2023)

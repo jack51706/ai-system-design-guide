@@ -16,7 +16,7 @@ GraphRAG is the combination of **Knowledge Graphs (KG)** and **Retrieval-Augment
 
 ---
 
-## When GraphRAG Actually Wins (and When It Doesn't)
+## When GraphRAG Actually Wins (and When It Doesn't) {#when-graphrag-actually-wins-and-when-it-doesnt}
 
 GraphRAG is a specialized tool for graph-shaped questions, not a default upgrade over vector RAG. For roughly 80% of production retrieval workloads, a hybrid BM25-plus-dense retriever followed by a cross-encoder reranker is cheaper to build, cheaper to operate, and competitive on answer quality. The graph is worth building only when the question genuinely requires multi-hop traversal that vector similarity cannot recover.
 
@@ -63,7 +63,7 @@ GraphRAG's hidden cost is not extraction; it is maintenance. The corpus drifts: 
 
 ---
 
-## Graph as Reranker Pattern (May 2026)
+## Graph as Reranker Pattern (May 2026) {#graph-as-reranker-pattern-may-2026}
 
 The dominant production pattern in 2026 is not full GraphRAG. It is graph-as-reranker, which delivers most of the multi-hop benefit at a fraction of the construction cost. The intuition is that you do not need a graph index over the entire corpus; you need a graph that covers the entities that show up in the top-k vector results, expanded just enough to find connected evidence.
 
@@ -120,7 +120,7 @@ The general direction across all four variants is the same: less monolithic inde
 
 ---
 
-## The Limitations of Vector RAG
+## The Limitations of Vector RAG {#limitations}
 
 Vector RAG operates on "points" in space. This fails for questions like:
 - *"What are the primary themes across all 500 employee reviews?"*
@@ -153,7 +153,7 @@ A modern GraphRAG pipeline consists of three phases:
 
 ---
 
-## Entity-Relationship Retrieval
+## Entity-Relationship Retrieval {#retrieval}
 
 Production stacks use **Hybrid Graph-Vector Search**.
 - **Dense Pass**: Find the most similar nodes via embeddings.
@@ -161,7 +161,7 @@ Production stacks use **Hybrid Graph-Vector Search**.
 
 ---
 
-## When to Use GraphRAG
+## When to Use GraphRAG {#when}
 
 | Feature | Vector RAG | GraphRAG |
 |---------|------------|----------|
@@ -174,7 +174,7 @@ Production stacks use **Hybrid Graph-Vector Search**.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is the "Extraction" phase the bottleneck for GraphRAG?
 
@@ -188,7 +188,7 @@ For aggregate questions (e.g., "Summarize the sentiment of 1,000 documents"), a 
 
 ---
 
-## References
+## References {#references}
 - Edge et al. "From Local to Global: A GraphRAG Approach" (Microsoft Research, 2024)
 - Neo4j. "Generative AI and Graph Databases" (2025)
 - WhyHow AI. "Deterministic RAG with Knowledge Graphs" (2024)

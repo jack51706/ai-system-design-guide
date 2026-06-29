@@ -28,7 +28,7 @@ Frontier models (Llama 4, GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro) are trained 
 
 ---
 
-## Evol-Instruct Pattern
+## Evol-Instruct Pattern {#evol-instruct}
 
 Evol-Instruct is a recursive process where an LLM takes a simple instruction and evolves it into a more complex one.
 
@@ -68,7 +68,7 @@ The biggest risk of synthetic data is **Model Collapse** (the model learning its
 
 ---
 
-## De-biasing and Diversity
+## De-biasing and Diversity {#diversity}
 
 Synthetic data is used to "fill the gaps" in human data.
 - **Languages**: Generating high-quality text in low-resource languages (e.g., Swahili, Marathi) by translating conceptual templates.
@@ -76,7 +76,7 @@ Synthetic data is used to "fill the gaps" in human data.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: What is the risk of "Model Collapse" when training on synthetic data?
 
@@ -97,7 +97,7 @@ We use a **Multi-Stage Filtering Pipeline**:
 
 ---
 
-## References
+## References {#references}
 - Xu et al. "WizardLM: Empowering Large Language Models to Follow Complex Instructions" (2023)
 - Bai et al. "Constitutional AI: Harmlessness from AI Feedback" (2022)
 - OpenAI. "Weak-to-Strong Generalization" (2023)

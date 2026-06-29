@@ -13,7 +13,7 @@ Batching is the primary lever for increasing LLM throughput and reducing cost. S
 
 ---
 
-## Static vs. Dynamic Batching
+## Static vs. Dynamic Batching {#static-vs-dynamic}
 
 In traditional ML (Classification), we use **Static Batching** where all requests must be the same size and start/end together. This is inefficient for LLMs due to variable response lengths.
 
@@ -32,7 +32,7 @@ Continuous batching (pioneered by Orca and vLLM) allows new requests to join the
 
 ---
 
-## In-Flight Batching (Prefill-Decode Fusion)
+## In-Flight Batching (Prefill-Decode Fusion) {#in-flight-batching}
 
 Previously, serving engines processed a batch of "Prefill" (heavy compute) OR a batch of "Decode" (heavy memory). 
 **In-Flight Batching** (TensorRT-LLM) allows mixing them:
@@ -42,7 +42,7 @@ Previously, serving engines processed a batch of "Prefill" (heavy compute) OR a 
 
 ---
 
-## Chunked Prefill & RAD-O
+## Chunked Prefill & RAD-O {#chunked-prefill}
 
 Massive context prompts (1M+ tokens) can hang a batch for seconds during the Prefill phase, causing "stalls."
 
@@ -51,7 +51,7 @@ Instead of prefilling 128k tokens at once, the engine breaks the prefill into sm
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is Continuous Batching superior to Static Batching for LLMs?
 
@@ -65,7 +65,7 @@ A "stall" occurs when a massive new request arrives and its Prefill phase (which
 
 ---
 
-## References
+## References {#references}
 - Yu et al. "Orca: A Distributed Serving System for [Transformer] Models" (2022)
 - NVIDIA. "TensorRT-LLM: In-Flight Batching" (2023)
 - vLLM Project. "Iteration-Level Scheduling" (2023)

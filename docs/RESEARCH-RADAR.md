@@ -25,7 +25,7 @@ It is organized by theme, not by paper. Each theme leads with why it matters for
 
 ---
 
-## How to Use This Page
+## How to Use This Page {#how-to-use-this-page}
 
 Read the [Big Shifts](#the-big-shifts) first for the meta-trends, then dip into the themes relevant to what you build. If you build agents, prioritize themes 1, 6, 7, and 8. If you optimize inference, prioritize 2, 5, and 11. If you work on retrieval or memory, prioritize 1 and 9. The [90-Day Learning Path](#a-90-day-learning-path) sequences the highest-leverage reading.
 
@@ -33,7 +33,7 @@ A note on citations: arXiv IDs follow the `YYMM.NNNNN` convention, so `2606.xxxx
 
 ---
 
-## The Big Shifts
+## The Big Shifts {#the-big-shifts}
 
 Five meta-trends sit underneath the specific papers:
 
@@ -45,7 +45,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 1. Context Engineering Becomes a Systems Discipline
+## 1. Context Engineering Becomes a Systems Discipline {#1-context-engineering-becomes-a-systems-discipline}
 
 **Why it matters:** Long-running agents degrade as their context fills with stale tool output (context rot). The fixes have graduated from "summarize the history" into trained context managers, serving-layer compaction, and demand-paged context. If you run agents past a few minutes of autonomy, this is the highest-leverage area to understand.
 
@@ -59,7 +59,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 2. The Limits of Test-Time Compute
+## 2. The Limits of Test-Time Compute {#2-the-limits-of-test-time-compute}
 
 **Why it matters:** "Turn up the thinking budget" is not a free quality lever. Several 2026 results show inverse scaling past a critical token count and diminishing returns that plateau. The production takeaway is to set cost-aware, difficulty-adaptive budgets, not maximal ones. (Do not confuse this with test-time *training*, which updates the model's weights at inference; see [theme 12](#12-test-time-training-learning-at-inference).)
 
@@ -72,7 +72,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 3. RL Post-Training: What It Actually Does
+## 3. RL Post-Training: What It Actually Does {#3-rl-post-training-what-it-actually-does}
 
 **Why it matters:** Whether to spend on RL post-training depends on a contested empirical question: does RL with verifiable rewards (RLVR) add new capability, or just sharpen sampling of what the base model already does? The answer determines when RL is worth the cost versus supervised fine-tuning or distillation.
 
@@ -84,7 +84,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 4. Latent and Alternative Reasoning
+## 4. Latent and Alternative Reasoning {#4-latent-and-alternative-reasoning}
 
 **Why it matters:** Chain-of-thought spends tokens to think. A growing line of work reasons in latent space (recurrent depth) or via diffusion, opening a new compute axis that does not consume output tokens. Worth tracking even if it is not yet your default, because it changes the latency and cost model of reasoning.
 
@@ -96,7 +96,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 5. Efficient Long-Context Architecture
+## 5. Efficient Long-Context Architecture {#5-efficient-long-context-architecture}
 
 **Why it matters:** Serving long context cheaply is now an architecture decision, not just a KV-cache trick. Trainable sparse attention has moved from research into shipped frontier models, and it is the production answer to quadratic attention cost.
 
@@ -109,7 +109,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 6. Agent Reliability and Failure Modes
+## 6. Agent Reliability and Failure Modes {#6-agent-reliability-and-failure-modes}
 
 **Why it matters:** Single-shot demos hide that agents fail differently at scale: errors cascade through multi-agent systems, and the same agent that passes a task once fails it on re-run. Reliability is a measurable engineering property, and the benchmarks for it are new.
 
@@ -122,7 +122,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 7. Agent and Memory Security
+## 7. Agent and Memory Security {#7-agent-and-memory-security}
 
 **Why it matters:** This is the fastest-moving risk area in 2026, and some of it is provably hard. If you ship tool-using or memory-equipped agents, these results should shape your architecture toward least-privilege and containment.
 
@@ -134,7 +134,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 8. AI Control and the Evaluation Frontier
+## 8. AI Control and the Evaluation Frontier {#8-ai-control-and-the-evaluation-frontier}
 
 **Why it matters:** Two practitioner-relevant research programs are maturing. AI control gives concrete protocols for deploying agents you do not fully trust. And evaluation itself has become a research problem, because models can detect and game evals.
 
@@ -148,7 +148,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 9. Memory and Retrieval Advances
+## 9. Memory and Retrieval Advances {#9-memory-and-retrieval-advances}
 
 **Why it matters:** Retrieval is becoming agentic (the model gets retrieval primitives, not a fixed pipeline), memory is getting a real engineering and security treatment, and the field has hard new evidence about what memory systems can and cannot do.
 
@@ -162,7 +162,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 10. Multimodal: World Models, VLAs, and Omni
+## 10. Multimodal: World Models, VLAs, and Omni {#10-multimodal-world-models-vlas-and-omni}
 
 **Why it matters:** Three converging fronts: omnimodal models that natively emit actions, interactive world models you can navigate in real time, and vision-language-action models for robotics. Even if you do not build robots, the architecture patterns (dual-system control, latent-action pretraining, predictive embedding world models) are spreading into agents.
 
@@ -175,7 +175,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 11. Smaller, Cheaper, Faster
+## 11. Smaller, Cheaper, Faster {#11-smaller-cheaper-faster}
 
 **Why it matters:** The cost frontier is moving as fast as the capability frontier. Frontier-class reasoning is appearing in small models, low-bit inference is getting reasoning-aware, and speculative decoding keeps improving.
 
@@ -188,7 +188,7 @@ Five meta-trends sit underneath the specific papers:
 
 ---
 
-## 12. Test-Time Training: Learning at Inference
+## 12. Test-Time Training: Learning at Inference {#12-test-time-training-learning-at-inference}
 
 **Why it matters:** This is the most-confused term on the page, so it earns its own section. Test-time *training* updates the model's **weights** at inference; test-time *compute* (theme 2) keeps weights frozen and just spends more forward-pass tokens. Different lever, different cost. TTT is research-stage in 2026, but it is the cleanest lens on a real question: when a frozen model plateaus on a genuinely novel task, the fix might not be to think longer or retrieve more, but to briefly *learn*.
 
@@ -217,7 +217,7 @@ They stack: the ARC result pairs a TTT weight update with augmentation voting, w
 
 ---
 
-## A 90-Day Learning Path
+## A 90-Day Learning Path {#a-90-day-learning-path}
 
 If you read in this order, you cover the highest-leverage ideas first:
 
@@ -232,7 +232,7 @@ Pair every theme with the relevant guide chapter so the research lands on a conc
 
 ---
 
-## How This Maps to the Guide
+## How This Maps to the Guide {#how-this-maps-to-the-guide}
 
 Most of these themes deepen existing chapters rather than replacing them. The cleanest new-section candidates, if you are extending the guide, are **AI control protocols** (largely absent and production-relevant for agent deployers), **memory security and OWASP ASI06** (a fast-moving cluster with a dedicated risk entry), and the **effective-context gap** as a first-class concept. The rest are best added as "Frontier (2026)" callouts inside their home chapters, linked back here so this page stays the single radar and the chapters stay teachable.
 

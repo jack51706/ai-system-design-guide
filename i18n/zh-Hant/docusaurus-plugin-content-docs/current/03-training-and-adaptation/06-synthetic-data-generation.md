@@ -28,7 +28,7 @@
 
 ---
 
-## Evol-Instruct 模式
+## Evol-Instruct 模式 {#evol-instruct}
 
 Evol-Instruct 是一個遞迴流程，由 LLM 拿一條簡單的指令，將其演化成更複雜的指令。
 
@@ -68,7 +68,7 @@ RLAIF 由 Anthropic 開發，並已廣泛被業界採用，它使用一部「憲
 
 ---
 
-## 去偏見與多樣性
+## 去偏見與多樣性 {#diversity}
 
 合成資料被用來「填補」人類資料中的缺口。
 - **語言**：透過翻譯概念性範本，為低資源語言（例如 Swahili、Marathi）生成高品質文本。
@@ -76,7 +76,7 @@ RLAIF 由 Anthropic 開發，並已廣泛被業界採用，它使用一部「憲
 
 ---
 
-## 面試題
+## 面試題 {#interview-questions}
 
 ### Q：在合成資料上訓練時，「模型崩潰」的風險是什麼？
 
@@ -97,7 +97,7 @@ RLAIF 由 Anthropic 開發，並已廣泛被業界採用，它使用一部「憲
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Xu et al. "WizardLM: Empowering Large Language Models to Follow Complex Instructions" (2023)
 - Bai et al. "Constitutional AI: Harmlessness from AI Feedback" (2022)
 - OpenAI. "Weak-to-Strong Generalization" (2023)

@@ -14,7 +14,7 @@ Traditional OCR (Tesseract, specialized engines) has been largely superseded by 
 
 ---
 
-## The Shift: Traditional OCR vs. Vision-LLMs
+## The Shift: Traditional OCR vs. Vision-LLMs {#shift}
 
 | Feature | Traditional OCR (Tesseract/AWS Textract) | Vision-LLMs (Gemini 3.1 Pro, GPT-5.5, Claude Opus 4.7) |
 |---------|-------------------------------------------|--------------------------------------------------------|
@@ -26,7 +26,7 @@ Traditional OCR (Tesseract, specialized engines) has been largely superseded by 
 
 ---
 
-## Vision-LLM Layout Extraction
+## Vision-LLM Layout Extraction {#layout-extraction}
 
 The standard workflow is **Screenshot-to-Markdown**.
 1. **Rasterize**: Convert PDF pages to images.
@@ -35,7 +35,7 @@ The standard workflow is **Screenshot-to-Markdown**.
 
 ---
 
-## Reading Order and Logical Structure
+## Reading Order and Logical Structure {#reading-order}
 
 > [!IMPORTANT]
 > A common failure in naive RAG is breaking a paragraph across a column. 
@@ -52,7 +52,7 @@ Modern multimodal models are robust to:
 
 ---
 
-## Cost and Latency Tradeoffs
+## Cost and Latency Tradeoffs {#tradeoffs}
 
 | Model Tier | Use Case | Latency | Cost (1K pages) |
 |------------|----------|---------|-----------------|
@@ -62,7 +62,7 @@ Modern multimodal models are robust to:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why would you still use AWS Textract or Azure AI Search (OCR) when vision LLMs exist?
 
@@ -80,7 +80,7 @@ This reduces the processing time from 30 minutes (sequential) to under 20 second
 
 ---
 
-## References
+## References {#references}
 - Google DeepMind. "Gemini 2.0: Understanding Multi-column Documents" (2025)
 - OpenAI. "Vision Models for Document Understanding" (2025)
 - Tesseract v6. "The Integration of Hybrid Transformer OCR" (2025)

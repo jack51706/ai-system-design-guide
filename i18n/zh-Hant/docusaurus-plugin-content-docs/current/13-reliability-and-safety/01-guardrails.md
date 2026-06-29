@@ -20,7 +20,7 @@
 
 ---
 
-## 為什麼防護機制很重要
+## 為什麼防護機制很重要 {#why-guardrails-matter}
 
 ### 可靠性的挑戰
 
@@ -45,7 +45,7 @@ LLM 具有機率性，可能產生：
 
 ---
 
-## 防護機制的類型
+## 防護機制的類型 {#types-of-guardrails}
 
 ### 縱深防禦
 
@@ -60,7 +60,7 @@ flowchart TD
 
 ---
 
-## 輸入防護機制
+## 輸入防護機制 {#input-guardrails}
 
 ### 主題分類
 
@@ -177,7 +177,7 @@ class InputLimitsGuardrail:
 
 ---
 
-## 輸出防護機制
+## 輸出防護機制 {#output-guardrails}
 
 ### 內容安全過濾器
 
@@ -280,7 +280,7 @@ class FactualityGuardrail:
 
 ---
 
-## 提示注入防禦
+## 提示注入防禦 {#prompt-injection-defense}
 
 ### 偵測
 
@@ -384,7 +384,7 @@ Provide a helpful response.
 
 ---
 
-## 幻覺緩解
+## 幻覺緩解 {#hallucination-mitigation}
 
 ### 多層方法
 
@@ -496,7 +496,7 @@ class AbstentionDetector:
 
 ---
 
-## 結構化輸出驗證
+## 結構化輸出驗證 {#structured-output-validation}
 
 ### JSON Schema 驗證
 
@@ -578,7 +578,7 @@ class StructuredOutputRetry:
 
 ---
 
-## 動作安全
+## 動作安全 {#action-safety}
 
 ### 動作驗證
 
@@ -677,7 +677,7 @@ class SandboxedExecutor:
 
 ---
 
-## 回退策略
+## 回退策略 {#fallback-strategies}
 
 ### 優雅降級
 
@@ -749,7 +749,7 @@ def handle_low_confidence(query: str, response: str, metadata: dict):
 
 ---
 
-## 防護機制架構
+## 防護機制架構 {#guardrail-architecture}
 
 ### 分層管線
 
@@ -843,7 +843,7 @@ class GuardrailMetrics:
 
 ---
 
-## 防護機制框架
+## 防護機制框架 {#guardrail-frameworks}
 
 ### NeMo Guardrails（NVIDIA）
 
@@ -901,7 +901,7 @@ result = guard(
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你如何在生產環境的 RAG 系統中防止幻覺？
 
@@ -1001,7 +1001,7 @@ flowchart LR
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - NeMo Guardrails: https://github.com/NVIDIA/NeMo-Guardrails
 - Guardrails AI: https://github.com/guardrails-ai/guardrails

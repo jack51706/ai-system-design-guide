@@ -14,7 +14,7 @@ Knowledge distillation is the process of transferring the intelligence from a la
 
 ---
 
-## The Teacher-Student Paradigm
+## The Teacher-Student Paradigm {#teacher-student-paradigm}
 
 Small models (e.g., Llama 4 8B, Gemini 3.1 Flash, Claude Haiku 4.5) are not trained on raw web data alone. They are trained on **Synthetic Data** generated or curated by a much larger model (e.g., GPT-5.5, Claude Opus 4.7, or Llama 4 405B).
 
@@ -25,7 +25,7 @@ Small models (e.g., Llama 4 8B, Gemini 3.1 Flash, Claude Haiku 4.5) are not trai
 
 ---
 
-## How Distillation Works
+## How Distillation Works {#how-distillation-works}
 
 ### 1. Hard Label Distillation
 The student learns from the teacher's final predictions (e.g., the answer to a question).
@@ -41,7 +41,7 @@ Loss = KL_Div(Teacher_Logits / T, Student_Logits / T)
 
 ---
 
-## Feature vs. Output Distillation
+## Feature vs. Output Distillation {#feature-vs-output}
 
 ### Output Distillation (Standard)
 Student matches the teacher's text responses.
@@ -55,7 +55,7 @@ Student matches the inner **Hidden States** (vector representations) of the teac
 
 ---
 
-## Self-Distillation from Proof (SDP)
+## Self-Distillation from Proof (SDP) {#self-distillation-proof}
 
 **The reasoning breakthrough.**
 Models like o1, DeepSeek-R1, and Claude Opus 4.7 use SDP to improve without new human data.
@@ -68,14 +68,14 @@ Models like o1, DeepSeek-R1, and Claude Opus 4.7 use SDP to improve without new 
 
 ---
 
-## Quantization-Aware Distillation
+## Quantization-Aware Distillation {#quantization-aware-distillation}
 
 Standard quantization (e.g., 16-bit to 4-bit) causes a small drop in accuracy.
 **The Fix**: Use Knowledge Distillation *during* the quantization process. The 16-bit model acts as the teacher, guiding the 4-bit model to minimize its error. This is how modern 4-bit models match 16-bit performance.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is a distilled 8B model better than an 8B model trained from scratch on the same tokens?
 
@@ -91,7 +91,7 @@ Training from scratch (Pretraining) on raw web data is noisy; the model spends a
 
 ---
 
-## References
+## References {#references}
 - Hinton et al. "Distilling the Knowledge in a Neural Network" (2015)
 - Gou et al. "Knowledge Distillation: A Survey" (2021)
 - DeepSeek. "DeepSeek-R1: Incentivizing Reasoning Capability" (2025)

@@ -14,7 +14,7 @@ The KV Cache is the most significant memory consumer in long-context AI systems.
 
 ---
 
-## The KV Cache Problem
+## The KV Cache Problem {#kv-cache-problem}
 
 During generation, the model needs the Key (K) and Value (V) tensors for all previous tokens. Storing these in memory is expensive.
 
@@ -26,7 +26,7 @@ During generation, the model needs the Key (K) and Value (V) tensors for all pre
 
 ---
 
-## GQA: Grouped Query Attention
+## GQA: Grouped Query Attention {#gqa}
 
 GQA is the modern standard for reducing KV Cache size without losing performance.
 
@@ -40,7 +40,7 @@ GQA is the modern standard for reducing KV Cache size without losing performance
 
 ---
 
-## Context Caching (Self-hosted)
+## Context Caching (Self-hosted) {#context-caching-self-hosted}
 
 Production systems use **Shared KV Caches** for prompts with common prefixes (e.g., a 100-page knowledge base shared by 1,000 users).
 
@@ -50,7 +50,7 @@ Production systems use **Shared KV Caches** for prompts with common prefixes (e.
 
 ---
 
-## API-level Context Caching (Prompt Caching)
+## API-level Context Caching (Prompt Caching) {#api-prompt-caching}
 
 Major providers (OpenAI, Anthropic, Google, DeepSeek) now offer **Prompt Caching** discounts.
 
@@ -65,7 +65,7 @@ Major providers (OpenAI, Anthropic, Google, DeepSeek) now offer **Prompt Caching
 
 ---
 
-## RAD-O: Retrieval Augmented Decoding
+## RAD-O: Retrieval Augmented Decoding {#rad-o}
 
 RAD-O is a context-caching technique where the model **compresses** the KV cache of long documents into "Latent tokens."
 - **How**: Instead of storing the full KV vectors for 1M tokens, it stores a compressed representation that is 10x smaller.
@@ -73,7 +73,7 @@ RAD-O is a context-caching technique where the model **compresses** the KV cache
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How does PagedAttention help with KV Cache management? (Simplified)
 
@@ -90,7 +90,7 @@ With cheap context caching (DeepSeek, Gemini, Anthropic), RAG is often "overkill
 
 ---
 
-## References
+## References {#references}
 - Kwon et al. "Efficient Memory Management with PagedAttention" (2023)
 - Anthropic. "Prompt Caching Documentation" (2024)
 - DeepSeek. "Context Caching Technical Report" (2025)

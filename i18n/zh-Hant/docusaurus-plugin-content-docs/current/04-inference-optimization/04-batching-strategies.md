@@ -13,7 +13,7 @@
 
 ---
 
-## 靜態與動態批次處理
+## 靜態與動態批次處理 {#static-vs-dynamic}
 
 在傳統機器學習（分類）中，我們使用**靜態批次處理（Static Batching）**，要求所有請求必須具有相同的大小，並且一起開始與結束。由於 LLM 的回應長度不固定，這種做法對 LLM 來說效率低落。
 
@@ -32,7 +32,7 @@
 
 ---
 
-## 飛行中批次處理（Prefill-Decode 融合）
+## 飛行中批次處理（Prefill-Decode 融合） {#in-flight-batching}
 
 過去，服務引擎處理的是一批「Prefill」（運算密集）或者一批「Decode」（記憶體密集）。
 **飛行中批次處理（In-Flight Batching）**（TensorRT-LLM）則允許將兩者混合：
@@ -42,7 +42,7 @@
 
 ---
 
-## 分塊 Prefill 與 RAD-O
+## 分塊 Prefill 與 RAD-O {#chunked-prefill}
 
 超大上下文提示（1M+ tokens）在 Prefill 階段可能讓一個批次卡住數秒，造成「停滯（stall）」。
 
@@ -51,7 +51,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：對 LLM 而言，為什麼連續批次處理優於靜態批次處理？
 
@@ -65,7 +65,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Yu et al. "Orca: A Distributed Serving System for [Transformer] Models" (2022)
 - NVIDIA. "TensorRT-LLM: In-Flight Batching" (2023)
 - vLLM Project. "Iteration-Level Scheduling" (2023)

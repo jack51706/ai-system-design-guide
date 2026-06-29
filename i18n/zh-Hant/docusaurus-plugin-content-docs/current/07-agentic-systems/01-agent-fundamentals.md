@@ -14,7 +14,7 @@
 
 ---
 
-## 代理公式
+## 代理公式 {#formula}
 
 現代的代理能力通常被描述為：
 `Agent = Reasoning Model + Tool Use + Persistent Memory + Environment Feedback`
@@ -48,7 +48,7 @@
 
 ---
 
-## 核心元件
+## 核心元件 {#components}
 
 ### 1. 推理模型（決策核心）
 代理的 CPU。它決定「通往成功的路徑」。
@@ -64,7 +64,7 @@
 
 ---
 
-## 代理生命週期
+## 代理生命週期 {#lifecycle}
 
 1. **接收（Intake）**：接收使用者目標。
 2. **分解（Decomposition）**：將目標拆解為子步驟。
@@ -74,7 +74,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼「推理模型」（例如具延伸思考能力的 Claude Opus 4.7 或 GPT-5.5）在代理能力上優於標準 LLM？
 
@@ -88,7 +88,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Kahneman, D. "Thinking, Fast and Slow"（應用於 AI，2025）
 - OpenAI. "Learning to Reason with LLMs"（2024）
 - DeepSeek. "R1: Cold-Start Data for Reasoning"（2025）

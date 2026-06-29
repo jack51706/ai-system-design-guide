@@ -14,7 +14,7 @@
 
 ---
 
-## The Mem0 Philosophy
+## The Mem0 Philosophy {#philosophy}
 
 Traditional memory stores *everything*. 
 Mem0 stores **Insights**.
@@ -22,7 +22,7 @@ Instead of storing "The user said they like blue coffee mugs," Mem0 stores the f
 
 ---
 
-## How it Works: The Digest Loop
+## How it Works: The Digest Loop {#digest-loop}
 
 1. **Observe**: The agent monitors the conversation in L1.
 2. **Extract**: A background "Memory Agent" identifies a memorable fact.
@@ -31,7 +31,7 @@ Instead of storing "The user said they like blue coffee mugs," Mem0 stores the f
 
 ---
 
-## Self-Updating Memories
+## Self-Updating Memories {#self-updating}
 
 Modern agentic memory is **Recursive**.
 - If a user mentions a task: "I need to finish the budget by Friday."
@@ -40,7 +40,7 @@ Modern agentic memory is **Recursive**.
 
 ---
 
-## Integrating Mem0 with LangGraph
+## Integrating Mem0 with LangGraph {#langgraph}
 
 In a state-machine architecture, Mem0 acts as an **External State Provider**.
 
@@ -55,7 +55,7 @@ def memory_node(state: AgentState):
 
 ---
 
-## Personalization at Scale
+## Personalization at Scale {#personalization}
 
 For enterprise apps (millions of users), Mem0 manages:
 - **Consistency**: The AI "remembers" the user's name across the Web App, Mobile App, and Slack Bot.
@@ -63,7 +63,7 @@ For enterprise apps (millions of users), Mem0 manages:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why use a dedicated service like Mem0 instead of a custom Python script that writes to Postgres?
 
@@ -77,7 +77,7 @@ We use **Thresholded Relevance**. Mem0 returns a \"Relevance Score\" for every r
 
 ---
 
-## References
+## References {#references}
 - Mem0. "Learning User Preferences across Sessions" (2025)
 - TMemory. "Temporal Logic in AI Agents" (2024/2025)
 - NVIDIA. "Memory Banks for Intelligent Assistants" (2025)

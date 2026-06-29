@@ -14,7 +14,7 @@ Reasoning Loops define the control flow of an agent. While **ReAct** was the 202
 
 ---
 
-## The Evolution of the Loop
+## The Evolution of the Loop {#evolution}
 
 | Era | Pattern | Core Philosophy |
 |-----|---------|-----------------|
@@ -36,7 +36,7 @@ The fundamental loop for 90% of agents:
 
 ---
 
-## Self-Reflexion Loops
+## Self-Reflexion Loops {#reflexion}
 
 Reflexion adds a **"Critic"** step to the loop.
 
@@ -77,7 +77,7 @@ Modern agentic systems have moved from "Chat interfaces" to **"State Machines."*
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: When would you use a "Reasoning Loop" (ReAct) vs. a "Plan-and-Solve" architecture?
 
@@ -91,7 +91,7 @@ Inference-Time Scaling (often associated with OpenAI's o1) refers to spending mo
 
 ---
 
-## References
+## References {#references}
 - Yao et al. "ReAct: Synergizing Reasoning and Acting" (2022/2025 update)
 - Shinn et al. "Reflexion: Language Agents with Iterative Homeostatic Learning" (2024)
 - Wang et al. "Plan-and-Solve Prompting" (2023)

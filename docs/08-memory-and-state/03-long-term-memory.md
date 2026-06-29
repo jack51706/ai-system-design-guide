@@ -34,7 +34,7 @@ Semantic memory stores **Discovered Facts** about entities.
 
 ---
 
-## Hybrid Vector-Graph Storage
+## Hybrid Vector-Graph Storage {#hybrid}
 
 Staff-level engineers use **GraphRAG-style Memory**.
 - **Vector Search** finds "Related" nodes.
@@ -43,7 +43,7 @@ Staff-level engineers use **GraphRAG-style Memory**.
 
 ---
 
-## Memory Pruning and Decay
+## Memory Pruning and Decay {#pruning}
 
 Memory is a liability if it grows unchecked.
 - **Temporal Decay**: Older memories lose their "relevance score" unless frequently accessed.
@@ -52,7 +52,7 @@ Memory is a liability if it grows unchecked.
 
 ---
 
-## Privacy and Multi-Tenancy
+## Privacy and Multi-Tenancy {#privacy}
 
 > [!CAUTION]
 > **Cross-Session Leakage** is the #1 security risk in global memory. 
@@ -60,7 +60,7 @@ Memory is a liability if it grows unchecked.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you choose between a Vector DB and a Knowledge Graph for long-term memory?
 
@@ -74,7 +74,7 @@ In fine-tuned agents, catastrophic forgetting happens when new training data wip
 
 ---
 
-## References
+## References {#references}
 - Neo4j. "Knowledge Graphs for Generative AI" (2025)
 - Pinecone. "The Managed Memory Layer" (2025)
 - GraphRAG. "Reasoning over Relationships" (2024/2025)

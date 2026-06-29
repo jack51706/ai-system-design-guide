@@ -15,7 +15,7 @@ A practical framework for choosing the right LLM for your use case, considering 
 
 ---
 
-## Selection Framework
+## Selection Framework {#selection-framework}
 
 ### Decision Tree (June 2026)
 
@@ -46,7 +46,7 @@ flowchart TD
 
 ---
 
-## Capability Comparison
+## Capability Comparison {#capability-comparison}
 
 ### Frontier Model Comparison (June 2026)
 
@@ -78,7 +78,7 @@ flowchart TD
 
 ---
 
-## Use Case Mapping
+## Use Case Mapping {#use-case-mapping}
 
 ### By Application Type (June 2026)
 
@@ -103,7 +103,7 @@ flowchart TD
 
 ---
 
-## Cost Analysis
+## Cost Analysis {#cost-analysis}
 
 ### Cost Modeling (June 2026)
 
@@ -132,7 +132,7 @@ Assume 1M queries/month, 1K input tokens + 500 output tokens per query:
 
 ---
 
-## Operational Considerations
+## Operational Considerations {#operational-considerations}
 
 ### Rate Limits and Quotas
 
@@ -202,7 +202,7 @@ class LLMClient:
 
 ---
 
-## Multi-Model Strategies
+## Multi-Model Strategies {#multi-model-strategies}
 
 ### Model Routing
 
@@ -256,7 +256,7 @@ class ModelCascade:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you choose between GPT-4o, Claude, and Gemini for a production application?
 
@@ -307,7 +307,7 @@ Hidden costs of self-hosting: GPU procurement, engineering time, model updates, 
 
 ---
 
-## References
+## References {#references}
 
 - OpenAI API: https://platform.openai.com/
 - Anthropic API: https://docs.anthropic.com/

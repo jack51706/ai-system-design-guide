@@ -14,7 +14,7 @@
 
 ---
 
-## CrewAI：管理者視角
+## CrewAI：管理者視角 {#crewai}
 
 CrewAI 是圍繞 **Process（流程）** 這個概念所建構的。
 - **角色導向代理**：你定義一個「Researcher（研究員）」、一個「Writer（撰稿者）」和一個「Manager（管理者）」。
@@ -62,7 +62,7 @@ CrewAI v1.13 標誌著邁向企業級生產環境就緒的轉捩點：
 
 ---
 
-## Microsoft Agent Framework（AutoGen 的繼任者）
+## Microsoft Agent Framework（AutoGen 的繼任者） {#microsoft-agent-framework}
 
 ### 合併：AutoGen + Semantic Kernel = Agent Framework
 
@@ -104,7 +104,7 @@ workflow = Workflow(
 
 ---
 
-## Agent SDK 全景
+## Agent SDK 全景 {#agent-sdk-landscape}
 
 如今每一家主要的 AI 實驗室都推出了自家的 agent 框架。截至 2026 年 5 月的版圖如下：
 
@@ -162,7 +162,7 @@ Google 針對 Google 生態系最佳化、但與模型無關的框架：
 
 ---
 
-## 框架比較表
+## 框架比較表 {#comparison}
 
 | 功能 | CrewAI | MS Agent Framework | LangGraph | Claude Agent SDK | OpenAI Agents SDK | Google ADK |
 |---------|--------|-------------------|-----------|-----------------|-------------------|------------|
@@ -177,7 +177,7 @@ Google 針對 Google 生態系最佳化、但與模型無關的框架：
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：你在什麼情況下會用 CrewAI 而不是 LangGraph？
 
@@ -196,7 +196,7 @@ AutoGen 仍會持續收到錯誤修正與安全性修補，所以既有的部署
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - CrewAI. "The Multi-Agent Process Engine" (2025/2026, v1.13)
 - Microsoft. "Agent Framework Overview" (2026) — learn.microsoft.com/en-us/agent-framework
 - Microsoft. "AutoGen to Agent Framework Migration Guide" (2026)

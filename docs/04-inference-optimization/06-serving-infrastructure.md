@@ -14,7 +14,7 @@ Deploying LLMs at scale requires a robust infrastructure layer that handles load
 
 ---
 
-## The Inference Gateway
+## The Inference Gateway {#inference-gateway}
 
 The gateway is the "Traffic Controller" for your AI workload.
 
@@ -45,7 +45,7 @@ Splits different layers (e.g., layers 1-40 on GPU 1, 41-80 on GPU 2).
 
 ---
 
-## Multi-GPU Orchestration
+## Multi-GPU Orchestration {#multi-gpu}
 
 Kubernetes operators (like **Kube-Ray** or **Gloo**) manage "GPU Pools" in production.
 
@@ -55,7 +55,7 @@ Kubernetes operators (like **Kube-Ray** or **Gloo**) manage "GPU Pools" in produ
 
 ---
 
-## Streaming and Long-Lived Connections
+## Streaming and Long-Lived Connections {#streaming}
 
 LLMs are almost always served via **Server-Sent Events (SSE)** or **WebSockets**.
 
@@ -64,7 +64,7 @@ LLMs are almost always served via **Server-Sent Events (SSE)** or **WebSockets**
 
 ---
 
-## May 2026 Inference Engine Landscape
+## May 2026 Inference Engine Landscape {#may-2026-inference-engine-landscape}
 
 By May 2026 the engine choice is no longer a question of "which one is fastest." Each leading engine has won a specific workload category, and the right answer is engine-per-workload rather than a single house engine. The map below is the practical one teams actually use.
 
@@ -162,7 +162,7 @@ A more explicit mapping for the workloads teams actually deploy:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is Tensor Parallelism preferred over Pipeline Parallelism for low-latency serving?
 
@@ -176,7 +176,7 @@ We handle noisy neighbors through **Tiered Iteration-Level Scheduling**. Each te
 
 ---
 
-## References
+## References {#references}
 - Narayanan et al. "Efficient Large-Scale Language Model Training on GPU Clusters Using Pipedream" (2019/2021)
 - NVIDIA. "Megatron-LM: Training Multi-Billion Parameter Models on GPU Clusters" (2021)
 

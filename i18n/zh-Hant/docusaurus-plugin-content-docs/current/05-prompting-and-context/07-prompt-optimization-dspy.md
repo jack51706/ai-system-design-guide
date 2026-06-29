@@ -14,7 +14,7 @@
 
 ---
 
-## DSPy 哲學：程式化 vs. 提示
+## DSPy 哲學：程式化 vs. 提示 {#philosophy}
 
 在傳統提示中，更換模型（例如從 GPT-5.5 換成 Claude Sonnet 4.6 或 Llama 4）需要重寫你所有的提示。
 **DSPy 把邏輯與格式分離開來。**
@@ -24,7 +24,7 @@
 
 ---
 
-## Signatures 與 Modules
+## Signatures 與 Modules {#signatures-modules}
 
 你不用撰寫提示，而是定義一個 **Signature**：輸入是什麼，以及輸出應該是什麼。
 
@@ -42,7 +42,7 @@ qa_system = dspy.ChainOfThought(MultiHopQA)
 
 ---
 
-## Teleprompters（最佳化器）
+## Teleprompters（最佳化器） {#optimizers}
 
 Teleprompters 是會反覆迭代你的程式以提升準確度的演算法。
 1. **BootstrapFewShot**：自動為你的提示找出高品質的範例。
@@ -52,14 +52,14 @@ Teleprompters 是會反覆迭代你的程式以提升準確度的演算法。
 
 ---
 
-## 「提示即權重」的類比
+## 「提示即權重」的類比 {#prompt-as-weight}
 
 在 DSPy 中，你的提示就像神經網路中的一個權重。你不會「寫死」權重，而是去訓練它們。
 - 如果你更換了模型，你只要**重新編譯**（重新訓練）你的程式即可。最佳化器會找出新模型更能理解的新 few-shot 範例。
 
 ---
 
-## 指標驅動的最佳化
+## 指標驅動的最佳化 {#metrics}
 
 最佳化需要一個**指標**（一個會回傳分數的函式）。
 - **Exact Match（完全比對）**：`prediction.answer == target.answer`
@@ -67,7 +67,7 @@ Teleprompters 是會反覆迭代你的程式以提升準確度的演算法。
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：DSPy 如何解決提示工程的「脆弱性」？
 
@@ -81,7 +81,7 @@ Teleprompter 是一個程式化的最佳化器。它的工作是接收一個 DSP
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Khattab et al. "DSPy: Compiling Declarative Language Models" (2023/2024)
 - Stanford NLP. "DSPy Documentation and Tutorials" (2025)
 

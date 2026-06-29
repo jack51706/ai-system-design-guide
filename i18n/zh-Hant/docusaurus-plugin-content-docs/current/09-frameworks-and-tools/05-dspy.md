@@ -14,7 +14,7 @@
 
 ---
 
-## 程式設計典範
+## 程式設計典範 {#paradigm}
 
 DSPy 把 LLM 應用程式當成一個**神經網路**來看待。
 - **Module（模組）**：可重複使用的邏輯區塊（例如 `ChainOfThought`）。
@@ -23,7 +23,7 @@ DSPy 把 LLM 應用程式當成一個**神經網路**來看待。
 
 ---
 
-## Signatures：描述任務
+## Signatures：描述任務 {#signatures}
 
 你不必再寫出一段 100 行的提示，而是寫一個 **Signature**：
 ```python
@@ -37,7 +37,7 @@ class ResearchAssistant(dspy.Signature):
 
 ---
 
-## 最佳化器與 MIPROv2
+## 最佳化器與 MIPROv2 {#optimizers}
 
 **MIPROv2（Multi-stage Instruction PRoposal Optimizer，多階段指令提案最佳化器）**是 DSPy 的旗艦級最佳化器。
 1. **指令提案（Instruction Proposal）**：由一個「助理模型」針對該任務，提出 10 到 20 種不同的系統提示寫法。
@@ -46,7 +46,7 @@ class ResearchAssistant(dspy.Signature):
 
 ---
 
-## 斷言與約束
+## 斷言與約束 {#assertions}
 
 DSPy 同時支援**硬斷言與軟斷言（Hard and Soft Assertions）**。
 - `dspy.Suggest(...)`：如果模型未通過某項檢查（例如「答案必須少於 50 個字」），DSPy 會**自動重新提示**該模型，並附上失敗原因，讓它自我修正。
@@ -54,14 +54,14 @@ DSPy 同時支援**硬斷言與軟斷言（Hard and Soft Assertions）**。
 
 ---
 
-## 管理模型漂移
+## 管理模型漂移 {#model-drift}
 
 當 OpenAI 或 Anthropic 釋出權重更新時，手工打造的提示往往會失效。
 - **2025 年的解法**：有了 DSPy，你只需要**重新編譯（Re-compile）**。最佳化器會為更新後的模型架構找出新的「最佳」token，在不需人力投入的情況下維持一致性。
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼 DSPy 被視為「反提示工程（Anti-Prompt Engineering）」？
 
@@ -75,7 +75,7 @@ DSPy 同時支援**硬斷言與軟斷言（Hard and Soft Assertions）**。
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Khattab et al. "DSPy: Compiling Declarative Language Model Calls" (2024/2025)
 - Stanford NLP. "The MIPROv2 Technical Report" (2025)
 - Databricks. "Productionizing Programmed Prompts" (2025)

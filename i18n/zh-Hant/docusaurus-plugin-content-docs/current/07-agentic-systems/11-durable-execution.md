@@ -15,7 +15,7 @@
 
 ---
 
-## 為什麼代理打破了一般的故障模型
+## 為什麼代理打破了一般的故障模型 {#why-agents-break-the-normal-failure-model}
 
 代理是長時間運行、有狀態、會產生副作用的行程，這打破了三項假設：
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 持久化執行模型
+## 持久化執行模型 {#the-durable-execution-model}
 
 核心模式是 **以程式碼形式表達的工作流（workflows-as-code）加上一份僅可追加（append-only）的事件歷史，再加上確定性重播（deterministic replay）。** 像 Temporal 這樣的系統會為每個工作流記錄一份不可變的事件歷史；如果某個 worker 在 10 個步驟中的第 5 步崩潰，另一個 worker 會重播這份歷史，以重建記憶體內的狀態，並從第 6 步恢復。
 
@@ -43,7 +43,7 @@
 
 ---
 
-## 工具
+## 工具 {#tools}
 
 | 工具 | 狀態存放在哪裡 | 佔用規模 | 備註 |
 |------|-------------------|-----------|-------|
@@ -57,7 +57,7 @@
 
 ---
 
-## 把持久化執行對應到代理迴圈
+## 把持久化執行對應到代理迴圈 {#mapping-durable-execution-onto-agent-loops}
 
 核心對應關係是：**代理迴圈變成一個工作流，而每一次模型呼叫與工具呼叫都變成一個持久化活動。** 在崩潰時，已完成的模型呼叫與工具呼叫會從日誌重播，而不是重新執行，因此你不會重新支付 token，也不會重新觸發副作用，你甚至可以修掉一個 bug 並恢復一個運行中的應用。
 
@@ -73,7 +73,7 @@
 
 ---
 
-## 何時你會需要它
+## 何時你會需要它 {#when-you-need-it}
 
 持久化執行正是 *生產環境* 代理可靠性逐漸浮現的答案，而 2026 年的聲勢是實實在在的：Temporal 以據報達數十億美元的估值募得了一輪龐大的 Series D，且多項重要的 AI 產品都建構於其上。一份被廣泛引用的廠商案例研究描述了一個深度研究代理在遭遇競態條件、脆弱的自製重試邏輯，以及變得難以支援的陳舊狀態 bug 之後，**從一個框架原型遷移到一個持久化執行引擎**（這是一份廠商發布的說法，因此請把方向視為真實，把其框定的角度視為他們自己的）。
 
@@ -81,7 +81,7 @@
 
 ---
 
-## 你需要持久化執行嗎？
+## 你需要持久化執行嗎？ {#do-you-need-durable-execution}
 
 依序走過這些問題：
 
@@ -94,7 +94,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼對於一個帶有副作用的生產環境代理來說，天真的重試與檢查點是不夠的？
 
@@ -108,7 +108,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Resonate，["From where do deterministic constraints come?"](https://journal.resonatehq.io/p/from-where-do-deterministic-constraints)
 - Restate，["What is durable execution?"](https://www.restate.dev/what-is-durable-execution)

@@ -14,7 +14,7 @@
 
 ---
 
-## RAG 模式
+## RAG 模式 {#rag-patterns}
 
 ### 模式：Naive RAG
 
@@ -202,7 +202,7 @@ class CorrectiveRAG:
 
 ---
 
-## 代理模式
+## 代理模式 {#agent-patterns}
 
 ### 模式：ReAct
 
@@ -339,7 +339,7 @@ class ManagerAgent:
 
 ---
 
-## 最佳化模式
+## 最佳化模式 {#optimization-patterns}
 
 ### 模式：Cascading Models（級聯模型）
 
@@ -449,7 +449,7 @@ class CachingLLM:
 
 ---
 
-## 可靠性模式
+## 可靠性模式 {#reliability-patterns}
 
 ### 模式：Retry with Fallback（重試並備援）
 
@@ -529,7 +529,7 @@ agent_bulkhead = BulkheadExecutor(max_concurrent=5)
 
 ---
 
-## 成本模式
+## 成本模式 {#cost-patterns}
 
 ### 模式：Token Budget（Token 預算）
 
@@ -579,7 +579,7 @@ async def generate_response(query: str):
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：請描述三種 RAG 模式以及各自的適用時機。
 
@@ -617,7 +617,7 @@ async def generate_response(query: str):
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Gao et al. "Retrieval-Augmented Generation for Large Language Models: A Survey" (2024)
 - Yao et al. "ReAct: Synergizing Reasoning and Acting in Language Models" (2023)

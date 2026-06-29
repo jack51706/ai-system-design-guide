@@ -18,7 +18,7 @@
 
 ---
 
-## 為什麼純文字 RAG 會失敗
+## 為什麼純文字 RAG 會失敗 {#why-text-only-rag-fails}
 
 傳統的 RAG 管線會把文件解析成文字區塊、進行嵌入，再針對文字查詢做檢索。這套做法在真實世界的文件上會崩潰：
 
@@ -34,7 +34,7 @@
 
 ---
 
-## 架構模式
+## 架構模式 {#architecture-patterns}
 
 多模態 RAG 有三種主導模式，各有不同的取捨：
 
@@ -100,7 +100,7 @@ flowchart LR
 
 ---
 
-## 多模態嵌入策略
+## 多模態嵌入策略 {#multi-modal-embedding-strategies}
 
 ### CLIP（Contrastive Language-Image Pretraining）
 
@@ -140,7 +140,7 @@ flowchart TD
 
 ---
 
-## 用於文件理解的視覺語言模型
+## 用於文件理解的視覺語言模型 {#vision-language-models}
 
 VLM 在多模態 RAG 中扮演兩個角色：(1) 作為從檢索到的多模態脈絡中綜合出答案的**生成器**，以及 (2) 作為在攝取階段擷取結構化資訊的**索引引擎**。
 
@@ -177,7 +177,7 @@ flowchart TD
 
 ---
 
-## ColPali 與視覺式檢索
+## ColPali 與視覺式檢索 {#colpali}
 
 ColPali 代表了一種典範轉移：不再建構複雜的 OCR + 版面 + 表格擷取管線，而是把每一頁文件當成一張圖片，讓視覺語言模型處理所有事情。
 
@@ -221,7 +221,7 @@ ColPali 在視覺上複雜的基準測試（例如分別測試資訊圖表、圖
 
 ---
 
-## 表格擷取與結構化資料檢索
+## 表格擷取與結構化資料檢索 {#table-extraction}
 
 表格是傳統 RAG 最難處理的模態。逐列攤平一張表格，會摧毀那些賦予每個儲存格意義的欄與標頭關係。
 
@@ -266,7 +266,7 @@ flowchart TD
 
 ---
 
-## 圖表與圖解理解
+## 圖表與圖解理解 {#chart-understanding}
 
 ### 圖表類型與擷取方法
 
@@ -295,7 +295,7 @@ flowchart TD
 
 ---
 
-## 生產環境架構
+## 生產環境架構 {#production-architecture}
 
 ### 完整的多模態 RAG 管線
 
@@ -335,7 +335,7 @@ flowchart TD
 
 ---
 
-## 實作範例
+## 實作範例 {#implementation-example}
 
 ### 使用 ColPali + VLM 的端到端多模態 RAG
 
@@ -465,7 +465,7 @@ def generate_answer(query: str, retrieved_context: list) -> str:
 
 ---
 
-## 系統設計面試切角
+## 系統設計面試切角 {#system-design-interview-angle}
 
 ### Q：為一個金融研究平台設計一套 RAG 系統，它需要回答關於財報的問題，而這些財報含有文字、表格與圖表。
 
@@ -501,7 +501,7 @@ def generate_answer(query: str, retrieved_context: list) -> str:
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Faysse et al. "ColPali: Efficient Document Retrieval with Vision Language Models" (ICLR 2025)
 - Google. "SigLIP 2: Multilingual Vision-Language Encoders" (2025)

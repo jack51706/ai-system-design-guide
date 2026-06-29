@@ -16,7 +16,7 @@ Building production LLM systems requires understanding deployment options, scali
 
 ---
 
-## Deployment Options
+## Deployment Options {#deployment-options}
 
 ### API vs Self-Hosted
 
@@ -68,7 +68,7 @@ def should_use_api(requirements: dict) -> bool:
 
 ---
 
-## Serving Architecture
+## Serving Architecture {#serving-architecture}
 
 ### Single Model Serving
 
@@ -134,7 +134,7 @@ class ModelRouter:
 
 ---
 
-## Scaling Patterns
+## Scaling Patterns {#scaling-patterns}
 
 ### Horizontal Scaling
 
@@ -219,7 +219,7 @@ class AsyncLLMProcessor:
 
 ---
 
-## Cost Management
+## Cost Management {#cost-management}
 
 ### Cost Tracking
 
@@ -298,7 +298,7 @@ class BudgetManager:
 
 ---
 
-## Monitoring and Alerting
+## Monitoring and Alerting {#monitoring-and-alerting}
 
 ### Key Metrics
 
@@ -363,7 +363,7 @@ alerts:
 
 ---
 
-## Disaster Recovery
+## Disaster Recovery {#disaster-recovery}
 
 ### Multi-Provider Failover
 
@@ -433,7 +433,7 @@ class GracefulDegradation:
 
 ---
 
-## May 2026 AI Accelerator Landscape
+## May 2026 AI Accelerator Landscape {#may-2026-ai-accelerator-landscape}
 
 The hardware picture has shifted faster between January and May 2026 than at any previous moment in the AI build-out. The capacity announcements add up to **over a trillion dollars in committed cloud spend** and the supply chain is no longer single-vendor. This section is the snapshot a senior architect should be carrying into capacity-planning conversations in May 2026.
 
@@ -568,7 +568,7 @@ The framing that matters in 2026: **no senior architect designs a serious AI pro
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How would you design infrastructure for 1M LLM queries per day?
 
@@ -631,7 +631,7 @@ The hidden costs of self-hosting: GPU procurement/rental, engineering time for o
 
 ---
 
-## References
+## References {#references}
 
 - vLLM: https://docs.vllm.ai/
 - TensorRT-LLM: https://github.com/NVIDIA/TensorRT-LLM

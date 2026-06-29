@@ -14,7 +14,7 @@ LangGraph is the **de facto standard** for building stateful, multi-agent system
 
 ---
 
-## The Graph Philosophy
+## The Graph Philosophy {#philosophy}
 
 In 2023, agents were "Black Boxes."
 Today, agents are **Graphs**.
@@ -46,7 +46,7 @@ class GraphState(TypedDict):
 
 ---
 
-## Persistence and Checkpointing
+## Persistence and Checkpointing {#persistence}
 
 Current LangGraph uses **Thread-based Persistence**.
 - **The Concept**: Every session has a `thread_id`.
@@ -65,7 +65,7 @@ Current LangGraph uses **Thread-based Persistence**.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why use LangGraph instead of OpenAI's "Assistant API"?
 
@@ -79,7 +79,7 @@ We use **State Narrowing**. Instead of passing the entire global state to every 
 
 ---
 
-## References
+## References {#references}
 - LangChain Team. "LangGraph: Multi-Agent Workflows at Scale" (2025)
 - Anthropic. "Building Resilient Agents with State Machines" (2025)
 - OpenSource AI. "Cycles and the Future of Agency" (2024 Tech Report)

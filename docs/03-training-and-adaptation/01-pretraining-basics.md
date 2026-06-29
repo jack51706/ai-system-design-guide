@@ -14,7 +14,7 @@ Pretraining is the most computationally expensive phase of building an LLM, wher
 
 ---
 
-## The Pretraining Objective
+## The Pretraining Objective {#the-pretraining-objective}
 
 Most modern LLMs are **Decoder-only** and use **Causal Language Modeling (CLM)**:
 
@@ -27,7 +27,7 @@ The model predicts the next token given the context. This simple objective, at s
 
 ---
 
-## Data Curriculum and Quality
+## Data Curriculum and Quality {#data-curriculum-and-quality}
 
 The focus has shifted from "More Data" to "Better Curriculum."
 
@@ -66,7 +66,7 @@ Modern models (Llama 3, Llama 4) are **heavily overtrained** relative to Chinchi
 
 ---
 
-## Training Stability
+## Training Stability {#training-stability}
 
 Training at the "Ultra" scale (100k+ GPUs) faces massive stability issues.
 
@@ -81,7 +81,7 @@ Sudden jumps in loss that can ruin a training run.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why train an 8B model on 15T tokens if Chinchilla says 160B tokens is optimal?
 
@@ -98,7 +98,7 @@ Curriculum refers to the order and mixture of data. A common modern pattern is:
 
 ---
 
-## References
+## References {#references}
 - Kaplan et al. "Scaling Laws for Neural Language Models" (2020)
 - Hoffmann et al. "Training Compute-Optimal Large Language Models" (Chinchilla, 2022)
 - Meta AI. "The Llama 3/4 Herd of Models" (2024/2025)

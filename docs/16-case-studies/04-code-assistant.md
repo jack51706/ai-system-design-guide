@@ -15,7 +15,7 @@ This case study covers designing a production code assistant that provides real-
 
 ---
 
-## Problem Statement
+## Problem Statement {#problem-statement}
 
 **Company:** Developer tools company building IDE extension
 
@@ -33,7 +33,7 @@ This case study covers designing a production code assistant that provides real-
 
 ---
 
-## Requirements Analysis
+## Requirements Analysis {#requirements-analysis}
 
 ### Functional Requirements
 
@@ -57,7 +57,7 @@ This case study covers designing a production code assistant that provides real-
 
 ---
 
-## Architecture Design
+## Architecture Design {#architecture-design}
 
 ### High-Level Architecture
 
@@ -195,7 +195,7 @@ flowchart TD
 
 ---
 
-## Code Generation Pipeline
+## Code Generation Pipeline {#code-generation-pipeline}
 
 ### Completion Service (Dec 2025)
 
@@ -241,7 +241,7 @@ class AgenticGeneration:
 
 ---
 
-## Quality Assurance
+## Quality Assurance {#quality-assurance}
 
 ### Multi-Stage Verification
 
@@ -375,7 +375,7 @@ class AcceptanceOptimizer:
 
 ---
 
-## Performance Optimization
+## Performance Optimization {#performance-optimization}
 
 ### Latency Optimization
 
@@ -434,7 +434,7 @@ class CompletionCache:
 
 ---
 
-## Results and Metrics
+## Results and Metrics {#results-and-metrics}
 
 ### Performance Results
 
@@ -461,7 +461,7 @@ class CompletionCache:
 
 ---
 
-## Interview Walkthrough
+## Interview Walkthrough {#interview-walkthrough}
 
 **Interviewer:** "Design an AI code assistant for an IDE."
 

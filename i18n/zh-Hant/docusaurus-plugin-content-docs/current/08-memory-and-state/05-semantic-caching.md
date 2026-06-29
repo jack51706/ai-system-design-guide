@@ -14,7 +14,7 @@
 
 ---
 
-## 精確快取 vs. 語意快取
+## 精確快取 vs. 語意快取 {#vs}
 
 | 特性 | 精確快取（Redis/Memcached） | 語意快取（RedisVL/Qdrant） |
 |---------|-------------------------------|---------------------------------|
@@ -25,7 +25,7 @@
 
 ---
 
-## 語意比對管線
+## 語意比對管線 {#pipeline}
 
 1. **嵌入（Embed）**：將進來的查詢轉換成向量（例如使用 `text-embedding-3-small`）。
 2. **搜尋（Search）**：在快取中搜尋最近鄰。
@@ -35,7 +35,7 @@
 
 ---
 
-## RedisVL 與 GPTCache
+## RedisVL 與 GPTCache {#tech-stack}
 
 標準技術堆疊：
 - **RedisVL**：直接在 Redis 實例內提供低延遲的向量搜尋。
@@ -44,7 +44,7 @@
 
 ---
 
-## 多模態語意快取
+## 多模態語意快取 {#multimodal}
 
 有了原生多模態的前沿模型（Gemini 3.1 Pro、GPT-5.5、Claude Opus 4.7），我們現在也能快取**圖片與音訊查詢**。
 - **視覺相似度（Visual Similarity）**：如果先前曾處理過語意上相似的圖片，就快取該圖片的描述。
@@ -52,7 +52,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：什麼是快取中的「語意漂移（Semantic Drift）」？你如何預防它？
 
@@ -66,7 +66,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Redis. "RedisVL: Python Client for Redis Vector Library" (2025)
 - Akiba et al. "GPTCache: A Library for Creating Semantic Cache" (2024/2025)
 - Google Cloud. "Generative AI Caching Patterns" (2025)

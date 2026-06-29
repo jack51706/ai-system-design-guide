@@ -15,7 +15,7 @@
 
 ---
 
-## 為何集成方法重要
+## 為何集成方法重要 {#why-ensembles-matter}
 
 對於高風險應用而言，單一模型的輸出並不可靠：
 - 模型會捏造事實
@@ -36,7 +36,7 @@
 
 ---
 
-## 評估集成
+## 評估集成 {#evaluation-ensembles}
 
 ### LLM 評審團（Panel of LLM Judges, PoLL）
 
@@ -119,7 +119,7 @@ async def pairwise_compare_debiased(model, response_a: str, response_b: str, cri
 
 ---
 
-## 生成集成
+## 生成集成 {#generation-ensembles}
 
 ### 自一致性（Self-Consistency，多數投票）
 
@@ -251,7 +251,7 @@ class BestOfNSampler:
 
 ---
 
-## 多代理模式
+## 多代理模式 {#multi-agent-patterns}
 
 ### 多代理辯論（Multi-Agent Debate）
 
@@ -374,7 +374,7 @@ Synthesize the best answer, combining the strongest elements from each response.
 
 ---
 
-## 集成與仲裁
+## 集成與仲裁 {#ensemble-vs-arbitration}
 
 ### 概念上的區別
 
@@ -400,7 +400,7 @@ flowchart TD
 
 ---
 
-## 成本與準確度的取捨
+## 成本與準確度的取捨 {#cost-accuracy-tradeoffs}
 
 ### 集成成本矩陣
 
@@ -425,7 +425,7 @@ flowchart TD
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：你何時會使用 Self-Consistency，何時會使用 Best-of-N？
 
@@ -471,7 +471,7 @@ flowchart TD
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - Verga et al. "Replacing Judges with Juries: Evaluating LLM Generations with a Panel of Diverse Models" (2024)
 - Wang et al. "Self-Consistency Improves Chain of Thought Reasoning" (2023)

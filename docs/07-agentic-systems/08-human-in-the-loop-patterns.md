@@ -14,7 +14,7 @@ No agent is 100% reliable. **Human-in-the-Loop (HITL)** is the bridge that ensur
 
 ---
 
-## The HITL Spectrum
+## The HITL Spectrum {#spectrum}
 
 | Pattern | Agent Autonomy | Human Role | Best For |
 |---------|---------------|------------|----------|
@@ -25,7 +25,7 @@ No agent is 100% reliable. **Human-in-the-Loop (HITL)** is the bridge that ensur
 
 ---
 
-## Interrupts and Breakpoints
+## Interrupts and Breakpoints {#interrupts}
 
 Modern architectures (LangGraph, Microsoft Agent Framework) use **Deterministic Breakpoints**.
 
@@ -35,7 +35,7 @@ Modern architectures (LangGraph, Microsoft Agent Framework) use **Deterministic 
 
 ---
 
-## Time-Travel Debugging (State Editing)
+## Time-Travel Debugging (State Editing) {#time-travel}
 
 Standard agents are "One-way." If they make a mistake in Step 3, the session is usually ruined.
 - **Innovation**: **State Injection**. A human reviewer can "Go back" to the state at Step 3, edit the agent's observation or thought, and then "Resume" execution.
@@ -43,7 +43,7 @@ Standard agents are "One-way." If they make a mistake in Step 3, the session is 
 
 ---
 
-## Co-Reasoning (Shared Scratchpads)
+## Co-Reasoning (Shared Scratchpads) {#co-reasoning}
 
 Instead of the human being a "Judge," they become a **"Partner."**
 - The agent shows its **Scratchpad** (Internal Thinking) to the human.
@@ -52,7 +52,7 @@ Instead of the human being a "Judge," they become a **"Partner."**
 
 ---
 
-## Confidence-Based Escalation
+## Confidence-Based Escalation {#escalation}
 
 Using models that support "Logprobs" or built-in reasoning steps, we calculate an **Uncertainty Score**.
 
@@ -61,7 +61,7 @@ Using models that support "Logprobs" or built-in reasoning steps, we calculate a
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you design an HITL system that doesn't "Fatigue" the human operator?
 
@@ -75,7 +75,7 @@ Over-reliance happens when humans start clicking "Approve" without reading the l
 
 ---
 
-## References
+## References {#references}
 - Wu et al. "Co-reasoning: Human-AI Collaboration Patterns" (2025)
 - LangChain. "Human-in-the-loop in LangGraph" (2024/2025)
 - Anthropic. "Designing for Safety and Human Oversight" (2024)

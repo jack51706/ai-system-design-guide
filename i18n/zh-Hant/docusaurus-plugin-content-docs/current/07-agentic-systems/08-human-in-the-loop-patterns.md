@@ -14,7 +14,7 @@
 
 ---
 
-## HITL 光譜
+## HITL 光譜 {#spectrum}
 
 | 模式 | 代理自主性 | 人類角色 | 最適用於 |
 |---------|---------------|------------|----------|
@@ -25,7 +25,7 @@
 
 ---
 
-## 中斷與斷點
+## 中斷與斷點 {#interrupts}
 
 現代架構（LangGraph、Microsoft Agent Framework）使用**確定性斷點（Deterministic Breakpoints）**。
 
@@ -35,7 +35,7 @@
 
 ---
 
-## 時光旅行除錯（狀態編輯）
+## 時光旅行除錯（狀態編輯） {#time-travel}
 
 標準代理是「單向的」。如果它們在步驟 3 出錯，這個工作階段通常就毀了。
 - **創新之處**：**狀態注入（State Injection）**。人類審查者可以「回到」步驟 3 的狀態，編輯代理的觀察或想法，然後「恢復」執行。
@@ -43,7 +43,7 @@
 
 ---
 
-## 協同推理（共享暫存區）
+## 協同推理（共享暫存區） {#co-reasoning}
 
 人類不再是「裁判」，而是成為**「夥伴」**。
 - 代理會把它的**暫存區（Scratchpad）**（內部思考）展示給人類看。
@@ -52,7 +52,7 @@
 
 ---
 
-## 基於信心的升級
+## 基於信心的升級 {#escalation}
 
 利用支援「Logprobs」或內建推理步驟的模型，我們計算出一個**不確定性分數（Uncertainty Score）**。
 
@@ -61,7 +61,7 @@
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你如何設計一個不會讓人類操作員「疲乏」的 HITL 系統？
 
@@ -75,7 +75,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Wu et al. "Co-reasoning: Human-AI Collaboration Patterns" (2025)
 - LangChain. "Human-in-the-loop in LangGraph" (2024/2025)
 - Anthropic. "Designing for Safety and Human Oversight" (2024)

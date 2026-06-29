@@ -15,7 +15,7 @@
 
 ---
 
-## 問題陳述
+## 問題陳述 {#problem-statement}
 
 **公司：** 擁有 5000 萬日活躍使用者的社群媒體平台
 
@@ -34,7 +34,7 @@
 
 ---
 
-## 需求分析
+## 需求分析 {#requirements-analysis}
 
 ### 內容類別
 
@@ -59,7 +59,7 @@
 
 ---
 
-## 架構設計
+## 架構設計 {#architecture-design}
 
 ### 高階架構
 
@@ -115,7 +115,7 @@ flowchart TD
 
 ---
 
-## 分類管線
+## 分類管線 {#classification-pipeline}
 
 ### Tier 1：快速過濾器
 
@@ -211,7 +211,7 @@ class NuanceReviewer:
 
 ---
 
-## 人在迴路中（Human-in-the-Loop）
+## 人在迴路中（Human-in-the-Loop） {#human-in-the-loop}
 
 ### 審核佇列管理
 
@@ -324,7 +324,7 @@ class ModeratorDecision:
 
 ---
 
-## 對抗式穩健性
+## 對抗式穩健性 {#adversarial-robustness}
 
 ### 規避手法與防禦
 
@@ -381,7 +381,7 @@ class AdversarialDefense:
 
 ---
 
-## 結果與指標
+## 結果與指標 {#results-and-metrics}
 
 ### 效能比較
 
@@ -409,7 +409,7 @@ class AdversarialDefense:
 
 ---
 
-## 面試演練
+## 面試演練 {#interview-walkthrough}
 
 **面試官：** 「為一個社群媒體平台設計一套內容審核系統。」
 

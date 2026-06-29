@@ -25,7 +25,7 @@
 
 ---
 
-## 指令階層
+## 指令階層 {#instruction-hierarchy}
 
 生產環境系統採用分層的訊息結構：
 
@@ -38,7 +38,7 @@
 
 ---
 
-## 角色提示
+## 角色提示 {#role-prompting}
 
 指派一個人設，已不再只是「你是一位老師」這麼簡單。它是一個**能力錨點（Capabilities Anchor）**。
 
@@ -49,7 +49,7 @@
 
 ---
 
-## 指令清晰度與分隔符
+## 指令清晰度與分隔符 {#clarity}
 
 當前的前沿模型能處理龐大的上下文。分隔符（Delimiters）能幫助模型區分指令與資料。
 
@@ -70,7 +70,7 @@ $USER_INPUT_HERE
 
 ---
 
-## Zero-Shot 與 Few-Shot 的效率取捨
+## Zero-Shot 與 Few-Shot 的效率取捨 {#zero-vs-few}
 
 | 面向 | Zero-Shot | Few-Shot |
 |--------|-----------|----------|
@@ -82,7 +82,7 @@ $USER_INPUT_HERE
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：在現代 LLM 中，為什麼 system 提示的份量比 user 提示更重？
 
@@ -96,7 +96,7 @@ system 提示通常會在模型的架構訓練（RLHF）中被優先處理，在
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - OpenAI. "Prompt Engineering Guide" (2024-2025)
 - Anthropic. "Claude Prompt Engineering Documentation" (2024)
 - Google DeepMind. "The Power of Prompting" (2023)

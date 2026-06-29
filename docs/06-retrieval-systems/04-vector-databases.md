@@ -19,7 +19,7 @@ Vector databases are purpose-built systems for storing, indexing, and searching 
 
 ---
 
-## What Is a Vector Database
+## What Is a Vector Database {#what-is-a-vector-database}
 
 A vector database stores embeddings (dense vectors) and enables fast similarity search over them.
 
@@ -49,7 +49,7 @@ Traditional databases can store vectors but lack optimized search:
 
 ---
 
-## Vector Search Fundamentals
+## Vector Search Fundamentals {#vector-search-fundamentals}
 
 ### Exact vs Approximate Search
 
@@ -91,7 +91,7 @@ ANN indices trade some accuracy for speed. Tune for your requirements.
 
 ---
 
-## Indexing Algorithms
+## Indexing Algorithms {#indexing-algorithms}
 
 ### HNSW (Hierarchical Navigable Small World)
 
@@ -208,7 +208,7 @@ No approximation, exact search.
 
 ---
 
-## Competitive Landscape
+## Competitive Landscape {#competitive-landscape}
 
 ### Vector-Native (Dedicated)
 
@@ -229,7 +229,7 @@ No approximation, exact search.
 
 ---
 
-## Detailed Database Comparison
+## Detailed Database Comparison {#detailed-database-comparison}
 
 ### Feature Matrix
 
@@ -247,7 +247,7 @@ No approximation, exact search.
 
 ---
 
-## Metadata Filtering
+## Metadata Filtering {#metadata-filtering}
 
 Critical for multi-tenant and filtering use cases.
 
@@ -281,7 +281,7 @@ results = client.search(
 
 ---
 
-## Query Patterns
+## Query Patterns {#query-patterns}
 
 ### Pattern 1: Simple Semantic Search
 
@@ -357,7 +357,7 @@ def multi_vector_search(queries: list[str], top_k: int = 5) -> list[Document]:
 
 ---
 
-## Production Operations
+## Production Operations {#production-operations}
 
 ### Capacity Planning
 
@@ -480,7 +480,7 @@ def alert_rules():
 
 ---
 
-## Managed vs Self-Hosted (TCO Analysis)
+## Managed vs Self-Hosted (TCO Analysis) {#managed-vs-self-hosted-tco-analysis}
 
 ### Cost Comparison
 
@@ -542,7 +542,7 @@ def estimate_self_hosted_cost(
 
 ---
 
-## Selection Framework
+## Selection Framework {#selection-framework}
 
 ### Decision Tree
 
@@ -584,7 +584,7 @@ Before committing to a vector database:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How would you choose between Pinecone and a self-hosted solution?
 
@@ -682,7 +682,7 @@ results = index.query(vector=query, namespace=tenant_id)
 
 ---
 
-## References
+## References {#references}
 
 - Malkov and Yashunin. "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs" (HNSW, 2018)
 - Microsoft Research. "Vamana/DiskANN: A Disk-based Index for ANN Search" (2019/2023)

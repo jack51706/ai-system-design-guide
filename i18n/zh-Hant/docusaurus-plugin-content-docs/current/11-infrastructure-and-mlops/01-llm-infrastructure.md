@@ -16,7 +16,7 @@
 
 ---
 
-## 部署選項
+## 部署選項 {#deployment-options}
 
 ### API 與自架（Self-Hosted）
 
@@ -68,7 +68,7 @@ def should_use_api(requirements: dict) -> bool:
 
 ---
 
-## 服務架構
+## 服務架構 {#serving-architecture}
 
 ### 單一模型服務
 
@@ -134,7 +134,7 @@ class ModelRouter:
 
 ---
 
-## 擴展模式
+## 擴展模式 {#scaling-patterns}
 
 ### 水平擴展
 
@@ -219,7 +219,7 @@ class AsyncLLMProcessor:
 
 ---
 
-## 成本管理
+## 成本管理 {#cost-management}
 
 ### 成本追蹤
 
@@ -298,7 +298,7 @@ class BudgetManager:
 
 ---
 
-## 監控與告警
+## 監控與告警 {#monitoring-and-alerting}
 
 ### 關鍵指標
 
@@ -363,7 +363,7 @@ alerts:
 
 ---
 
-## 災難復原
+## 災難復原 {#disaster-recovery}
 
 ### 多供應商故障轉移
 
@@ -433,7 +433,7 @@ class GracefulDegradation:
 
 ---
 
-## 2026 年 5 月 AI 加速器版圖
+## 2026 年 5 月 AI 加速器版圖 {#may-2026-ai-accelerator-landscape}
 
 在這波 AI 建置浪潮中，硬體格局在 2026 年 1 月到 5 月之間的變化速度，比過去任何時刻都快。各項產能宣布加總起來，是**超過一兆美元的承諾雲端支出**，而且供應鏈已不再是單一供應商。本節是一位資深架構師在 2026 年 5 月進行產能規劃對話時，應該隨身攜帶的快照。
 
@@ -568,7 +568,7 @@ flowchart TD
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你會如何為每天 100 萬次 LLM 查詢設計基礎設施？
 
@@ -631,7 +631,7 @@ flowchart TD
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - vLLM: https://docs.vllm.ai/
 - TensorRT-LLM: https://github.com/NVIDIA/TensorRT-LLM

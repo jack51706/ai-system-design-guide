@@ -18,7 +18,7 @@
 
 ---
 
-## 問題所在：上下文稀釋
+## 問題所在：上下文稀釋 {#context-dilution}
 
 當我們為了 RAG 而把文件分塊時，個別區塊會喪失賦予它意義的周邊上下文。
 
@@ -44,7 +44,7 @@ Chunk 18: "The Enterprise plan includes SSO and audit
 
 ---
 
-## 上下文檢索的運作方式
+## 上下文檢索的運作方式 {#how-it-works}
 
 核心概念很簡單：**在嵌入一個區塊之前，先在前面加上一段簡短的上下文字串，說明這個區塊在整份文件中是在講什麼**。
 
@@ -99,7 +99,7 @@ After:  "This chunk is from the Acme Corp Q3 2025 Financial
 
 ---
 
-## 上下文嵌入（Contextual Embeddings）
+## 上下文嵌入（Contextual Embeddings） {#contextual-embeddings}
 
 上下文嵌入是第一個子技術：嵌入「加上上下文後的區塊」而非原始區塊。
 
@@ -132,7 +132,7 @@ After:  "This chunk is from the Acme Corp Q3 2025 Financial
 
 ---
 
-## 上下文 BM25
+## 上下文 BM25 {#contextual-bm25}
 
 第二個子技術是把同樣的上下文化做法套用上去，針對強化過的區塊建立一個 **BM25 關鍵字索引**。
 
@@ -158,7 +158,7 @@ After:  "This chunk is from the Acme Corp Q3 2025 Financial
 
 ---
 
-## 完整管線：混合搜尋 + 重排序
+## 完整管線：混合搜尋 + 重排序 {#full-pipeline}
 
 生產等級的上下文檢索管線分為四個階段：
 
@@ -204,7 +204,7 @@ k = 60 (standard smoothing constant)
 
 ---
 
-## 實作模式
+## 實作模式 {#implementation}
 
 ### 模式 1：基本上下文檢索（Python）
 
@@ -361,7 +361,7 @@ contextualized = add_chunk_headers(
 
 ---
 
-## 成本考量
+## 成本考量 {#cost}
 
 ### 上下文化成本
 
@@ -390,7 +390,7 @@ contextualized = add_chunk_headers(
 
 ---
 
-## 上下文檢索與其他做法的比較
+## 上下文檢索與其他做法的比較 {#comparison}
 
 | 做法 | 運作方式 | 檢索改善幅度 | 成本 | 複雜度 |
 |----------|-------------|----------------------|------|------------|
@@ -425,7 +425,7 @@ flowchart TD
 
 ---
 
-## 生產環境架構
+## 生產環境架構 {#production}
 
 ### 參考架構：大規模的上下文 RAG
 
@@ -470,7 +470,7 @@ flowchart TD
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：請說明 Anthropic 的上下文檢索。你會在什麼情況下使用它，又會在什麼情況下略過它？
 
@@ -496,7 +496,7 @@ flowchart TD
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Anthropic. "Contextual Retrieval"（2024 年 9 月）
 - Jina AI. "Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models"（2024）
 - Voyage AI. "voyage-context-3: Contextualized Chunk Embeddings"（2025）

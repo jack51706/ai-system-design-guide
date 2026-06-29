@@ -13,7 +13,7 @@
 
 ---
 
-## Enterprise DNA
+## Enterprise DNA {#dna}
 
 While LangChain is favored by startups, Semantic Kernel is favored by **Banks and Fortune 500s**.
 - **Dependency Injection**: SK follows standard enterprise design patterns.
@@ -22,7 +22,7 @@ While LangChain is favored by startups, Semantic Kernel is favored by **Banks an
 
 ---
 
-## Plugins and Planners
+## Plugins and Planners {#plugins}
 
 1. **Kernel Functions**: The basic unit of logic (Native code or LLM prompts).
 2. **Plugins**: A collection of functions (e.g., a "GitHub Plugin" or an "SQL Plugin").
@@ -30,7 +30,7 @@ While LangChain is favored by startups, Semantic Kernel is favored by **Banks an
 
 ---
 
-## Memory and Connectors
+## Memory and Connectors {#memory}
 
 Semantic Kernel uses **Connectors** to abstract away the underlying infrastructure.
 - **Universal Connectors**: One interface for OpenAI, Mistral, and local Onyx models.
@@ -46,7 +46,7 @@ SK is one of the few major frameworks that treats C# and Python as equals.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why would a Staff Engineer choose Semantic Kernel over LangChain?
 
@@ -60,7 +60,7 @@ SK uses a **Plugin-based model**. Every function (native C# or LLM-based) is reg
 
 ---
 
-## References
+## References {#references}
 - Microsoft Learn. "Semantic Kernel Documentation" (2025)
 - Azure Architecture Center. "AI Design Patterns with Semantic Kernel" (2025)
 - Build 2025. "The Future of Copilots with SK" (2025 Conference Recap)

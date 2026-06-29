@@ -16,7 +16,7 @@
 
 ---
 
-## 長上下文範式（1M 以上 Token）
+## 長上下文範式（1M 以上 Token） {#long-context}
 
 像 Gemini 3.1 Pro（1M）、Claude Sonnet 4.6（1M）、Claude Opus 4.7（1M）以及 GPT-5.5（1M）這類模型，都具備極為龐大的上下文視窗。
 
@@ -25,7 +25,7 @@
 
 ---
 
-## 代理式上下文工程
+## 代理式上下文工程 {#agentic-context-engineering}
 
 提示工程寫的是一條好指令。**上下文工程**則策劃模型在代理迴圈的**每一次推論回合**所看到的完整 token 集合：系統提示、工具、檢索到的資料、先前的工具結果，以及持續累積的訊息歷史。這個區別之所以重要，是因為代理會一回合接一回合地累積上下文，所以策劃的問題是持續性的，而非一次性的。這正是 Anthropic、OpenAI 與 Google 現在用來打造其代理框架的基本架構。
 
@@ -61,7 +61,7 @@
 
 ---
 
-## Extended Thinking 與 Budget Tokens
+## Extended Thinking 與 Budget Tokens {#extended-thinking}
 
 數個前沿模型現在都提供在生成回應之前進行**可控的內部推理**：
 
@@ -137,7 +137,7 @@ def smart_generate(query: str) -> str:
 
 ---
 
-## Lost-in-the-Middle
+## Lost-in-the-Middle {#lost-in-the-middle}
 
 在 2023 年，模型對於位於提示中間的資訊會喪失準確度。
 **現況**：前沿模型（Claude Sonnet 4.6、Claude Opus 4.7、Gemini 3.1 Pro、GPT-5.5）表現顯著更好，但 **注意力梯度（Attention Gradient）** 仍然存在。
@@ -146,7 +146,7 @@ def smart_generate(query: str) -> str:
 
 ---
 
-## 上下文預算與 Token 意識
+## 上下文預算與 Token 意識 {#budgeting}
 
 每一個 token 都要花錢，並會增加 TTFT（Time to First Token，首個 Token 的時間）。
 
@@ -159,7 +159,7 @@ def smart_generate(query: str) -> str:
 
 ---
 
-## Prompt Caching 經濟學
+## Prompt Caching 經濟學 {#prompt-caching}
 
 幾乎所有主要供應商（OpenAI、DeepSeek、Anthropic、Google）都支援 **前綴快取（Prefix Caching）**。
 
@@ -171,7 +171,7 @@ def smart_generate(query: str) -> str:
 
 ---
 
-## 上下文壓縮（RAD-L）
+## 上下文壓縮（RAD-L） {#compression}
 
 對於極長的上下文（10M 以上），我們使用 **推理感知刪除（Reasoning-Aware Deletion，RAD-L）**。
 - **做法**：一個極小的輔助模型（0.1B）掃描文字，並在提示送往龐大的前沿模型*之前*，移除「填充」字詞、常見的語言模式以及不相關的段落。
@@ -179,7 +179,7 @@ def smart_generate(query: str) -> str:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你會在什麼時候選擇 Long Context 而非 RAG？
 
@@ -198,7 +198,7 @@ def smart_generate(query: str) -> str:
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Liu et al. "Lost in the Middle" (2023/2024 update)
 - [Anthropic. "Effective context engineering for AI agents" (2025)](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
 - [Anthropic. "Effective harnesses for long-running agents" (2026)](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)

@@ -18,7 +18,7 @@ Evaluation is the hardest unsolved problem in RAG. You can build a retrieval pip
 
 ---
 
-## The RAG Triad
+## The RAG Triad {#the-rag-triad}
 
 The RAG Triad is the foundational framework for evaluating RAG systems. It decomposes correctness into three independent dimensions, each catching a different failure mode.
 
@@ -82,7 +82,7 @@ flowchart TD
 
 ---
 
-## RAGAS Framework and Metrics
+## RAGAS Framework and Metrics {#ragas-framework}
 
 RAGAS (Retrieval Augmented Generation Assessment) is the most widely adopted open-source evaluation framework for RAG, providing reference-free metrics that do not require ground-truth answers.
 
@@ -167,7 +167,7 @@ flowchart TD
 
 ---
 
-## Component-Level Evaluation
+## Component-Level Evaluation {#component-level-evaluation}
 
 The RAG Triad evaluates the system end-to-end. Component-level evaluation isolates each stage to pinpoint failures.
 
@@ -224,7 +224,7 @@ flowchart TD
 
 ---
 
-## LLM-as-Judge for RAG
+## LLM-as-Judge for RAG {#llm-as-judge}
 
 Using an LLM to evaluate another LLM's output is the dominant evaluation paradigm. It scales where human evaluation cannot, but has known biases.
 
@@ -268,7 +268,7 @@ Provide scores and brief justifications in JSON.
 
 ---
 
-## Building Golden Test Sets
+## Building Golden Test Sets {#golden-test-sets}
 
 A golden test set is a curated, versioned collection of (query, expected_context, expected_answer) triples that serves as the ground truth for regression testing.
 
@@ -317,7 +317,7 @@ testset.to_pandas().to_csv("golden_set_draft_v4.csv")
 
 ---
 
-## Automated Regression Testing
+## Automated Regression Testing {#regression-testing}
 
 Every RAG pipeline change (new embeddings, chunk size, prompt edit, reranker swap) needs automated regression testing before deployment.
 
@@ -347,7 +347,7 @@ Any metric below its absolute minimum blocks the PR. Any regression beyond thres
 
 ---
 
-## Production Monitoring
+## Production Monitoring {#production-monitoring}
 
 Offline evaluation is necessary but not sufficient. Production queries differ from test sets, and retrieval quality can degrade over time as the corpus changes.
 
@@ -368,7 +368,7 @@ Drift happens when the corpus changes but embeddings, chunks, or prompts do not 
 
 ---
 
-## Cost of Evaluation at Scale
+## Cost of Evaluation at Scale {#cost-at-scale}
 
 LLM-as-judge evaluation is powerful but expensive. Understanding the cost structure is critical for budgeting.
 
@@ -394,7 +394,7 @@ LLM-as-judge evaluation is powerful but expensive. Understanding the cost struct
 
 ---
 
-## Tools Comparison
+## Tools Comparison {#tools-comparison}
 
 ### Framework Overview
 
@@ -444,7 +444,7 @@ Apply the same decompose-then-judge pattern for context relevance (per-chunk: "I
 
 ---
 
-## System Design Interview Angle
+## System Design Interview Angle {#system-design-interview-angle}
 
 ### Q: You deployed a RAG system and users report that answers are sometimes wrong. How do you systematically diagnose and fix the problem?
 
@@ -497,7 +497,7 @@ The goal is to spend evaluation budget where it provides the most signal: on amb
 
 ---
 
-## References
+## References {#references}
 
 - Es et al. "RAGAS: Automated Evaluation of Retrieval Augmented Generation" (2023, arXiv:2309.15217)
 - TruLens. "The RAG Triad" (2024)

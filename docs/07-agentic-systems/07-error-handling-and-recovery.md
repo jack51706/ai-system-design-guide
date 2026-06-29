@@ -23,7 +23,7 @@ Agents fail in non-deterministic ways. Error handling has moved from "Try-Catch 
 
 ---
 
-## Self-Correction Loops
+## Self-Correction Loops {#correction}
 
 Errors are now treated as **Tokens of Information**.
 
@@ -32,7 +32,7 @@ Errors are now treated as **Tokens of Information**.
 
 ---
 
-## Stateful Rollbacks (Checkpointing)
+## Stateful Rollbacks (Checkpointing) {#rollbacks}
 
 For long-running agents, an error in Step 9 shouldn't crash the whole project.
 
@@ -41,7 +41,7 @@ For long-running agents, an error in Step 9 shouldn't crash the whole project.
 
 ---
 
-## The "Stuck in a Loop" Fix
+## The "Stuck in a Loop" Fix {#stuck}
 
 Infinite loops are the #1 cost-sink in agentic systems.
 
@@ -51,7 +51,7 @@ Infinite loops are the #1 cost-sink in agentic systems.
 
 ---
 
-## Graceful Degradation
+## Graceful Degradation {#degradation}
 
 If the high-reasoning agent (Claude Opus 4.7, GPT-5.5 reasoning) keeps failing, we fall back to:
 - **Simplified Agent**: A smaller model with fewer, more reliable tools.
@@ -60,7 +60,7 @@ If the high-reasoning agent (Claude Opus 4.7, GPT-5.5 reasoning) keeps failing, 
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is traditional "Exception Handling" (Try/Catch) insufficient for Agentic Systems?
 
@@ -74,7 +74,7 @@ Silent failures are the most dangerous. We implement **Output Validation Agents*
 
 ---
 
-## References
+## References {#references}
 - LangGraph. "Persistence and Checkpointing" (2025)
 - Shinn et al. "Reflexion: Learning from Errors" (2024 update)
 - Microsoft. "Managing Hallucinations in Agentic Systems" (2025)

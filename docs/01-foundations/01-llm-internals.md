@@ -23,7 +23,7 @@ This chapter covers the core concepts behind large language models. Understandin
 
 ---
 
-## The Transformer Revolution
+## The Transformer Revolution {#the-transformer-revolution}
 
 Before 2017, sequence modeling relied on recurrent architectures (RNNs, LSTMs) that processed tokens sequentially. This created two problems:
 
@@ -58,7 +58,7 @@ flowchart LR
 
 ---
 
-## Architecture Variants
+## Architecture Variants {#architecture-variants}
 
 Three main variants emerged based on which parts of the original Transformer are used:
 
@@ -102,7 +102,7 @@ While decoder-only dominated for years, there has been a partial return to encod
 
 ---
 
-## Mixture of Experts (MoE)
+## Mixture of Experts (MoE) {#mixture-of-experts-moe}
 
 **The most significant architectural shift in frontier models (GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro, DeepSeek V4, Llama 4 Maverick, Mixtral).**
 
@@ -148,7 +148,7 @@ flowchart TD
 
 ---
 
-## Scaling Laws: Training vs. Inference Optimal
+## Scaling Laws: Training vs. Inference Optimal {#scaling-laws-training-vs-inference-optimal}
 
 The original Chinchilla laws (2022) focused on being **Training-Optimal**: finding the best model size for a given training budget.
 
@@ -158,7 +158,7 @@ The industry has now shifted to **Inference-Optimal** scaling:
 
 ---
 
-## Native Multimodality
+## Native Multimodality {#native-multimodality}
 
 Older models used **Vision Adapters** (connecting a frozen CLIP-style vision encoder to an LLM). Frontier models (GPT-5.2, Gemini 3) are **Native Multimodal**.
 
@@ -168,7 +168,7 @@ Older models used **Vision Adapters** (connecting a frozen CLIP-style vision enc
 
 ---
 
-## Self-Attention Mechanism
+## Self-Attention Mechanism {#self-attention-mechanism}
 
 Self-attention is the core innovation. It allows each token to "attend to" (gather information from) all other tokens in a sequence.
 
@@ -225,7 +225,7 @@ The O(n²) complexity limits context length. A 100K context window means 10 bill
 
 ---
 
-## Multi-Head Attention
+## Multi-Head Attention {#multi-head-attention}
 
 Instead of single attention, modern transformers use multiple "heads" that attend to different aspects in parallel.
 
@@ -268,7 +268,7 @@ This directly affects batch size and therefore throughput.
 
 ---
 
-## Position Encodings
+## Position Encodings {#position-encodings}
 
 Self-attention is permutation-invariant. Without position information, "dog bites man" and "man bites dog" would be identical. Position encodings inject sequence order.
 
@@ -338,7 +338,7 @@ Where m is a head-specific slope and distance is |pos_q - pos_k|.
 
 ---
 
-## Feed-Forward Networks
+## Feed-Forward Networks {#feed-forward-networks}
 
 Each transformer layer has a feed-forward network (FFN) that processes each position independently:
 
@@ -379,7 +379,7 @@ output = (gate * hidden) @ W_down
 
 ---
 
-## Layer Normalization
+## Layer Normalization {#layer-normalization}
 
 Layer normalization stabilizes training by normalizing activations:
 
@@ -425,7 +425,7 @@ def rms_norm(x, gamma):
 
 ---
 
-## Putting It All Together
+## Putting It All Together {#putting-it-all-together}
 
 A complete transformer layer:
 
@@ -452,7 +452,7 @@ Token IDs → Embedding → [Transformer Layer × N] → Output Norm → LM Head
 
 ---
 
-## Key Numbers to Know
+## Key Numbers to Know {#key-numbers-to-know}
 
 ### Model Sizes
 
@@ -499,7 +499,7 @@ H100 at 990 TFLOPS (FP16):
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Explain why transformer attention is O(n²) and what alternatives exist.
 
@@ -557,7 +557,7 @@ Llama 2 70B uses GQA with 8 KV heads for 64 query heads, reducing KV cache by 8x
 
 ---
 
-## References
+## References {#references}
 
 - Vaswani et al. "Attention Is All You Need" (2017)
 - Su et al. "RoFormer: Enhanced Transformer with Rotary Position Embedding" (2021)

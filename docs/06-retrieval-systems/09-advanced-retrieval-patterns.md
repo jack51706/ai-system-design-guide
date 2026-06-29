@@ -14,7 +14,7 @@ Beyond the basics, production RAG systems use specialized patterns to handle com
 
 ---
 
-## Query Decomposition (Multi-Query)
+## Query Decomposition (Multi-Query) {#query-decomposition}
 
 Complex user queries are often "Compound Queries."
 - **User**: "Compare our Q3 vs Q4 revenue and explain the drop."
@@ -26,7 +26,7 @@ Complex user queries are often "Compound Queries."
 
 ---
 
-## Hypothetical Document Embeddings (HyDE)
+## Hypothetical Document Embeddings (HyDE) {#hyde}
 
 Queries are short; documents are long. This "Asymmetry" causes retrieval failure.
 - **Pattern**: 
@@ -37,7 +37,7 @@ Queries are short; documents are long. This "Asymmetry" causes retrieval failure
 
 ---
 
-## Contextual Retrieval (The Anthropic Pattern)
+## Contextual Retrieval (The Anthropic Pattern) {#contextual}
 
  standardized by Anthropic in late 2024, this pattern solves **Context Dilution**.
 
@@ -47,7 +47,7 @@ Queries are short; documents are long. This "Asymmetry" causes retrieval failure
 
 ---
 
-## Iterative Document Enrichment
+## Iterative Document Enrichment {#enrichment}
 
 Instead of just storing the raw document, we store "Enriched" meta-data.
 - **Summary**: Store a 1-paragraph summary of the document.
@@ -56,7 +56,7 @@ Instead of just storing the raw document, we store "Enriched" meta-data.
 
 ---
 
-## In-Context Reranking
+## In-Context Reranking {#reranking}
 
 With 1M-2M context windows now standard (Claude Sonnet 4.6, Gemini 3.1 Pro), **Rank-by-Context** is a viable pattern.
 1. Retrieve Top 100 docs.
@@ -66,7 +66,7 @@ With 1M-2M context windows now standard (Claude Sonnet 4.6, Gemini 3.1 Pro), **R
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why is HyDE (Hypothetical Document Embedding) risky for some applications?
 
@@ -80,7 +80,7 @@ Asymmetric retrieval refers to the fact that user queries are usually short (3-1
 
 ---
 
-## References
+## References {#references}
 - Gao et al. "Precise Zero-Shot Dense Retrieval without Relevance Labels" (HyDE, 2023/2024)
 - Anthropic. "The Contextual Retrieval Playbook" (2024)
 - LlamaIndex. "Query Transformation Cookbook" (2025)

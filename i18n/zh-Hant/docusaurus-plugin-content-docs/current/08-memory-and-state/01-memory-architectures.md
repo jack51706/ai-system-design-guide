@@ -14,7 +14,7 @@ LLM 記憶體已從「歷史緩衝區」演進為**三層認知架構（Three-Ti
 
 ---
 
-## 三層階層架構
+## 三層階層架構 {#hierarchy}
 
 | 層級 | 類型 | 人類類比 | 技術 | 延遲 |
 |------|------|---------------|------------|---------|
@@ -52,7 +52,7 @@ L3 儲存**不可變的事實**與**習得的規則**。
 
 ---
 
-## 記憶整合模式
+## 記憶整合模式 {#consolidation}
 
 記憶會透過**整合（Consolidation）**在各層級之間移動：
 1. **抽取（Extraction）**：在工作階段結束時，由一個 LLM「審閱者（Reviewer）」從 L1 中抽取事實。
@@ -61,7 +61,7 @@ L3 儲存**不可變的事實**與**習得的規則**。
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### 問：為什麼不直接用一個 2M token 的上下文視窗來容納所有記憶（L1-L3）？
 
@@ -79,7 +79,7 @@ L3 儲存**不可變的事實**與**習得的規則**。
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Pack et al. "Generative Agents" (2023/2025 Context)
 - OpenAI. "Context Window Optimization" (2025)
 - Mem0 Documentation. "Dynamic Memory Management" (2025)

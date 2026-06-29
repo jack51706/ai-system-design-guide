@@ -15,7 +15,7 @@ This case study walks through designing a production RAG system for enterprise d
 
 ---
 
-## Problem Statement
+## Problem Statement {#problem-statement}
 
 ### Scenario
 
@@ -35,7 +35,7 @@ A financial services company wants to build an AI-powered search system for thei
 
 ---
 
-## Requirements Analysis
+## Requirements Analysis {#requirements-analysis}
 
 ### Functional Requirements
 
@@ -66,7 +66,7 @@ A financial services company wants to build an AI-powered search system for thei
 
 ---
 
-## System Architecture
+## System Architecture {#system-architecture}
 
 ### High-Level Architecture
 
@@ -146,7 +146,7 @@ flowchart TD
 
 ---
 
-## Component Deep Dives
+## Component Deep Dives {#component-deep-dives}
 
 ### Document Ingestion Pipeline
 
@@ -436,7 +436,7 @@ class GeminiGenerator:
 
 ---
 
-## Scaling Considerations
+## Scaling Considerations {#scaling-considerations}
 
 ### Handling 500K Documents
 
@@ -521,7 +521,7 @@ class QueryCache:
 
 ---
 
-## Cost Analysis
+## Cost Analysis {#cost-analysis}
 
 ### Monthly Cost Estimate (500 Users, 100 Queries/User/Day)
 
@@ -544,7 +544,7 @@ class QueryCache:
 
 ---
 
-## Lessons Learned
+## Lessons Learned {#lessons-learned}
 
 ### What Worked Well
 
@@ -569,7 +569,7 @@ class QueryCache:
 
 ---
 
-## Interview Walkthrough
+## Interview Walkthrough {#interview-walkthrough}
 
 ### How to Present This in an Interview
 

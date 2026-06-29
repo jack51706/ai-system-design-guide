@@ -16,7 +16,7 @@ Understanding the cost structure of LLM systems is essential for production plan
 
 ---
 
-## Pricing Models
+## Pricing Models {#pricing-models}
 
 ### Token-Based Pricing
 
@@ -52,7 +52,7 @@ Committed (1-year): $2.00 / 1M input tokens (20% savings)
 
 ---
 
-## Current API Pricing
+## Current API Pricing {#current-api-pricing}
 
 ### May 2026 Pricing
 
@@ -140,7 +140,7 @@ Committed (1-year): $2.00 / 1M input tokens (20% savings)
 
 ---
 
-## Cost Calculation
+## Cost Calculation {#cost-calculation}
 
 ### Basic Cost Formula
 
@@ -233,7 +233,7 @@ costs = project_monthly_cost(
 
 ---
 
-## Cost Optimization Strategies
+## Cost Optimization Strategies {#cost-optimization-strategies}
 
 ### Strategy 1: Model Routing
 
@@ -374,7 +374,7 @@ response = model.generate(
 
 ---
 
-## Context Caching Economics
+## Context Caching Economics {#context-caching-economics}
 
 **The "Golden Rule" for RAG (still true in 2026).**
 If you have a fixed system prompt or a shared knowledge base (prefix) larger than 10,000 tokens, **Context Caching** is mandatory.
@@ -390,7 +390,7 @@ If your long prefix is used by **more than 2 users**, caching it is strictly che
 
 ---
 
-## Self-Hosting & GPU Cloud Arbitrage
+## Self-Hosting & GPU Cloud Arbitrage {#self-hosting-economics}
 
 **The Reserved vs. Serverless Tradeoff:**
 
@@ -463,7 +463,7 @@ Choose self-hosting when:
 
 ---
 
-## Total Cost of Ownership
+## Total Cost of Ownership {#total-cost-of-ownership}
 
 ### TCO Components
 
@@ -532,7 +532,7 @@ def calculate_tco(scenario: dict) -> dict:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How would you optimize costs for a high-volume RAG application?
 
@@ -593,7 +593,7 @@ Decision depends on multiple factors:
 
 ---
 
-## References
+## References {#references}
 
 - OpenAI Pricing: https://developers.openai.com/api/docs/pricing
 - Anthropic Pricing: https://platform.claude.com/docs/en/about-claude/pricing

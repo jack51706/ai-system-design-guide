@@ -20,7 +20,7 @@ This chapter covers how LLMs generate text at inference time, the computational 
 
 ---
 
-## Generation Basics
+## Generation Basics {#generation-basics}
 
 LLMs generate text autoregressively: one token at a time, using all previous tokens as context.
 
@@ -56,7 +56,7 @@ def generate(prompt: str, max_tokens: int, model) -> str:
 
 ---
 
-## Prefill and Decode Phases
+## Prefill and Decode Phases {#prefill-and-decode-phases}
 
 Inference has two distinct phases with different characteristics:
 
@@ -118,7 +118,7 @@ Decode step 2:
 
 ---
 
-## Sampling Strategies
+## Sampling Strategies {#sampling-strategies}
 
 After computing logits, we need to select the next token. Different strategies produce different outputs.
 
@@ -221,7 +221,7 @@ def apply_repetition_penalty(logits, generated_tokens, penalty=1.2):
 
 ---
 
-## Stopping Conditions
+## Stopping Conditions {#stopping-conditions}
 
 Generation continues until a stopping condition is met:
 
@@ -256,7 +256,7 @@ for seq in stop_sequences:
         break
 ```
 
-## Latent Optimization: Speculative Decoding
+## Latent Optimization: Speculative Decoding {#speculative-decoding}
 
 **The current standard for high-bandwidth serving.**
 
@@ -340,7 +340,7 @@ Higher batch sizes increase throughput but may increase per-request latency.
 
 ---
 
-## Memory and Compute Requirements
+## Memory and Compute Requirements {#memory-and-compute-requirements}
 
 ### Model Weights
 
@@ -396,7 +396,7 @@ At 40 tokens/sec:
 
 ---
 
-## Streaming
+## Streaming {#streaming}
 
 For interactive applications, stream tokens as they are generated:
 
@@ -433,7 +433,7 @@ async for event in sse_client.stream("/generate"):
 
 ---
 
-## Production Considerations
+## Production Considerations {#production-considerations}
 
 ### Batching for Throughput
 
@@ -459,7 +459,7 @@ Caches the KV tensors of common prefixes (e.g., system prompts, few-shot example
 - **TTFT Reduction**: 90%
 - **Mechanism**: Use a hash of the prefix to lookup KV tensors in a GPU-memory LRU cache.
 
-### Multi-LoRA Serving
+### Multi-LoRA Serving {#multi-lora-serving}
 
 **Scenario:** Serving 1000 different fine-tuned models (adapters) on one base model.
 **The Challenge:** Loading 1000 separate models would take terabytes of VRAM.
@@ -541,7 +541,7 @@ def calculate_cost(metrics: RequestMetrics) -> float:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Explain the difference between prefill and decode phases.
 
@@ -642,7 +642,7 @@ Then verify throughput meets requirements via benchmarking.
 
 ---
 
-## References
+## References {#references}
 
 - Holtzman et al. "The Curious Case of Neural Text Degeneration" (nucleus sampling, 2020)
 - Kwon et al. "Efficient Memory Management for Large Language Model Serving with PagedAttention" (vLLM, 2023)

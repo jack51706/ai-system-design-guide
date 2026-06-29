@@ -15,7 +15,7 @@ By May 2026 the agent framework debate has stopped being "LangGraph or LlamaInde
 
 ---
 
-## What These Frameworks Are
+## What These Frameworks Are {#what-these-frameworks-are}
 
 Both Pydantic AI and Mastra grew out of frustration with framework lock-in and untyped prompt-stitching. They focus on the same set of ideas:
 
@@ -28,7 +28,7 @@ The differences are mostly stack-shaped: one targets Python services that alread
 
 ---
 
-## Pydantic AI: Typed Agents in Python
+## Pydantic AI: Typed Agents in Python {#pydantic-ai-typed-agents-in-python}
 
 ### Current State
 
@@ -91,7 +91,7 @@ The [Pydantic AI evals docs](https://ai.pydantic.dev/evals/) describe a typical 
 
 ---
 
-## Mastra: TypeScript-First Agents
+## Mastra: TypeScript-First Agents {#mastra-typescript-first-agents}
 
 ### Current State
 
@@ -152,7 +152,7 @@ The [Generative.inc Mastra guide](https://generative.inc/blog/mastra-typescript-
 
 ---
 
-## Comparison with LangGraph
+## Comparison with LangGraph {#comparison-with-langgraph}
 
 | Dimension | Pydantic AI v1.85 | Mastra (May 2026) | LangGraph 1.x |
 |-----------|-------------------|---------------------|----------------|
@@ -191,7 +191,7 @@ flowchart TD
 
 ---
 
-## Choosing a Framework
+## Choosing a Framework {#choosing-a-framework}
 
 Three decision drivers, in order of weight:
 
@@ -203,7 +203,7 @@ A useful heuristic: if the longest thing on the page is the tool list, pick Pyda
 
 ---
 
-## Production References
+## Production References {#production-references}
 
 These are public references where each framework is in serious use as of May 2026:
 
@@ -220,7 +220,7 @@ These are public references where each framework is in serious use as of May 202
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: When would you choose Pydantic AI over LangGraph for a Python service?
 
@@ -239,7 +239,7 @@ Three things. First, **fewer bad inputs leak through**. The LLM-facing schema is
 
 ---
 
-## References
+## References {#references}
 
 - Pydantic AI v1.85 release notes: https://github.com/pydantic/pydantic-ai/releases
 - Pydantic AI documentation: https://ai.pydantic.dev/

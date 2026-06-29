@@ -15,7 +15,7 @@ Not every model has to run in someone else's cloud. Running LLMs **locally**, on
 
 ---
 
-## The Runtime Stack
+## The Runtime Stack {#the-runtime-stack}
 
 The key mental model: these tools are **not substitutes**. They occupy different layers.
 
@@ -32,7 +32,7 @@ The key mental model: these tools are **not substitutes**. They occupy different
 
 ---
 
-## Why Ollama Is Not a Production Server
+## Why Ollama Is Not a Production Server {#why-ollama-is-not-a-production-server}
 
 Ollama and LM Studio are excellent for prototyping and wrong for a shared production endpoint, for an architectural reason worth teaching.
 
@@ -44,7 +44,7 @@ The takeaway is not "vLLM is tuned better." It is structural: Ollama and LM Stud
 
 ---
 
-## When Local Beats Cloud (and When It Does Not)
+## When Local Beats Cloud (and When It Does Not) {#when-local-beats-cloud-and-when-it-does-not}
 
 **Lean local or edge when:**
 - **Privacy or regulated data** that cannot leave the box (HIPAA, GDPR, contractual residency). A caveat to teach: the major API providers now offer zero-data-retention enterprise tiers, so "privacy" alone no longer automatically decides for local.
@@ -56,7 +56,7 @@ The takeaway is not "vLLM is tuned better." It is structural: Ollama and LM Stud
 
 ---
 
-## Quantization for Local Serving
+## Quantization for Local Serving {#quantization-for-local-serving}
 
 Quantization is what makes local serving viable; the [Quantization Deep Dive](../03-training-and-adaptation/07-quantization-deep-dive.md) covers the math, so here is just the deployment layer.
 
@@ -72,7 +72,7 @@ then add the KV cache (it grows with context length times concurrent requests) p
 
 ---
 
-## Hardware
+## Hardware {#hardware}
 
 A model-size-to-hardware guide (Q4 quant assumed; planning guidance, not guarantees):
 
@@ -93,7 +93,7 @@ Notes:
 
 ---
 
-## Prototype to Production
+## Prototype to Production {#prototype-to-production}
 
 1. **Prototype** with Ollama (CLI) or LM Studio (GUI) on a GGUF Q4_K_M model; validate quality and prompts on the smallest model that passes.
 2. **Pick the largest model and best quant** that fits the target hardware with KV-cache headroom.
@@ -106,7 +106,7 @@ Common pitfalls: treating Ollama or LM Studio as a server (it serializes under l
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: A team prototyped on Ollama and wants to ship it as a shared API. What changes and why?
 
@@ -120,7 +120,7 @@ When data cannot leave the box for privacy or residency reasons, when the system
 
 ---
 
-## References
+## References {#references}
 
 - Red Hat Developer, ["Ollama vs vLLM: a deep dive into performance benchmarking"](https://developers.redhat.com/articles/2025/08/08/ollama-vs-vllm-deep-dive-performance-benchmarking)
 - vLLM, [docs](https://docs.vllm.ai/) and the [PagedAttention blog](https://blog.vllm.ai/2023/06/20/vllm.html)

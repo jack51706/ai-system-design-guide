@@ -15,7 +15,7 @@ Behavioral questions in AI roles assess how you approach ambiguous problems, col
 
 ---
 
-## Why Behavioral Questions Matter for AI Roles
+## Why Behavioral Questions Matter for AI Roles {#why-behavioral-questions-matter-for-ai-roles}
 
 AI projects have unique characteristics that behavioral questions probe:
 
@@ -30,7 +30,7 @@ AI projects have unique characteristics that behavioral questions probe:
 
 ---
 
-## AI-Specific Behavioral Themes
+## AI-Specific Behavioral Themes {#ai-specific-behavioral-themes}
 
 ### Theme 1: Handling Ambiguity
 
@@ -112,7 +112,7 @@ AI systems can cause harm. Strong candidates think proactively about ethics and 
 
 ---
 
-## Question Categories and Examples
+## Question Categories and Examples {#question-categories-and-examples}
 
 ### Leadership and Influence
 
@@ -204,7 +204,7 @@ Strong answer elements:
 
 ---
 
-## Sample Answers Using STAR-L
+## Sample Answers Using STAR-L {#sample-answers-using-star-l}
 
 ### Example 1: Handling Ambiguity
 
@@ -362,7 +362,7 @@ Being overruled is not the end of the job. Converting a lost argument into cheap
 
 ---
 
-## Questions to Ask Your Interviewers
+## Questions to Ask Your Interviewers {#questions-to-ask-your-interviewers}
 
 Strong candidates ask thoughtful questions. Here are AI-specific questions that demonstrate depth:
 
@@ -402,7 +402,7 @@ Save these for the recruiter call or after an offer signal; asking them shows yo
 
 ---
 
-## Red Flags to Avoid
+## Red Flags to Avoid {#red-flags-to-avoid}
 
 | Behavior | Why It Is a Red Flag |
 |----------|----------------------|
@@ -414,7 +414,7 @@ Save these for the recruiter call or after an offer signal; asking them shows yo
 
 ---
 
-## Practicing Out Loud
+## Practicing Out Loud {#practicing-out-loud}
 
 Reading stories is not preparing them. The gap between a written story and a spoken one is where most candidates lose points.
 
@@ -426,7 +426,7 @@ Reading stories is not preparing them. The gap between a written story and a spo
 
 ---
 
-## Preparation Checklist
+## Preparation Checklist {#preparation-checklist}
 
 Before your behavioral interviews:
 

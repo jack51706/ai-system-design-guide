@@ -14,7 +14,7 @@ LangChain is no longer just a "prompting library." It has matured into a **Modul
 
 ---
 
-## The LangChain Stack
+## The LangChain Stack {#stack}
 
 The ecosystem is now split into three distinct layers:
 1. **LangChain Core**: Minimal abstractions for Prompts, Output Parsers, and Runnables. (Low dependency footprint).
@@ -23,7 +23,7 @@ The ecosystem is now split into three distinct layers:
 
 ---
 
-## LCEL: Programming with Pipes
+## LCEL: Programming with Pipes {#lcel}
 
 LangChain Expression Language (LCEL) uses the `|` operator to create a **Directed Acyclic Graph (DAG)** of execution.
 
@@ -64,7 +64,7 @@ While early systems used regex, modern code uses `.with_structured_output()` whi
 
 ---
 
-## LangChain Modularity Push
+## LangChain Modularity Push {#langchain-modularity-push}
 
 By May 2026 the ecosystem has finished its long migration from the monolithic `langchain` import to a tiered structure with clean dependency boundaries. The split exists so teams can pick exactly the surface area they need without dragging in 500+ integrations.
 
@@ -152,7 +152,7 @@ The version pin matters. `langchain-core >= 1.0` is the supported floor for new 
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: What is the main benefit of LCEL over traditional Python "Chains" (sequences of function calls)?
 
@@ -166,7 +166,7 @@ The key is to **Import only Core**. I use `langchain-core` for the abstractions 
 
 ---
 
-## References
+## References {#references}
 - LangChain. "The LangChain Expression Language Specification" (2025)
 - Anthropic. "Partner Integration Guide for LangChain" (2025)
 - Harrison Chase. "The Future of AI Orchestration" (2024 podcast/post)

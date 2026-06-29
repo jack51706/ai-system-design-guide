@@ -17,7 +17,7 @@ The anchor finding that frames the whole chapter, from Datadog's 2026 State of A
 
 ---
 
-## The Cost Model
+## The Cost Model {#the-cost-model}
 
 Pricing is quoted per million tokens, split input versus output, and **output costs materially more than input**, commonly 3-5x and sometimes more, because generation is autoregressive and compute-bound while input is a parallel prefill pass. (Current per-model prices live in [Pricing and Costs](../02-model-landscape/03-pricing-and-costs.md); they deflate fast, so model the *structure*, not the cents.)
 
@@ -47,7 +47,7 @@ with caching applied as a discount on the cacheable input fraction.
 
 ---
 
-## Caching: The Top Cost Lever
+## Caching: The Top Cost Lever {#caching-the-top-cost-lever}
 
 This is the headline lever precisely because of the anchor stat: the layer that is ~69% of input tokens (the system prompt) is static and ideal for caching, yet only ~28% of calls cache it. The gap between potential and actual is the biggest, cheapest saving available.
 
@@ -63,7 +63,7 @@ Distinct from prefix caching, **exact-match and semantic caching** serve whole r
 
 ---
 
-## Batch and Async Economics
+## Batch and Async Economics {#batch-and-async-economics}
 
 Both OpenAI and Anthropic offer a roughly **50% discount on batch processing** (input and output), asynchronous, with a completion ceiling around 24 hours. The decision rule is simple: **use batch whenever no human or system is waiting on the token.** High-value batch workloads include evaluation and regression suites, bulk classification and labeling, corpus-scale summarization and document processing, backfills after a prompt or model change, and A/B testing prompt variants. For the entire offline tier of a product, not batching leaves about half the money on the table.
 
@@ -71,7 +71,7 @@ The third lane is **provisioned/reserved throughput** (AWS Bedrock Provisioned T
 
 ---
 
-## The FinOps Discipline
+## The FinOps Discipline {#the-finops-discipline}
 
 The FinOps Foundation's framing: **inference is 80-90% of total GenAI spend** in many deployments, so the discipline centers on per-request inference economics, not training. The operational core:
 
@@ -83,7 +83,7 @@ The FinOps Foundation's framing: **inference is 80-90% of total GenAI spend** in
 
 ---
 
-## Structural Cost Decisions
+## Structural Cost Decisions {#structural-cost-decisions}
 
 These architecture-level choices move cost by 2-50x, beyond per-call tuning:
 
@@ -95,7 +95,7 @@ These architecture-level choices move cost by 2-50x, beyond per-call tuning:
 
 ---
 
-## Cost Anti-Patterns
+## Cost Anti-Patterns {#cost-anti-patterns}
 
 | Anti-pattern | Mechanism | Fix |
 |--------------|-----------|-----|
@@ -114,7 +114,7 @@ Reported real incidents make the agent-loop row concrete: runaway agents have bu
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Your LLM bill doubled month over month with flat traffic. How do you find and fix it?
 
@@ -128,7 +128,7 @@ Because every request carries a variable token cost, so an AI product behaves li
 
 ---
 
-## References
+## References {#references}
 
 - Datadog, [State of AI Engineering 2026](https://www.datadoghq.com/state-of-ai-engineering/)
 - FinOps Foundation, [Optimizing GenAI Usage](https://www.finops.org/wg/optimizing-genai-usage/) and [FinOps for AI](https://www.finops.org/wg/finops-for-ai-overview/)

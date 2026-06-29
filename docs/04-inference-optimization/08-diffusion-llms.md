@@ -15,7 +15,7 @@ Almost every LLM you use is autoregressive (AR): it emits one token per forward 
 
 ---
 
-## How They Work
+## How They Work {#how-they-work}
 
 An AR model factorizes a sequence left to right: each token is predicted from the past only, one per forward pass. A **masked diffusion model** instead learns to reconstruct a whole sequence from a corrupted (masked) version, refining all positions at once over a few denoising steps, with **bidirectional** attention (each position sees both past and future).
 
@@ -30,7 +30,7 @@ The cleanest mental model is not "AR vs diffusion" but an **interpolation** betw
 
 ---
 
-## The Speed Advantage and the Tradeoff
+## The Speed Advantage and the Tradeoff {#the-speed-advantage-and-the-tradeoff}
 
 The speedup comes from one place: **tokens committed per forward pass.** AR emits one; diffusion commits many over a few steps, so wall-clock throughput rises when the model can confidently unmask several positions at once. It is a latency and throughput win, not inherently a quality win.
 
@@ -42,7 +42,7 @@ The tradeoff is intrinsic to the unmasking schedule: committing more tokens per 
 
 ---
 
-## The 2026 Landscape
+## The 2026 Landscape {#the-2026-landscape}
 
 Treat versions, speeds, and prices as a perishable snapshot.
 
@@ -56,7 +56,7 @@ Treat versions, speeds, and prices as a perishable snapshot.
 
 ---
 
-## Hybrids: Draft with Diffusion, Verify with AR
+## Hybrids: Draft with Diffusion, Verify with AR {#hybrids-draft-with-diffusion-verify-with-ar}
 
 The most production-relevant work fuses the two paradigms:
 
@@ -68,7 +68,7 @@ The likely near-term production path is not pure diffusion but these hybrids, wh
 
 ---
 
-## Where Diffusion Wins and Where AR Still Wins
+## Where Diffusion Wins and Where AR Still Wins {#where-diffusion-wins-and-where-ar-still-wins}
 
 **Diffusion advantages (structural, not just hype):**
 - **Low-latency, high-throughput serving**, the headline use case, where round-trip latency dominates (interactive coding, autocomplete, real-time agents).
@@ -80,7 +80,7 @@ The likely near-term production path is not pure diffusion but these hybrids, wh
 
 ---
 
-## Maturity and What to Do Today
+## Maturity and What to Do Today {#maturity-and-what-to-do-today}
 
 The honest read: mostly early, with a thin layer of real commercial offerings on a fast-moving open research base. What an engineer should do:
 
@@ -92,7 +92,7 @@ The honest read: mostly early, with a thin layer of real commercial offerings on
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How does a diffusion language model differ from an autoregressive one, and where is that an advantage?
 
@@ -106,7 +106,7 @@ Because the speed comes with real tradeoffs and the ecosystem is young. The qual
 
 ---
 
-## References
+## References {#references}
 
 - Nie et al., "Large Language Diffusion Models" (LLaDA) arXiv:2502.09992
 - Arriola et al., "Block Diffusion" (BD3-LMs) arXiv:2503.09573

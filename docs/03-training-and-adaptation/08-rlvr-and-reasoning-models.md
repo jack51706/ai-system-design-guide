@@ -15,7 +15,7 @@ The frontier reasoning models (OpenAI's o-series, DeepSeek-R1, Qwen's thinking m
 
 ---
 
-## RLVR: Reinforcement Learning with Verifiable Rewards
+## RLVR: Reinforcement Learning with Verifiable Rewards {#rlvr-reinforcement-learning-with-verifiable-rewards}
 
 RLVR replaces RLHF's learned reward model with a deterministic **verifier** that returns a reward from a ground-truth check: did the final answer match (math), did the code pass the unit tests, does the proof check. The policy is the LLM; the environment is a single-turn generation of a long chain of thought followed by an answer; the reward is computed by a numeric/string match or by running the code.
 
@@ -32,7 +32,7 @@ The canonical open result is **DeepSeek-R1** (arXiv:2501.12948; the peer-reviewe
 
 ---
 
-## GRPO
+## GRPO {#grpo}
 
 **Group Relative Policy Optimization** was introduced in DeepSeekMath (arXiv:2402.03300) and used as the RL engine for DeepSeek-R1.
 
@@ -65,7 +65,7 @@ The practical lesson: curate prompts at the model's difficulty band, and prefer 
 
 ---
 
-## Reward Design and Failure Modes
+## Reward Design and Failure Modes {#reward-design-and-failure-modes}
 
 Even with a verifiable reward, the policy optimizes whatever the verifier *actually* measures, not what you meant.
 
@@ -78,7 +78,7 @@ A flagged, important caveat: the **Spurious Rewards** finding (arXiv:2506.10947)
 
 ---
 
-## Does RL Add Capability or Sharpen Sampling?
+## Does RL Add Capability or Sharpen Sampling? {#does-rl-add-capability-or-sharpen-sampling}
 
 This is the chapter's most nuanced point: a genuine open question with three positions.
 
@@ -90,7 +90,7 @@ That same work highlights **mid-training**: a stage between general pretraining 
 
 ---
 
-## Distillation: The Cheaper Path
+## Distillation: The Cheaper Path {#distillation-the-cheaper-path}
 
 For most teams, RL is the wrong first move.
 
@@ -108,7 +108,7 @@ See [Knowledge Distillation](05-knowledge-distillation.md) for the broader treat
 
 ---
 
-## Practical Guidance
+## Practical Guidance {#practical-guidance}
 
 **Train your own reasoning model vs consume one.** For roughly 95% of teams: consume a strong reasoner or distill from one. Do your own RLVR only when (a) you have a clean programmatic verifier for your domain, (b) the base or teacher genuinely cannot be elicited to your target behavior, (c) you have the RL infrastructure and GPU budget and tolerance for instability, and (d) your tasks sit at the model's edge of competence.
 
@@ -120,7 +120,7 @@ See [Knowledge Distillation](05-knowledge-distillation.md) for the broader treat
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: What is RLVR, and why does it scale more stably than RLHF for reasoning?
 
@@ -134,7 +134,7 @@ GRPO drops PPO's value/critic network, which for an LLM roughly doubles memory, 
 
 ---
 
-## References
+## References {#references}
 
 - DeepSeek-AI, "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via RL" arXiv:2501.12948 (Nature, 2025)
 - Shao et al., "DeepSeekMath" (GRPO) arXiv:2402.03300

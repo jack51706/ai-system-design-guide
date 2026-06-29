@@ -17,7 +17,7 @@ The AI coding agent landscape has exploded. This guide covers open-weight coding
 
 ---
 
-## The AI Coding Landscape (2026)
+## The AI Coding Landscape (2026) {#landscape}
 
 The coding AI landscape has three distinct layers:
 
@@ -43,7 +43,7 @@ flowchart TD
 
 ---
 
-## Open-Weight Coding Models
+## Open-Weight Coding Models {#models}
 
 These models can be self-hosted, fine-tuned, and deployed without any API dependency.
 
@@ -127,7 +127,7 @@ flowchart TD
 
 ---
 
-## AI-Native IDEs
+## AI-Native IDEs {#ides}
 
 ### Cursor
 
@@ -192,7 +192,7 @@ Antigravity is Google's agentic development platform, the successor to the Gemin
 
 ---
 
-## Open-Source Coding Agents
+## Open-Source Coding Agents {#agents}
 
 ### OpenHands (formerly OpenDevin)
 
@@ -288,7 +288,7 @@ flowchart TD
 
 ---
 
-## Benchmark Deep Dive
+## Benchmark Deep Dive {#benchmarks}
 
 ### SWE-bench Verified (March 2026)
 
@@ -332,7 +332,7 @@ LiveCodeBench uses fresh competitive programming problems (not in training data)
 
 ---
 
-## Cost Comparison
+## Cost Comparison {#costs}
 
 ### Closed API vs. Open Self-Hosted
 
@@ -350,7 +350,7 @@ LiveCodeBench uses fresh competitive programming problems (not in training data)
 
 ---
 
-## Selection Guide
+## Selection Guide {#selection}
 
 ### Quick Decision Tree
 
@@ -396,7 +396,7 @@ flowchart TD
 
 ---
 
-## Production Architecture
+## Production Architecture {#production}
 
 ### Enterprise Coding Agent Platform
 
@@ -439,7 +439,7 @@ flowchart TD
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you choose between Claude Code, Cursor, and OpenHands?
 
@@ -494,7 +494,7 @@ I also track **regression rate** — if an agent fix introduces a new failing te
 
 ---
 
-## References
+## References {#references}
 
 - Qwen2.5-Coder: https://qwenlm.github.io/blog/qwen2.5-coder/
 - DeepSeek-Coder-V2: https://github.com/deepseek-ai/DeepSeek-Coder-V2

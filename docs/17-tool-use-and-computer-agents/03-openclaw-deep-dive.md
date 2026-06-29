@@ -22,7 +22,7 @@ OpenClaw is an **open-source, self-hosted personal AI agent** that executes task
 
 ---
 
-## What Is OpenClaw
+## What Is OpenClaw {#what-is-openclaw}
 
 OpenClaw is:
 
@@ -197,7 +197,7 @@ This means you can have a work assistant on Slack, a personal assistant on Whats
 
 ---
 
-## The AgentSkills System
+## The AgentSkills System {#agentskills}
 
 ### How Skills Work
 
@@ -314,7 +314,7 @@ The OpenClaw skills ecosystem has grown rapidly, with community-maintained colle
 
 ---
 
-## LLM Provider Configuration
+## LLM Provider Configuration {#llm-providers}
 
 ### Configuration File
 
@@ -411,7 +411,7 @@ You can configure different models for different agents, allowing cost optimizat
 
 ---
 
-## Messaging Platform Integrations
+## Messaging Platform Integrations {#messaging-integrations}
 
 OpenClaw supports 20+ messaging platforms through its channel adapter architecture:
 
@@ -453,7 +453,7 @@ flowchart LR
 
 ---
 
-## Security Model
+## Security Model {#security-model}
 
 ### Security Philosophy
 
@@ -514,7 +514,7 @@ With `network: "none"`, a sandboxed sub-agent cannot make outbound requests, can
 
 ---
 
-## Deployment Patterns
+## Deployment Patterns {#deployment-patterns}
 
 ### Option 1: Local Development (Fastest Start)
 
@@ -623,7 +623,7 @@ server {
 
 ---
 
-## Performance Optimization and Scaling
+## Performance Optimization and Scaling {#performance}
 
 ### Memory Guidelines
 
@@ -665,7 +665,7 @@ Each enabled skill adds context the agent must evaluate on every turn. If you ha
 
 ---
 
-## Real-World Use Cases
+## Real-World Use Cases {#use-cases}
 
 ### 1. Development Workflow Orchestrator
 
@@ -715,7 +715,7 @@ When a new client signs on, an agent kicks off a full workflow: creates a projec
 
 ---
 
-## Limitations and When NOT to Use OpenClaw
+## Limitations and When NOT to Use OpenClaw {#limitations}
 
 ### Known Limitations
 
@@ -790,7 +790,7 @@ The incident was not a security event. It was a product-policy event with securi
 
 ---
 
-## Comparison with Alternatives
+## Comparison with Alternatives {#comparison}
 
 | Feature | OpenClaw | Hermes Agent | Claude Code | Open Interpreter |
 |---------|----------|-------------|-------------|-----------------|
@@ -901,7 +901,7 @@ docker logs openclaw-gateway --tail 50
 
 ---
 
-## System Design Interview Angle
+## System Design Interview Angle {#system-design-interview}
 
 ### Prompt: "Design a Personal AI Assistant Platform Like OpenClaw"
 
@@ -1000,7 +1000,7 @@ Three levels: (a) per-user message rate limiting at the Gateway, (b) per-agent t
 
 ---
 
-## References
+## References {#references}
 
 - OpenClaw Official Documentation -- https://docs.openclaw.ai
 - OpenClaw GitHub Repository -- https://github.com/openclaw/openclaw

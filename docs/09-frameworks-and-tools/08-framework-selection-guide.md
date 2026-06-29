@@ -13,7 +13,7 @@ The landscape of AI frameworks has consolidated significantly over the past year
 
 ---
 
-## The Framework Landscape
+## The Framework Landscape {#landscape}
 
 ### Orchestration & Agent Frameworks
 
@@ -45,7 +45,7 @@ The landscape of AI frameworks has consolidated significantly over the past year
 
 ---
 
-## The Decision Matrix
+## The Decision Matrix {#matrix}
 
 **Use this logic to select your stack:**
 
@@ -69,7 +69,7 @@ The landscape of AI frameworks has consolidated significantly over the past year
 
 ---
 
-## Build vs. Buy vs. Framework
+## Build vs. Buy vs. Framework {#build-vs-buy}
 
 As a Staff Engineer, you must resist **Framework Bloat**.
 
@@ -78,7 +78,7 @@ As a Staff Engineer, you must resist **Framework Bloat**.
 
 ---
 
-## Anti-Patterns to Avoid
+## Anti-Patterns to Avoid {#anti-patterns}
 
 1. **Framework Tunnelling**: Trying to force a complex logic flow into a framework that doesn't support it (e.g., using a pure RAG library for a coding agent).
 2. **The Golden Hammer**: Using LangChain just because it's popular, when a 50-line Python script would be faster and cheaper.
@@ -86,7 +86,7 @@ As a Staff Engineer, you must resist **Framework Bloat**.
 
 ---
 
-## Staff-Level Recommendation
+## Staff-Level Recommendation {#recommendation}
 
 For a modern, production-grade agentic system:
 - **Orchestration**: LangGraph (for state and loops) or Microsoft Agent Framework (for .NET shops).
@@ -107,7 +107,7 @@ For a modern, production-grade agentic system:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: Why do we see a trend towards "Programming" (DSPy) instead of "Prompting"?
 

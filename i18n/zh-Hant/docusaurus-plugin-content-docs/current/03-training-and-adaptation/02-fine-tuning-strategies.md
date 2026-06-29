@@ -15,7 +15,7 @@
 
 ---
 
-## 何時該微調
+## 何時該微調 {#when-to-fine-tune}
 
 在微調之前，先問自己：**這件事能不能用提示工程或 RAG 解決？**
 
@@ -29,7 +29,7 @@
 
 ---
 
-## 監督式微調（SFT）
+## 監督式微調（SFT） {#supervised-fine-tuning}
 
 預訓練之後的第一步。模型在 `(Prompt, Response)` 配對上進行訓練。
 
@@ -40,7 +40,7 @@
 
 ---
 
-## 持續預訓練（領域適應）
+## 持續預訓練（領域適應） {#continued-pretraining}
 
 也稱為「第二階段預訓練」。
 - **做法**：在特定領域的原始文字上訓練（例如，給金融模型訓練所有 SEC 申報文件）。
@@ -49,7 +49,7 @@
 
 ---
 
-## PEFT 與全參數微調的比較
+## PEFT 與全參數微調的比較 {#peft-vs-full-parameter}
 
 | 特性 | 全參數微調 | PEFT（LoRA、QLoRA） |
 |---------|-------------------|--------------------|
@@ -61,7 +61,7 @@
 
 ---
 
-## 超參數調校
+## 超參數調校 {#hyperparameter-tuning}
 
 ### 1. 學習率（LR）
 - **SFT**：`1e-5` 到 `5e-5` 是標準值。
@@ -78,7 +78,7 @@
 
 ---
 
-## 面試題
+## 面試題 {#interview-questions}
 
 ### Q：為什麼要用持續預訓練，而不是直接把領域資料放進 SFT 資料集？
 
@@ -94,7 +94,7 @@
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - Hu et al. "LoRA: Low-Rank Adaptation of Large Language Models" (2021)
 - Ouyang et al. "Training language models to follow instructions" (InstructGPT, 2022)
 - Dettmers et al. "QLoRA: Efficient Finetuning of Quantized LLMs" (2023)

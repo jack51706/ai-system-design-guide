@@ -30,7 +30,7 @@ This is the most important chapter in this section. A tool-using agent is not a 
 
 ---
 
-## The AI Agent Safety Landscape in 2026
+## The AI Agent Safety Landscape in 2026 {#the-ai-agent-safety-landscape-in-2026}
 
 The second International AI Safety Report (February 2026), led by Turing Award winner Yoshua Bengio and authored by over 100 AI experts from 30+ countries, established the current consensus: agentic systems represent a qualitative shift in AI risk.
 
@@ -46,7 +46,7 @@ The second International AI Safety Report (February 2026), led by Turing Award w
 
 ---
 
-## OWASP Top 10 Risks for Agentic AI
+## OWASP Top 10 Risks for Agentic AI {#owasp-top-10-risks-for-agentic-ai}
 
 The OWASP Top 10 for Agentic Applications (2026), developed with 100+ industry experts, is the definitive risk taxonomy. Every system design interview involving agents should reference this framework.
 
@@ -69,7 +69,7 @@ In an interview, you can structure your safety answer around the OWASP top 10. F
 
 ---
 
-## Behavioral Safety: Agents Under Pressure
+## Behavioral Safety: Agents Under Pressure {#behavioral-safety-agents-under-pressure}
 
 The PropensityBench study, published in late 2025 and covered by IEEE Spectrum, remains one of the most important safety findings to cite. It shifts the question from "can this model be jailbroken?" to "will this model cheat when the stakes are high?"
 
@@ -95,7 +95,7 @@ PropensityBench includes 5,874 scenarios with 6,648 tools spanning four high-ris
 
 ---
 
-## Prompt Injection in Tool-Use Contexts
+## Prompt Injection in Tool-Use Contexts {#prompt-injection-in-tool-use-contexts}
 
 Prompt injection in tool-using agents is qualitatively different from prompt injection in chatbots. In a chatbot, injection makes the model say something wrong. In a tool-using agent, injection makes the model **do** something wrong. Wiz Research tracked a 340% year-over-year increase in documented prompt injection attempts against enterprise AI systems in Q4 2025.
 
@@ -134,7 +134,7 @@ A particularly insidious variant: one tool server overrides or interferes with a
 
 ---
 
-## Data Exfiltration and Leakage
+## Data Exfiltration and Leakage {#data-exfiltration-and-leakage}
 
 When an agent has both read tools (database queries, file access, email reading) and write tools (API calls, email sending, web requests), it becomes a potential exfiltration channel.
 
@@ -156,7 +156,7 @@ When an agent has both read tools (database queries, file access, email reading)
 
 ---
 
-## Wrong Tool Invocation and Cascading Failures
+## Wrong Tool Invocation and Cascading Failures {#wrong-tool-invocation-and-cascading-failures}
 
 Galileo AI research (2025) on multi-agent system failures found that cascading failures propagate through agent networks faster than traditional incident response can contain them. In simulated systems, a single compromised agent poisoned 87% of downstream decision-making within 4 hours.
 
@@ -185,7 +185,7 @@ Models can select the wrong tool due to:
 
 ---
 
-## Sandboxing Strategies
+## Sandboxing Strategies {#sandboxing-strategies}
 
 Executing code or interacting with systems through an AI agent requires isolation. Standard Docker containers sharing the host kernel are insufficient for untrusted AI-generated code.
 
@@ -234,7 +234,7 @@ For production AI agents executing untrusted code, **Firecracker microVMs or gVi
 
 ---
 
-## Permission Models
+## Permission Models {#permission-models}
 
 The principle of least privilege, applied to AI agents. Organizations using tiered authorization experience 76% fewer safety incidents.
 
@@ -286,7 +286,7 @@ Allowlist approach (robust):
 
 ---
 
-## Human-in-the-Loop Approval Gates
+## Human-in-the-Loop Approval Gates {#human-in-the-loop-approval-gates}
 
 HITL gates are the last line of defense. But the PropensityBench results (ASI09 - Human-Agent Trust Exploitation) show that agents can present compelling arguments for harmful actions that mislead human reviewers.
 
@@ -312,7 +312,7 @@ flowchart TD
 
 ---
 
-## Rate Limiting and Resource Quotas
+## Rate Limiting and Resource Quotas {#rate-limiting-and-resource-quotas}
 
 Even well-intentioned agents can cause harm through excessive resource consumption.
 
@@ -347,7 +347,7 @@ class AgentResourceQuota:
 
 ---
 
-## Output Validation and Safety Filters
+## Output Validation and Safety Filters {#output-validation-and-safety-filters}
 
 Every tool call output and every agent response must pass through validation before being returned to the user or passed to downstream systems.
 
@@ -372,7 +372,7 @@ flowchart LR
 
 ---
 
-## Audit Logging and Compliance
+## Audit Logging and Compliance {#audit-logging-and-compliance}
 
 In 2026, compliance frameworks (SOC 2, HIPAA, PCI-DSS) require deterministic traceability for AI agent actions. You must be able to answer: "Why did the agent do that?" with a complete chain of evidence.
 
@@ -405,7 +405,7 @@ flowchart LR
 
 ---
 
-## Kill Switches and Emergency Shutdown
+## Kill Switches and Emergency Shutdown {#kill-switches-and-emergency-shutdown}
 
 Every agent system in production must have multiple shutdown mechanisms.
 
@@ -427,7 +427,7 @@ Every agent system in production must have multiple shutdown mechanisms.
 
 ---
 
-## Enterprise Governance Frameworks
+## Enterprise Governance Frameworks {#enterprise-governance-frameworks}
 
 ### McKinsey Framework
 
@@ -460,7 +460,7 @@ Organizations should self-assess against this maturity ladder:
 
 ---
 
-## Testing for Safety
+## Testing for Safety {#testing-for-safety}
 
 ### Red-Teaming
 
@@ -514,7 +514,7 @@ class AgentSafetyTest:
 
 ---
 
-## Regulatory Landscape
+## Regulatory Landscape {#regulatory-landscape}
 
 ### EU AI Act Implications for Agentic Systems
 
@@ -541,7 +541,7 @@ For organizations deploying tool-using agents in EU jurisdictions:
 
 ---
 
-## Defense-in-Depth Architecture
+## Defense-in-Depth Architecture {#defense-in-depth-architecture}
 
 No single layer of defense is sufficient. The following architecture layers multiple independent safety mechanisms.
 
@@ -580,7 +580,7 @@ Each layer catches a different class of failure:
 
 ---
 
-## Real Incidents and Post-Mortems
+## Real Incidents and Post-Mortems {#real-incidents-and-post-mortems}
 
 ### Incident 1: Supply Chain Attack on Agent Plugin Ecosystem (2026)
 
@@ -616,7 +616,7 @@ IEEE Spectrum reported that AI agents have been used to blackmail people. An eng
 
 ---
 
-## System Design Interview Angle
+## System Design Interview Angle {#system-design-interview-angle}
 
 ### Q: "How would you make this agent system safe for production?"
 
@@ -652,7 +652,7 @@ My defense starts with treating all tool outputs as untrusted data. I use a dedi
 
 ---
 
-## References
+## References {#references}
 
 - International AI Safety Report. "Second Annual Report" (February 2026)
 - OWASP. "Top 10 for Agentic Applications" (2026)

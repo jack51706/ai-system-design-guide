@@ -14,7 +14,7 @@
 
 ---
 
-## 可觀測性金字塔
+## 可觀測性金字塔 {#pyramid}
 
 1. **頂層（價值）**：使用者的任務有沒有被完成？（成功率）
 2. **中層（流程）**：哪一個代理節點是瓶頸？（每個節點的延遲／成本）
@@ -22,7 +22,7 @@
 
 ---
 
-## 追蹤與軌跡
+## 追蹤與軌跡 {#tracing}
 
 LangSmith 會自動擷取 **LangGraph** 或 **Chain** 中的每一個節點。
 - **中繼資料標記（Metadata Tagging）**：為每一筆追蹤標上 `user_id`、`model_tier` 與 `is_canary`。
@@ -30,7 +30,7 @@ LangSmith 會自動擷取 **LangGraph** 或 **Chain** 中的每一個節點。
 
 ---
 
-## LLM 的單元測試（資料集）
+## LLM 的單元測試（資料集） {#datasets}
 
 在沒有**資料集（Dataset）**的情況下建構 LLM 應用，就是「憑感覺開發」。
 - **黃金標準資料集（Gold Standard Datasets）**：一組 `(Input, Expected_Output)` 配對的集合。
@@ -55,7 +55,7 @@ LangSmith 支援**實驗分支（Experiment Branching）**。
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：為什麼「追蹤歸因（Trace Attribution）」對 Staff 級工程師至關重要？
 
@@ -69,7 +69,7 @@ LangSmith 支援**實驗分支（Experiment Branching）**。
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 - LangChain Team. "LangSmith: The Unified Evaluation Platform" (2025)
 - Microsoft. "Tracing and Debugging Multi-Agent Systems" (2025)
 - Weights & Biases. "Integrating LLOps into the CI/CD Pipeline" (2024/2025)

@@ -15,7 +15,7 @@
 
 ---
 
-## LLM CI/CD 的挑戰
+## LLM CI/CD 的挑戰 {#llm-cicd-challenges}
 
 ### LLM 部署有何不同
 
@@ -39,7 +39,7 @@
 
 ---
 
-## 管線架構
+## 管線架構 {#pipeline-architecture}
 
 ### 完整管線
 
@@ -57,7 +57,7 @@ flowchart TD
 
 ---
 
-## 測試階段
+## 測試階段 {#testing-stages}
 
 ### 階段 1：靜態驗證
 
@@ -197,7 +197,7 @@ class LLMEvaluationStage:
 
 ---
 
-## 品質關卡
+## 品質關卡 {#quality-gates}
 
 ### 關卡設定
 
@@ -249,7 +249,7 @@ QUALITY_THRESHOLDS = {
 
 ---
 
-## 部署策略
+## 部署策略 {#deployment-strategies}
 
 ### 金絲雀部署
 
@@ -316,7 +316,7 @@ class ShadowDeployer:
 
 ---
 
-## 回滾程序
+## 回滾程序 {#rollback-procedures}
 
 ### 自動化回滾
 
@@ -354,7 +354,7 @@ class AutoRollback:
 
 ---
 
-## 面試問題
+## 面試問題 {#interview-questions}
 
 ### Q：你如何在進入生產環境前測試提示變更？
 
@@ -400,7 +400,7 @@ class AutoRollback:
 
 ---
 
-## 參考資料
+## 參考資料 {#references}
 
 - ML Ops: https://ml-ops.org/
 - LangSmith: https://docs.smith.langchain.com/

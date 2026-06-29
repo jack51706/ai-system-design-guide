@@ -13,7 +13,7 @@ Tree-of-Thought (ToT) is an advanced prompting architecture where a model explor
 
 ---
 
-## The Tree vs. The Chain
+## The Tree vs. The Chain {#tree-vs-chain}
 
 While **Chain-of-Thought** is linear (one path), **Tree-of-Thought** allows for branching.
 
@@ -26,7 +26,7 @@ While **Chain-of-Thought** is linear (one path), **Tree-of-Thought** allows for 
 
 ---
 
-## The ToT Loop: Propose, Evaluate, Search
+## The ToT Loop: Propose, Evaluate, Search {#tot-loop}
 
 A ToT system consists of three modules:
 1. **Thought Proposer**: Generates 3-5 potential "next steps" for a problem.
@@ -45,14 +45,14 @@ For each branch:
 
 ---
 
-## Self-Correction & Backtracking
+## Self-Correction & Backtracking {#self-correction}
 
 ToT is specifically designed to overcome **Hallucination Cascades**. 
 In a linear chain, if the model makes a mistake in Step 1, every subsequent step is likely wrong. In ToT, the "Evaluator" (which can be a different model or a rule-based check) catches the error at Step 1 and forces the model to try a different starting point.
 
 ---
 
-## MCTS and Search-as-Service
+## MCTS and Search-as-Service {#mcts}
 
 ToT has evolved into **Monte Carlo Tree Search (MCTS)** for LLMs.
 - **Search-time Compute Scaling**: Instead of one large prompt, we use 100 small prompts to "search" for the best answer.
@@ -60,7 +60,7 @@ ToT has evolved into **Monte Carlo Tree Search (MCTS)** for LLMs.
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: When is ToT significantly better than simple CoT?
 
@@ -74,7 +74,7 @@ The primary drawback is **Exponential Cost and Latency**. Exploring 3 branches t
 
 ---
 
-## References
+## References {#references}
 - Yao et al. "Tree of Thoughts: Deliberate Problem Solving with Large Language Models" (2023)
 - Silver et al. "Mastering the Game of Go without Human Knowledge" (MCTS inspiration)
 

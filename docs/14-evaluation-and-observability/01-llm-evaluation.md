@@ -18,7 +18,7 @@ Evaluating LLM systems is fundamentally different from traditional ML. This chap
 
 ---
 
-## Why LLM Evaluation Is Hard
+## Why LLM Evaluation Is Hard {#why-llm-evaluation-is-hard}
 
 ### The Fundamental Challenge
 
@@ -43,7 +43,7 @@ You need to measure multiple dimensions independently.
 
 ---
 
-## Evaluation Dimensions
+## Evaluation Dimensions {#evaluation-dimensions}
 
 ### Core Dimensions
 
@@ -76,7 +76,7 @@ You need to measure multiple dimensions independently.
 
 ---
 
-## Automated Evaluation Methods
+## Automated Evaluation Methods {#automated-evaluation-methods}
 
 ### Exact Match
 
@@ -162,7 +162,7 @@ def evaluate_code(prediction: str, test_cases: list[dict]) -> dict:
 
 ---
 
-## LLM-as-Judge
+## LLM-as-Judge {#llm-as-judge}
 
 Use an LLM to evaluate another LLM's outputs.
 
@@ -276,7 +276,7 @@ def calibrated_pairwise_judge(question: str, response_a: str, response_b: str) -
 
 ---
 
-## Human Evaluation
+## Human Evaluation {#human-evaluation}
 
 ### When to Use Human Evaluation
 
@@ -342,7 +342,7 @@ def interpret_kappa(kappa: float) -> str:
 
 ---
 
-## RAG-Specific Evaluation
+## RAG-Specific Evaluation {#rag-specific-evaluation}
 
 ### RAGAS Metrics
 
@@ -446,7 +446,7 @@ def evaluate_context_relevance(query: str, contexts: list[str]) -> dict:
 
 ---
 
-## Building Evaluation Pipelines
+## Building Evaluation Pipelines {#building-evaluation-pipelines}
 
 ### Evaluation Dataset Structure
 
@@ -536,7 +536,7 @@ class EvaluationPipeline:
 
 ---
 
-## Production Monitoring
+## Production Monitoring {#production-monitoring}
 
 ### Key Metrics to Track
 
@@ -620,7 +620,7 @@ def detect_quality_drift(
 
 ---
 
-## 2026 Eval Evolution: Beyond LLM-as-Judge
+## 2026 Eval Evolution: Beyond LLM-as-Judge {#2026-eval-evolution-beyond-llm-as-judge}
 
 The 2023-2024 playbook ("use GPT-4 as a judge") was good enough for v1 systems but cracked under three pressures: cost at scale, agent trajectories that string-graders cannot inspect, and benchmarks that conflate retrieval, memory, and reasoning. By May 2026 the production eval stack has split into four layers that work together.
 
@@ -754,7 +754,7 @@ This is not free, but it is dramatically cheaper than running a frontier judge o
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How would you evaluate a RAG system?
 
@@ -818,7 +818,7 @@ Several known biases and limitations:
 
 ---
 
-## References
+## References {#references}
 
 - Es et al. "RAGAS: Automated Evaluation of Retrieval Augmented Generation" (2023)
 - Zheng et al. "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena" (2023)

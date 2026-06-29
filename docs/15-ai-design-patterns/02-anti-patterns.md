@@ -14,7 +14,7 @@ Recognizing what NOT to do is as important as knowing best practices. This chapt
 
 ---
 
-## Architecture Anti-Patterns
+## Architecture Anti-Patterns {#architecture-anti-patterns}
 
 ### The God Prompt
 
@@ -111,7 +111,7 @@ Consider fine-tuning (with 500+ examples)
 
 ---
 
-## RAG Anti-Patterns
+## RAG Anti-Patterns {#rag-anti-patterns}
 
 ### Retrieve Everything
 
@@ -204,7 +204,7 @@ results = vector_db.search(
 
 ---
 
-## Agent Anti-Patterns
+## Agent Anti-Patterns {#agent-anti-patterns}
 
 ### Infinite Loop Risk
 
@@ -309,7 +309,7 @@ async def handle_message(session_id: str, message: str) -> str:
 
 ---
 
-## Prompting Anti-Patterns
+## Prompting Anti-Patterns {#prompting-anti-patterns}
 
 ### Vague Instructions
 
@@ -382,7 +382,7 @@ response = await llm.generate(prompt, response_format={"type": "json_object"})
 
 ---
 
-## Evaluation Anti-Patterns
+## Evaluation Anti-Patterns {#evaluation-anti-patterns}
 
 ### Vibes-Based Evaluation
 
@@ -454,7 +454,7 @@ final_accuracy = evaluate(test_set)
 
 ---
 
-## Production Anti-Patterns
+## Production Anti-Patterns {#production-anti-patterns}
 
 ### No Rate Limiting
 
@@ -515,7 +515,7 @@ async def answer_faq(question: str) -> str:
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: What is the biggest anti-pattern you see in LLM applications?
 

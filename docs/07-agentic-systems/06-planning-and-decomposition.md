@@ -14,7 +14,7 @@ Planning is the "System 2" component that allows agents to solve multi-stage pro
 
 ---
 
-## The Planning Spectrum
+## The Planning Spectrum {#spectrum}
 
 | Method | Strategy | Complexity | Best For |
 |--------|----------|------------|----------|
@@ -25,7 +25,7 @@ Planning is the "System 2" component that allows agents to solve multi-stage pro
 
 ---
 
-## Static vs. Dynamic Planning
+## Static vs. Dynamic Planning {#static-vs-dynamic}
 
 ### Static (Plan-and-Solve)
 The agent writes a 10-step plan and follows it strictly.
@@ -46,7 +46,7 @@ The model's internal "Thinking" window (Inference scaling) acts as a **Hidden Pl
 
 ---
 
-## Recursive Task Decomposition
+## Recursive Task Decomposition {#decomposition}
 
 For massive tasks (e.g., "Build a full-stack app"), we use **Sub-Agent Spawning**.
 1. **Master Agent**: Decomposes "Project" into "Frontend," "Backend," and "DB."
@@ -66,7 +66,7 @@ For high-stakes decisions, we use **Monte Carlo Tree Search (MCTS)** within the 
 
 ---
 
-## Interview Questions
+## Interview Questions {#interview-questions}
 
 ### Q: How do you prevent an agent from "Infinite Recursion" during task decomposition?
 
@@ -80,7 +80,7 @@ Plan generation is a "Fresh Start." Plan revision requires **Context Re-evaluati
 
 ---
 
-## References
+## References {#references}
 - Silver et al. "Mastering the game of Go with deep neural networks and tree search" (Applied to LLMs, 2024/2025)
 - Wang et al. "Self-Consistency Improves Chain of Thought Reasoning" (2022/2025 update)
 - LangGraph. "Multi-Agent Planning Patterns" (2025)
