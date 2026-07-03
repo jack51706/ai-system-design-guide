@@ -68,7 +68,7 @@ AI 社群裡有一個爭論：有些人說「直接憑感覺檢查你的 app 就
 
 **每個人都需要評估。** 那些說自己不需要評估的人，其實正在享受別人在上游已經做好的評估成果。
 
-舉例：如果你正在用 GPT-4 打造一個程式碼助手，OpenAI 早已在大量的程式碼基準測試上測試過 GPT-4。所以你可以「憑感覺檢查」你的 app。但對於大多數不只是單純使用基礎模型的應用來說，你需要自己的評估。
+舉例：如果你正在用 GPT-5.6 打造一個程式碼助手，OpenAI 早已在大量的程式碼基準測試上測試過 GPT-5.6。所以你可以「憑感覺檢查」你的 app。但對於大多數不只是單純使用基礎模型的應用來說，你需要自己的評估。
 
 #### 上游評估的微妙之處（為什麼「我不需要評估」只說對了一半）
 
@@ -428,7 +428,7 @@ client = openai.OpenAI()
 
 # This call is automatically traced by Phoenix!
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -488,7 +488,7 @@ import openai
 client = openai.OpenAI()
 
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -557,7 +557,7 @@ client = OpenAI()
 
 # This call is automatically traced by Langfuse
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -601,7 +601,7 @@ prompt = await px_client.prompts.create(
     prompt_description="Basic recipe assistant prompt",
     version=PromptVersion(
         [{"role": "system", "content": "You are a recipe assistant..."}],
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.5-mini",
     ),
 )
 ```
@@ -618,7 +618,7 @@ langwatch.prompts.create(
         {"role": "system", "content": "You are a recipe assistant..."},
         {"role": "user", "content": "{{question}}"}
     ],
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     temperature=0.7
 )
 
@@ -898,7 +898,7 @@ Generate 1 unique, realistic query:"""
 queries = []
 for t in dimension_tuples:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         messages=[{"role": "user", "content": QUERY_GEN_PROMPT.format(
             tuple_description=str(t)
         )}],
@@ -921,7 +921,7 @@ Generate 1 unique, realistic query:
 queries_result = llm_generate(
     dataframe=query_df,
     template=query_template,
-    model=OpenAIModel(model="gpt-4o-mini", temperature=0.9)
+    model=OpenAIModel(model="gpt-5.5-mini", temperature=0.9)
 )
 ```
 
@@ -941,7 +941,7 @@ queries = []
 for t in dimension_tuples:
     result = langwatch.completion(
         prompt=QUERY_GEN_PROMPT.format(tuple_description=str(t)),
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         temperature=0.9
     )
     queries.append(result.text)
@@ -957,7 +957,7 @@ client = OpenAI()  # Auto-traced
 queries = []
 for t in dimension_tuples:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         messages=[{"role": "user", "content": QUERY_GEN_PROMPT.format(
             tuple_description=str(t)
         )}],
@@ -1466,14 +1466,14 @@ import langwatch
 results = langwatch.evaluate.batch(
     dataset=traces_df,
     evaluators=["dietary_compliance"],  # Built-in evaluator
-    model="gpt-4o"
+    model="gpt-5.6"
 )
 
 # Or create custom evaluator
 custom_evaluator = langwatch.evaluators.create(
     name="dietary_adherence",
     prompt=LABELING_PROMPT,
-    model="gpt-4o"
+    model="gpt-5.6"
 )
 
 results = langwatch.evaluate.batch(
@@ -1494,7 +1494,7 @@ client = OpenAI()
 labels = []
 for trace in traces:
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5.6",
         messages=[{"role": "user", "content": LABELING_PROMPT.format(**trace)}],
         temperature=0
     )
@@ -1674,7 +1674,7 @@ import langwatch
 judge_evaluator = langwatch.evaluators.create(
     name="dietary-judge-v1",
     prompt=judge_prompt_template,
-    model="gpt-4o",
+    model="gpt-5.6",
     temperature=0
 )
 
@@ -1844,7 +1844,7 @@ from phoenix.evals import llm_generate, OpenAIModel
 results = llm_generate(
     dataframe=all_traces_df,
     template=judge_prompt_template,
-    model=OpenAIModel(model="gpt-4o", temperature=0),
+    model=OpenAIModel(model="gpt-5.6", temperature=0),
     concurrency=20,
 )
 ```
@@ -1891,7 +1891,7 @@ client = openai.OpenAI()
 
 def run_judge(trace):
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5.6",
         messages=[{"role": "user", "content": judge_prompt.format(**trace)}],
         temperature=0,
     )
@@ -1939,7 +1939,7 @@ with ThreadPoolExecutor(max_workers=20) as executor:
 
 1. **優先選一個至少與受測系統一樣強、最好更強的 judge。** judge 必須完全理解任務才能評定它。如果你的產品跑在一個快速又便宜的模型上，用前沿模型（Claude Opus 4.8、GPT-5.6、Gemini 3.1 Pro）來評判，通常能換來與人類標註明顯更高的一致度。一個比生成器更弱的 judge，往往會正好漏掉那些你最需要抓出來的細微失敗。
 2. **使用與生成器不同的模型家族**，以避開上面提到的自我偏好偏誤。這會與「用最強的模型」產生張力，所以當最強的模型同時就是負責生成的那一個時，要嘛把生成器的家族換成 judge，要嘛用來自不同家族的兩個 judge 評分，並觀察它們意見相左的地方。
-3. **便宜的 judge 一樣可以用，前提是你有校準它。** 「盡可能最強」是個起點，不是強制規定。一個較小或較便宜的模型（DeepSeek V4 Flash、Gemini 3.1 Flash、Claude Fable 5）「只要它在 Test 集上跨過你的 TPR/TNR 門檻」，就可以是一個完全合格的 judge。那套 7 步驟工作流程，正是讓你能信任一個便宜 judge 的校準程序：驗證它，如果它達到目標，價格標籤對它的有效性就毫無影響。許多團隊會發現，在一個範圍狹窄、規格明確的二元任務上，便宜的 judge 與昂貴的只差一兩個百分點，而這正是合規閘門最常見的情況。
+3. **便宜的 judge 一樣可以用，前提是你有校準它。** 「盡可能最強」是個起點，不是強制規定。一個較小或較便宜的模型（DeepSeek V4 Flash、Gemini 3.1 Flash、Claude Haiku 4.5）「只要它在 Test 集上跨過你的 TPR/TNR 門檻」，就可以是一個完全合格的 judge。那套 7 步驟工作流程，正是讓你能信任一個便宜 judge 的校準程序：驗證它，如果它達到目標，價格標籤對它的有效性就毫無影響。許多團隊會發現，在一個範圍狹窄、規格明確的二元任務上，便宜的 judge 與昂貴的只差一兩個百分點，而這正是合規閘門最常見的情況。
 4. **刻意地在成本與一致度之間做取捨，並在規模化時重新評估這個取捨。** 用前沿模型評判每一筆生產軌跡，可能比提供產品本身還貴。正確的做法通常是一條分層管線：用一個便宜、已校準的 judge 處理 100% 的流量，只把意見相左或邊界案例升級給昂貴的 judge。第 13 章（Cost, Latency & Scaling Evals）會深入探討這種分層、抽樣與快取；把 judge 模型的選擇當成一個成本決策，跟它是準確度決策一樣看待。
 
 決策程序：先從你負擔得起的最強 judge 開始，藉此確立可達成的一致度上限，然後測試一個較便宜的 judge 在你的 Test 集上能不能落在那個上限可接受的誤差範圍內。如果可以，就推出便宜的那個，把省下來的成本收進口袋。如果不行，你就已經精確量化出這個便宜 judge 在漏掉的失敗上讓你付出多少代價，而那是一個你可以擺在利害關係人面前的數字。
@@ -3505,7 +3505,7 @@ for state_name in STATES:
     results = llm_generate(
         dataframe=spans_df,
         template=PromptTemplate(eval_prompt),
-        model=OpenAIModel(model="gpt-4o"),
+        model=OpenAIModel(model="gpt-5.6"),
         output_parser=parse_label_and_explanation,
     )
 
@@ -3540,7 +3540,7 @@ for state_name in STATES:
     evaluator = langwatch.evaluators.create(
         name=f"{state_name}_eval",
         prompt=eval_prompt,
-        model="gpt-4o"
+        model="gpt-5.6"
     )
 
     # Run evaluation
@@ -5181,7 +5181,7 @@ PM 與 QA 往往能產出比工程師更好的標籤，因為：
 
 ### 成本問題 {#the-cost-problem}
 
-在 10,000 筆追蹤紀錄上用 GPT-4o 當評審所費不貲。以下是控制成本的方法：
+在 10,000 筆追蹤紀錄上用旗艦評審（Claude Opus 4.8、GPT-5.6）所費不貲。以下是控制成本的方法：
 
 #### 在動手架構之前，先把算術算清楚
 
@@ -5225,25 +5225,17 @@ PM 與 QA 往往能產出比工程師更好的標籤，因為：
 
 ### 策略 1：用較便宜的模型當評審 {#strategy-1-cheaper-judges}
 
-並非每個評估都需要最好的模型：
+並非每個評估都需要最好的模型。**原則：** 先用強大的評審建立品質上限，驗證你的評審提示，然後測試較便宜的模型是否能給出相近的 TPR/TNR。通常是可以的。
 
-| 評審模型 | 成本（每 1K 筆追蹤） | 何時使用 |
-|---|---|---|
-| GPT-4o / Claude Opus | 約 $5-15 | 複雜的主觀判斷、安全關鍵情境 |
-| GPT-4o-mini / Claude Haiku | 約 $0.50-1.50 | 明確的標準、定義良好的評分準則 |
-| 基於程式碼 | $0 | 格式檢查、模式比對、驗證 |
+#### 評審分級階梯（能力 vs 成本 vs 一致性）
 
-**提示：** 先從強大的模型開始，驗證你的評審提示，然後測試較便宜的模型是否能給出相近的 TPR/TNR。通常是可以的。
-
-#### 更完整的評審分級階梯（能力 vs 成本 vs 一致性）
-
-上面那張兩列的表方向是對的，但太粗略，沒法拿來規劃。以下是 2026 年大多數團隊實際上會在其中做取捨的階梯。「與人類的一致性」是相對於一份金標籤集（gold-labeled set）的 Cohen's kappa；把這些數字當成「你應該預期量到的典型區間」，而不是承諾，因為一致性是因任務而異的，你必須自己驗證（見下文）。
+以下是 2026 年大多數團隊實際上會在其中做取捨的階梯。「與人類的一致性」是相對於一份金標籤集（gold-labeled set）的 Cohen's kappa；把這些數字當成「你應該預期量到的典型區間」，而不是承諾，因為一致性是因任務而異的，你必須自己驗證（見下文）。
 
 | 級別 | 範例評審（2026 年 6 月） | 相對每次評估成本 | 典型人類一致性（kappa） | 最適合 | 哪裡會失靈 |
 |---|---|---|---|---|---|
 | 程式碼／確定性 | regex、JSON schema、`assert` | $0 | 不適用（精確） | 格式、長度、髒話清單、必填欄位是否存在、合法 SQL 解析 | 任何主觀的東西；對換句話說很脆弱 |
 | 嵌入／分類器 | `text-embedding-3-large` + 閾值、微調過的 DistilBERT 毒性偵測頭 | 約 $0.0001 | 窄任務上 0.55-0.75 | 主題／PII 路由、毒性閘門、「這是否切題」 | 沒有推理能力；單一閾值很少能適配所有類別 |
-| 微型 LLM 評審 | Gemini 3.1 Flash、DeepSeek V4 Flash、Claude Fable 5 | 約 $0.0005 | 清楚評分準則上 0.60-0.80 | 定義明確的是／非評分準則、成對的「A 或 B 較好」 | 細微的事實性、多步推理、長脈絡 |
+| 微型 LLM 評審 | Gemini 3.1 Flash、DeepSeek V4 Flash、Claude Haiku 4.5 | 約 $0.0005 | 清楚評分準則上 0.60-0.80 | 定義明確的是／非評分準則、成對的「A 或 B 較好」 | 細微的事實性、多步推理、長脈絡 |
 | 中階 LLM 評審 | GPT-5.5 mini、Gemini 3.1 Pro | 約 $0.003-0.009 | 0.70-0.85 | 大多數生產評分：有用性、帶檢索脈絡的有據性（groundedness） | 對抗式安全、專家領域正確性 |
 | 前沿評審 | Claude Opus 4.8、GPT-5.6、DeepSeek V4 Pro（推理） | 約 $0.015-0.020 | 0.80-0.90 | 安全關鍵、細膩的主觀判斷、以及建立金標集本身 | 規模化下的成本；在高風險情境下仍無法取代人工簽核 |
 
@@ -5375,13 +5367,13 @@ def required_n(margin=0.03, conf_z=1.96, p=0.5):
 # Tier 1: Run on ALL traces (code-based, free)
 tier1_results = [eval_format(t) for t in all_traces]
 
-# Tier 2: Run on traces that passed Tier 1 (cheap LLM, ~$0.50/1K)
+# Tier 2: Run on traces that passed Tier 1 (cheap LLM, ~$1.50/1K)
 tier1_passed = [t for t, r in zip(all_traces, tier1_results) if r['passed']]
-tier2_results = run_llm_eval(tier1_passed, model="gpt-4o-mini")
+tier2_results = run_llm_eval(tier1_passed, model="gpt-5.5-mini")
 
-# Tier 3: Run on a sample (expensive LLM, ~$5/1K)
+# Tier 3: Run on a sample (expensive LLM, ~$15/1K)
 sample = random.sample(tier1_passed, 500)
-tier3_results = run_llm_eval(sample, model="gpt-4o")
+tier3_results = run_llm_eval(sample, model="gpt-5.6")
 ```
 
 #### 把級聯（cascade）想成漏斗：便宜的濾掉顯而易見的，昂貴的評判倖存者
@@ -5487,7 +5479,7 @@ def cache_key(trace, judge_model):
 | 正規表示式/程式碼檢查 | <1ms | 是 |
 | 嵌入相似度 | 10-50ms | 是 |
 | 小型 LLM（Haiku 等級） | 200-500ms | 勉強（會增加可察覺的延遲） |
-| 大型 LLM（GPT-4o 等級） | 1-3s | 否（僅供離線使用） |
+| 大型 LLM（GPT-5.6 / Opus 4.8 等級） | 1-3s | 否（僅供離線使用） |
 
 離線評估在乎的是*成本*；線上評估（位於請求路徑上的防護機制）在乎的是*成本與延遲*，而延遲是比較難搞的限制。防護機制每多加一毫秒，使用者在每一次請求都會感受到，所以這裡的紀律是一個嚴格的預算，而不是憑感覺。
 
@@ -5526,7 +5518,7 @@ async def guard_input(text):
 
 - **程式碼與 regex**（<1ms）：封鎖清單、schema 有效性、長度、必要的免責聲明。免費又即時；永遠是你的第一道防線。
 - **微調過的分類器／嵌入閘門**（10-50ms）：一個 DistilBERT 等級的毒性或越獄偵測頭，或一個對照已知壞模式的嵌入相似度檢查。這是輸入防護機制的甜蜜點：在*窄*任務上以分類器的速度與成本，達到接近 LLM 的品質。Llama Guard 式的小型安全分類器就屬於這一類。
-- **微型 LLM**（Gemini 3.1 Flash、Claude Fable 5，約 150-400ms）：當一個檢查真的需要分類器所缺乏的語言理解時才用，而且只用在*輸出*側，因為你在那裡已經付過生成延遲了。即使在這裡，也偏好把它當成快速失敗（fast-fail）：短提示、`max_tokens` 限制成一個單詞判定、`temperature=0`。
+- **微型 LLM**（Gemini 3.1 Flash、Claude Haiku 4.5，約 150-400ms）：當一個檢查真的需要分類器所缺乏的語言理解時才用，而且只用在*輸出*側，因為你在那裡已經付過生成延遲了。即使在這裡，也偏好把它當成快速失敗（fast-fail）：短提示、`max_tokens` 限制成一個單詞判定、`temperature=0`。
 - **前沿 LLM：** 只供離線／非同步。你一旦把一次 2 秒的 Opus 呼叫放進請求路徑，你就讓延遲翻倍了；別這麼做。
 
 #### 串流（streaming）的考量
@@ -6617,11 +6609,13 @@ Return your evaluation as JSON:
 
 | 模型層級 | 何時使用 | 典型準確性 |
 |------------|------------|-----------------|
-| GPT-4o / Claude Sonnet 4.6 | 高風險評估、複雜推理 | 85–95% |
-| GPT-4o-mini / Claude Haiku | 成本敏感、高流量評估 | 75–90% |
-| 開源（Llama、Mistral） | 自架、隱私敏感 | 70–85% |
+| Claude Opus 4.8 / GPT-5.6 | 高風險評估、複雜推理 | 85–95% |
+| GPT-5.5 mini / Gemini 3.1 Flash / DeepSeek V4 Flash | 成本敏感、高流量評估 | 75–90% |
+| 開放權重（Llama 4、Qwen 3.x、GLM-5.2） | 自架、隱私敏感 | 70–85% |
 
 **提示：** 從最強的模型開始，以建立效能上限。接著測試較便宜的模型能否在你的特定使用情境中與之匹敵。通常是可以的，尤其是搭配良好的 few-shot 範例時。
+
+價格與降階前的驗證流程，見第 13 章的評審分級階梯。
 
 ### 10. 提示版本管理
 
@@ -6650,7 +6644,7 @@ langwatch.prompts.create(
     name="dietary-judge-v3",
     description="Added edge cases for keto",
     template=judge_prompt_text,
-    model="gpt-4o",
+    model="gpt-5.6",
     temperature=0,
 )
 
@@ -6738,7 +6732,7 @@ from phoenix.evals import OpenAIModel, PromptTemplate, llm_generate, llm_classif
 results = llm_generate(
     dataframe=traces_df,
     template=PromptTemplate("Evaluate: {input}"),
-    model=OpenAIModel(model="gpt-4o"),
+    model=OpenAIModel(model="gpt-5.6"),
     output_parser=my_parser,
     concurrency=20,
 )
@@ -6754,7 +6748,7 @@ prompt = await px_client.prompts.create(
     version=PromptVersion(
         [{"role": "system", "content": "..."},
          {"role": "user", "content": "{{question}}"}],
-        model_name="gpt-4o",
+        model_name="gpt-5.6",
     ),
 )
 ```
@@ -6801,8 +6795,8 @@ spans_df = langwatch.get_spans(
 # Get spans within a time range
 spans_df = langwatch.get_spans(
     filters={
-        "timestamp_gte": "2025-02-01",
-        "timestamp_lte": "2025-02-09"
+        "timestamp_gte": "2026-06-01",
+        "timestamp_lte": "2026-06-09"
     }
 )
 ```
@@ -6884,7 +6878,7 @@ prompt = langwatch.prompts.create(
         {"role": "system", "content": "You are a recipe assistant..."},
         {"role": "user", "content": "{{question}}"}
     ],
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     temperature=0.7
 )
 
@@ -7003,7 +6997,7 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 
 | 天 | 活動 | 時間 | 角色重點 |
 |-----|----------|------|------------|
-| 1 | 挑選你的平台（Phoenix 或 Langfuse），並安裝它 | 1h | 全部 |
+| 1 | 挑選你的平台（Phoenix、LangWatch 或 Langfuse），並安裝它 | 1h | 全部 |
 | 2 | 為你的應用導入自動追蹤 | 2h | 工程師 |
 | 2 | 瀏覽追蹤檢視器 UI，以視覺方式理解追蹤紀錄 | 1h | PM/QA |
 | 3 | 以維度抽樣建立測試資料集 | 2h | 全部 |
@@ -7078,7 +7072,7 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 
 9. **安全性評估並非可有可無** - 提示注入、PII 外洩與越獄偵測，應該在你開始煩惱品質評估之前就已經在運作。
 
-10. **先用昂貴的，再最佳化** - 用 GPT-4o/Claude Sonnet 建立你的效能上限，接著測試較便宜的模型能否與之匹敵。通常是可以的。
+10. **先用昂貴的，再最佳化** - 用旗艦評審（Claude Opus 4.8 或 GPT-5.6）建立你的效能上限，接著測試較便宜的模型能否與之匹敵。通常是可以的。
 
 11. **抽樣勝過窮舉式評估** - 以統計嚴謹性評估 10% 的追蹤紀錄，會比用一個糟糕的 judge 評估 100% 給你更好的答案。
 
@@ -7200,4 +7194,4 @@ AI 評估不只是「測試」，它們是一套橫跨工程、產品管理與�
 
 *本指南受 Hamel Husain 與 Shreya Shankar 的 AI Evals for Engineers & PMs 課程啟發並以其為基礎，並補充了額外研究、可用於生產環境的程式碼範例，以及涵蓋 Phoenix、LangWatch、Langfuse 與更廣泛評估工具生態系的多平台指南。*
 
-*作者：Om Bharatiya | 建立時間：2026 年 2 月*
+*作者：Om Bharatiya | 建立時間：2026 年 2 月 | 最後更新：2026 年 6 月*

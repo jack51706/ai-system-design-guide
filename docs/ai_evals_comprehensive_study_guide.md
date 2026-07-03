@@ -68,7 +68,7 @@ There's a debate in the AI community: some people say "just vibe check your app"
 
 **Everyone needs evals.** The people who say they don't need evals are actually benefiting from evals that someone else did upstream.
 
-Example: If you're building a coding assistant with GPT-4, OpenAI already tested GPT-4 on massive code benchmarks. So you can "vibe check" your app. But for most applications that aren't simple uses of foundation models, you need your own evals.
+Example: If you're building a coding assistant with GPT-5.6, OpenAI already tested GPT-5.6 on massive code benchmarks. So you can "vibe check" your app. But for most applications that aren't simple uses of foundation models, you need your own evals.
 
 #### The upstream-evals nuance (why "I don't need evals" is a half-truth)
 
@@ -426,7 +426,7 @@ client = openai.OpenAI()
 
 # This call is automatically traced by Phoenix!
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -486,7 +486,7 @@ import openai
 client = openai.OpenAI()
 
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -555,7 +555,7 @@ client = OpenAI()
 
 # This call is automatically traced by Langfuse
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -599,7 +599,7 @@ prompt = await px_client.prompts.create(
     prompt_description="Basic recipe assistant prompt",
     version=PromptVersion(
         [{"role": "system", "content": "You are a recipe assistant..."}],
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.5-mini",
     ),
 )
 ```
@@ -616,7 +616,7 @@ langwatch.prompts.create(
         {"role": "system", "content": "You are a recipe assistant..."},
         {"role": "user", "content": "{{question}}"}
     ],
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     temperature=0.7
 )
 
@@ -894,7 +894,7 @@ Generate 1 unique, realistic query:"""
 queries = []
 for t in dimension_tuples:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         messages=[{"role": "user", "content": QUERY_GEN_PROMPT.format(
             tuple_description=str(t)
         )}],
@@ -917,7 +917,7 @@ Generate 1 unique, realistic query:
 queries_result = llm_generate(
     dataframe=query_df,
     template=query_template,
-    model=OpenAIModel(model="gpt-4o-mini", temperature=0.9)
+    model=OpenAIModel(model="gpt-5.5-mini", temperature=0.9)
 )
 ```
 
@@ -937,7 +937,7 @@ queries = []
 for t in dimension_tuples:
     result = langwatch.completion(
         prompt=QUERY_GEN_PROMPT.format(tuple_description=str(t)),
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         temperature=0.9
     )
     queries.append(result.text)
@@ -953,7 +953,7 @@ client = OpenAI()  # Auto-traced
 queries = []
 for t in dimension_tuples:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         messages=[{"role": "user", "content": QUERY_GEN_PROMPT.format(
             tuple_description=str(t)
         )}],
@@ -1461,14 +1461,14 @@ import langwatch
 results = langwatch.evaluate.batch(
     dataset=traces_df,
     evaluators=["dietary_compliance"],  # Built-in evaluator
-    model="gpt-4o"
+    model="gpt-5.6"
 )
 
 # Or create custom evaluator
 custom_evaluator = langwatch.evaluators.create(
     name="dietary_adherence",
     prompt=LABELING_PROMPT,
-    model="gpt-4o"
+    model="gpt-5.6"
 )
 
 results = langwatch.evaluate.batch(
@@ -1489,7 +1489,7 @@ client = OpenAI()
 labels = []
 for trace in traces:
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5.6",
         messages=[{"role": "user", "content": LABELING_PROMPT.format(**trace)}],
         temperature=0
     )
@@ -1669,7 +1669,7 @@ import langwatch
 judge_evaluator = langwatch.evaluators.create(
     name="dietary-judge-v1",
     prompt=judge_prompt_template,
-    model="gpt-4o",
+    model="gpt-5.6",
     temperature=0
 )
 
@@ -1839,7 +1839,7 @@ from phoenix.evals import llm_generate, OpenAIModel
 results = llm_generate(
     dataframe=all_traces_df,
     template=judge_prompt_template,
-    model=OpenAIModel(model="gpt-4o", temperature=0),
+    model=OpenAIModel(model="gpt-5.6", temperature=0),
     concurrency=20,
 )
 ```
@@ -1886,7 +1886,7 @@ client = openai.OpenAI()
 
 def run_judge(trace):
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5.6",
         messages=[{"role": "user", "content": judge_prompt.format(**trace)}],
         temperature=0,
     )
@@ -1934,7 +1934,7 @@ The model you pick as judge matters as much as the prompt. A few principles, rou
 
 1. **Prefer a judge at least as capable as the system under test, ideally stronger.** A judge has to fully understand the task to grade it. If your product runs on a fast cheap model, judging with a frontier model (Claude Opus 4.8, GPT-5.6, Gemini 3.1 Pro) usually buys you meaningfully higher agreement with human labels. A judge weaker than the generator tends to miss exactly the subtle failures you most need caught.
 2. **Use a different model family than the generator** to sidestep the self-preference bias above. This is in tension with "use the strongest model," so when the strongest model is also the one generating, either switch the generator's family for the judge or score with two judges from different families and look at where they disagree.
-3. **A cheap judge can still work, if you calibrate it.** "Strongest possible" is a starting point, not a mandate. A smaller or cheaper model (DeepSeek V4 Flash, Gemini 3.1 Flash, Claude Fable 5) can be a perfectly good judge *if it clears your TPR/TNR bar on the Test set*. The 7-step workflow is exactly the calibration that lets you trust a cheap judge: validate it, and if it hits the targets, the price tag is irrelevant to its validity. Many teams discover the cheap judge is within a point or two of the expensive one on a narrow, well-specified binary task, which is the common case for a compliance gate.
+3. **A cheap judge can still work, if you calibrate it.** "Strongest possible" is a starting point, not a mandate. A smaller or cheaper model (DeepSeek V4 Flash, Gemini 3.1 Flash, Claude Haiku 4.5) can be a perfectly good judge *if it clears your TPR/TNR bar on the Test set*. The 7-step workflow is exactly the calibration that lets you trust a cheap judge: validate it, and if it hits the targets, the price tag is irrelevant to its validity. Many teams discover the cheap judge is within a point or two of the expensive one on a narrow, well-specified binary task, which is the common case for a compliance gate.
 4. **Trade cost against agreement deliberately, and re-run the tradeoff at scale.** Judging every production trace with a frontier model can cost more than serving the product itself. The right move is usually a tiered pipeline: a cheap calibrated judge on 100% of traffic, escalating only disagreements or borderline cases to an expensive judge. Chapter 13 (Cost, Latency & Scaling Evals) covers this tiering, sampling, and caching in depth; treat judge-model choice as a cost decision as much as an accuracy one.
 
 The decision procedure: start with the strongest judge you can afford to establish a ceiling on achievable agreement, then test whether a cheaper judge gets within an acceptable margin of that ceiling on your Test set. If it does, ship the cheap one and bank the savings. If it does not, you have quantified exactly what the cheap judge is costing you in missed failures, which is a number you can put in front of a stakeholder.
@@ -3497,7 +3497,7 @@ for state_name in STATES:
     results = llm_generate(
         dataframe=spans_df,
         template=PromptTemplate(eval_prompt),
-        model=OpenAIModel(model="gpt-4o"),
+        model=OpenAIModel(model="gpt-5.6"),
         output_parser=parse_label_and_explanation,
     )
 
@@ -3532,7 +3532,7 @@ for state_name in STATES:
     evaluator = langwatch.evaluators.create(
         name=f"{state_name}_eval",
         prompt=eval_prompt,
-        model="gpt-4o"
+        model="gpt-5.6"
     )
 
     # Run evaluation
@@ -5165,7 +5165,7 @@ Evaluation is not free. Once you move from "I ran 50 evals by hand" to "I score 
 
 ### The Cost Problem {#the-cost-problem}
 
-Running GPT-4o as a judge on 10,000 traces is expensive. Here's how to manage costs:
+Running a frontier judge (Claude Opus 4.8, GPT-5.6) on 10,000 traces is expensive. Here's how to manage costs:
 
 #### Work the arithmetic before you architect
 
@@ -5209,25 +5209,17 @@ That spread is the whole chapter in one table: same coverage, **a 36x cost diffe
 
 ### Strategy 1: Use Cheaper Models for Judges {#strategy-1-cheaper-judges}
 
-Not every eval needs the best model:
+Not every eval needs the best model. **The rule:** start with a strong judge to establish the quality ceiling, validate the prompt, then test whether a cheaper model gives similar TPR/TNR. Often it does.
 
-| Judge Model | Cost (per 1K traces) | When to Use |
-|---|---|---|
-| GPT-4o / Claude Opus | ~$5-15 | Complex subjective judgments, safety-critical |
-| GPT-4o-mini / Claude Haiku | ~$0.50-1.50 | Clear-cut criteria, well-defined rubrics |
-| Code-based | $0 | Format checks, pattern matching, validation |
+#### The judge-tier ladder (capability vs cost vs agreement)
 
-**Tip:** Start with a strong model, validate your judge prompt, then test if a cheaper model gives similar TPR/TNR. Often it does.
-
-#### A fuller judge-tier ladder (capability vs cost vs agreement)
-
-The two-row table above is the right idea but too coarse to plan with. Here is the ladder most teams actually choose between in 2026. "Agreement with humans" is Cohen's kappa against a gold-labeled set; treat the numbers as the *typical band you should expect to measure*, not a promise, because agreement is task-specific and you must verify it yourself (see below).
+Here is the ladder most teams actually choose between in 2026. "Agreement with humans" is Cohen's kappa against a gold-labeled set; treat the numbers as the *typical band you should expect to measure*, not a promise, because agreement is task-specific and you must verify it yourself (see below).
 
 | Tier | Example judge (June 2026) | Rel. cost/eval | Typical human agreement (kappa) | Best for | Where it breaks |
 |---|---|---|---|---|---|
 | Code / deterministic | regex, JSON schema, `assert` | $0 | n/a (exact) | Format, length, profanity lists, required-field presence, valid SQL parse | Anything subjective; brittle to paraphrase |
 | Embedding / classifier | `text-embedding-3-large` + threshold, a fine-tuned DistilBERT toxicity head | ~$0.0001 | 0.55-0.75 on narrow tasks | Topic/PII routing, toxicity gate, "is this on-topic" | No reasoning; one threshold rarely fits all classes |
-| Tiny LLM judge | Gemini 3.1 Flash, DeepSeek V4 Flash, Claude Fable 5 | ~$0.0005 | 0.60-0.80 on clear rubrics | Well-defined yes/no rubrics, pairwise "A or B better" | Subtle factuality, multi-step reasoning, long context |
+| Tiny LLM judge | Gemini 3.1 Flash, DeepSeek V4 Flash, Claude Haiku 4.5 | ~$0.0005 | 0.60-0.80 on clear rubrics | Well-defined yes/no rubrics, pairwise "A or B better" | Subtle factuality, multi-step reasoning, long context |
 | Mid LLM judge | GPT-5.5 mini, Gemini 3.1 Pro | ~$0.003-0.009 | 0.70-0.85 | Most production grading: helpfulness, groundedness with retrieved context | Adversarial safety, expert-domain correctness |
 | Frontier judge | Claude Opus 4.8, GPT-5.6, DeepSeek V4 Pro (reasoning) | ~$0.015-0.020 | 0.80-0.90 | Safety-critical, nuanced subjective calls, building the gold set itself | Cost at scale; still not a substitute for human sign-off on high-stakes |
 
@@ -5359,13 +5351,13 @@ Run cheap evals on everything, expensive evals on a sample:
 # Tier 1: Run on ALL traces (code-based, free)
 tier1_results = [eval_format(t) for t in all_traces]
 
-# Tier 2: Run on traces that passed Tier 1 (cheap LLM, ~$0.50/1K)
+# Tier 2: Run on traces that passed Tier 1 (cheap LLM, ~$1.50/1K)
 tier1_passed = [t for t, r in zip(all_traces, tier1_results) if r['passed']]
-tier2_results = run_llm_eval(tier1_passed, model="gpt-4o-mini")
+tier2_results = run_llm_eval(tier1_passed, model="gpt-5.5-mini")
 
-# Tier 3: Run on a sample (expensive LLM, ~$5/1K)
+# Tier 3: Run on a sample (expensive LLM, ~$15/1K)
 sample = random.sample(tier1_passed, 500)
-tier3_results = run_llm_eval(sample, model="gpt-4o")
+tier3_results = run_llm_eval(sample, model="gpt-5.6")
 ```
 
 #### The cascade as a funnel: cheap filters out the obvious, expensive judges the survivors
@@ -5471,7 +5463,7 @@ Rule of thumb: cache freely for deterministic code checks and for prompt prefixe
 | Regex/code checks | <1ms | Yes |
 | Embedding similarity | 10-50ms | Yes |
 | Small LLM (Haiku-class) | 200-500ms | Marginal (adds noticeable delay) |
-| Large LLM (GPT-4o-class) | 1-3s | No (use offline only) |
+| Large LLM (GPT-5.6 / Opus 4.8-class) | 1-3s | No (use offline only) |
 
 Offline eval cares about *cost*; online eval (a guardrail in the request path) cares about *cost and latency*, and latency is the harder constraint. Every millisecond a guardrail adds is felt by the user on every request, so the discipline here is a strict budget, not a vibe.
 
@@ -5510,7 +5502,7 @@ Frontier LLMs (1-3s) are simply too slow to block on. The inline tier is built f
 
 - **Code and regex** (<1ms): blocklists, schema validity, length, required disclaimers. Free and instant; always your first line.
 - **Fine-tuned classifiers / embedding gates** (10-50ms): a DistilBERT-class toxicity or jailbreak head, or an embedding-similarity check against known-bad patterns. This is the sweet spot for input guardrails: near-LLM quality on a *narrow* task at classifier speed and cost. Llama Guard-style small safety classifiers live here.
-- **Tiny LLMs** (Gemini 3.1 Flash, Claude Fable 5, ~150-400ms): use when a check genuinely needs language understanding the classifier lacks, and only on the *output* side where you have already paid the generation latency. Even here, prefer it as a fast-fail: short prompt, `max_tokens` capped at a one-word verdict, `temperature=0`.
+- **Tiny LLMs** (Gemini 3.1 Flash, Claude Haiku 4.5, ~150-400ms): use when a check genuinely needs language understanding the classifier lacks, and only on the *output* side where you have already paid the generation latency. Even here, prefer it as a fast-fail: short prompt, `max_tokens` capped at a one-word verdict, `temperature=0`.
 - **Frontier LLMs:** offline/async only. The moment you put a 2s Opus call in the request path you have doubled your latency; do not.
 
 #### Streaming considerations
@@ -6623,11 +6615,13 @@ Return your evaluation as JSON:
 
 | Model Tier | When to Use | Typical Accuracy |
 |------------|------------|-----------------|
-| GPT-4o / Claude Sonnet 4.6 | High-stakes evals, complex reasoning | 85–95% |
-| GPT-4o-mini / Claude Haiku | Cost-sensitive, high-volume evals | 75–90% |
-| Open-source (Llama, Mistral) | Self-hosted, privacy-sensitive | 70–85% |
+| Claude Opus 4.8 / GPT-5.6 | High-stakes evals, complex reasoning | 85–95% |
+| GPT-5.5 mini / Gemini 3.1 Flash / DeepSeek V4 Flash | Cost-sensitive, high-volume evals | 75–90% |
+| Open-weight (Llama 4, Qwen 3.x, GLM-5.2) | Self-hosted, privacy-sensitive | 70–85% |
 
 **Tip:** Start with the most capable model to establish a performance ceiling. Then test whether a cheaper model can match it for your specific use case. Often it can, especially with good few-shot examples.
+
+For prices and the validation protocol for stepping down a tier, see the judge-tier ladder in Chapter 13.
 
 ### 10. Prompt Versioning
 
@@ -6656,7 +6650,7 @@ langwatch.prompts.create(
     name="dietary-judge-v3",
     description="Added edge cases for keto",
     template=judge_prompt_text,
-    model="gpt-4o",
+    model="gpt-5.6",
     temperature=0,
 )
 
@@ -6744,7 +6738,7 @@ from phoenix.evals import OpenAIModel, PromptTemplate, llm_generate, llm_classif
 results = llm_generate(
     dataframe=traces_df,
     template=PromptTemplate("Evaluate: {input}"),
-    model=OpenAIModel(model="gpt-4o"),
+    model=OpenAIModel(model="gpt-5.6"),
     output_parser=my_parser,
     concurrency=20,
 )
@@ -6760,7 +6754,7 @@ prompt = await px_client.prompts.create(
     version=PromptVersion(
         [{"role": "system", "content": "..."},
          {"role": "user", "content": "{{question}}"}],
-        model_name="gpt-4o",
+        model_name="gpt-5.6",
     ),
 )
 ```
@@ -6807,8 +6801,8 @@ spans_df = langwatch.get_spans(
 # Get spans within a time range
 spans_df = langwatch.get_spans(
     filters={
-        "timestamp_gte": "2025-02-01",
-        "timestamp_lte": "2025-02-09"
+        "timestamp_gte": "2026-06-01",
+        "timestamp_lte": "2026-06-09"
     }
 )
 ```
@@ -6890,7 +6884,7 @@ prompt = langwatch.prompts.create(
         {"role": "system", "content": "You are a recipe assistant..."},
         {"role": "user", "content": "{{question}}"}
     ],
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     temperature=0.7
 )
 
@@ -7009,7 +7003,7 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 
 | Day | Activity | Time | Role Focus |
 |-----|----------|------|------------|
-| 1 | Pick your platform (Phoenix or Langfuse), install it | 1h | All |
+| 1 | Pick your platform (Phoenix, LangWatch, or Langfuse), install it | 1h | All |
 | 2 | Instrument your app with auto-tracing | 2h | Engineer |
 | 2 | Browse the trace viewer UI, understand traces visually | 1h | PM/QA |
 | 3 | Create a test dataset with dimensional sampling | 2h | All |
@@ -7084,7 +7078,7 @@ Real lessons from implementing complete eval pipelines in production:
 
 9. **Safety evals are not optional** - Prompt injection, PII leakage, and jailbreak detection should be running before you worry about quality evals.
 
-10. **Start expensive, then optimize** - Use GPT-4o/Claude Sonnet to establish your performance ceiling, then test whether a cheaper model can match it. Often it can.
+10. **Start expensive, then optimize** - Use a frontier judge (Claude Opus 4.8 or GPT-5.6) to establish your performance ceiling, then test whether a cheaper model can match it. Often it can.
 
 11. **Sampling beats exhaustive evaluation** - Evaluating 10% of traces with statistical rigor gives you a better answer than evaluating 100% with a bad judge.
 
@@ -7206,4 +7200,4 @@ This guide was built on the foundation of the following people's work and ideas.
 
 *This guide was inspired by and builds upon the AI Evals for Engineers & PMs course by Hamel Husain and Shreya Shankar, extended with additional research, production-ready code examples, and multi-platform guides covering Phoenix, LangWatch, Langfuse, and the broader eval tooling ecosystem.*
 
-*Author: Om Bharatiya | Created: February 2026*
+*Author: Om Bharatiya | Created: February 2026 | Last updated: June 2026*
