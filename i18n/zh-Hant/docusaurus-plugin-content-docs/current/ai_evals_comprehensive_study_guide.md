@@ -68,7 +68,7 @@ AI 社群裡有一個爭論：有些人說「直接憑感覺檢查你的 app 就
 
 **每個人都需要評估。** 那些說自己不需要評估的人，其實正在享受別人在上游已經做好的評估成果。
 
-舉例：如果你正在用 GPT-4 打造一個程式碼助手，OpenAI 早已在大量的程式碼基準測試上測試過 GPT-4。所以你可以「憑感覺檢查」你的 app。但對於大多數不只是單純使用基礎模型的應用來說，你需要自己的評估。
+舉例：如果你正在用 GPT-5.6 打造一個程式碼助手，OpenAI 早已在大量的程式碼基準測試上測試過 GPT-5.6。所以你可以「憑感覺檢查」你的 app。但對於大多數不只是單純使用基礎模型的應用來說，你需要自己的評估。
 
 #### 上游評估的微妙之處（為什麼「我不需要評估」只說對了一半）
 
@@ -392,6 +392,28 @@ ASSISTANT RESPONSE:
 - **LangWatch：** 雲端或自架，設定最快（3 行整合），並內建 40 多個評估器。
 - **Langfuse：** 雲端或自架，對自訂管線最具彈性，擁有最大的社群與最多的整合。
 
+### 可攜性層：OpenTelemetry GenAI 語意慣例 {#otel-genai-semconv}
+
+在你決定投入某個平台之前，還有一件事要確認：你的儀器化（instrumentation）能不能活得比平台久。本指南的三個平台都講 OpenTelemetry，而到了 2026 年，OTel 的 **GenAI 語意慣例**（LLM span 的標準屬性名稱）已經穩定到可以作為設計基準。用標準屬性做一次儀器化，你的軌跡就能在後端之間搬移，甚至同時餵給兩個後端，完全不用動應用程式碼。
+
+實務上真正重要的屬性：
+
+| 屬性 | 記錄什麼 | 範例 |
+|---|---|---|
+| `gen_ai.operation.name` | 操作的種類 | `chat`、`embeddings`、`execute_tool` |
+| `gen_ai.request.model` / `gen_ai.response.model` | 請求的模型 vs 實際回答的模型 | `gpt-5.5-mini` |
+| `gen_ai.usage.input_tokens` / `gen_ai.usage.output_tokens` | token 數，一切成本儀表板的基礎 | `2500` / `300` |
+| `gen_ai.input.messages` / `gen_ai.output.messages` | 提示與回應的完整內容（選擇性啟用：有 PII 疑慮，見上文） | 完整訊息陣列 |
+| `gen_ai.tool.name` | agent 呼叫了哪個工具 | `get_availability` |
+
+為什麼這對評估特別重要：
+
+1. **你的歷史撐得過平台更換。** 評估資料集是從軌跡建出來的。標準屬性讓去年的軌跡在遷移後仍然可以查詢，黃金資料集與回歸集不會跟著舊後端一起陪葬。
+2. **一次儀器化，多方使用。** 生產環境常見的模式是把同一條 OTLP 串流同時送進追蹤平台（給人看）與便宜的物件儲存（供日後重新處理）。標準屬性讓兩邊都變得輕而易舉。
+3. **混用框架不再等於混用 schema。** Phoenix 的 OpenInference instrumentor、Langfuse 的 OTLP 端點、LangWatch 的 collector 都對應或接受這套慣例，所以一個 LangChain 服務和一個手刻的服務可以落在同一批儀表板裡。
+
+但要注意：這套慣例涵蓋的是*遙測*，不是工作流程。資料集、實驗、標註佇列與提示管理仍然是各平台專屬的 API（附錄 F）。span 用標準的，其餘的接受平台 SDK。
+
 ### 設定 Phoenix（開源、自架）
 
 Phoenix 是一個建構在 OpenTelemetry 之上的開源 AI 可觀測性平台。它提供追蹤、評估、資料集、實驗與提示管理，而且全部免費。
@@ -428,7 +450,7 @@ client = openai.OpenAI()
 
 # This call is automatically traced by Phoenix!
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -488,7 +510,7 @@ import openai
 client = openai.OpenAI()
 
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -557,7 +579,7 @@ client = OpenAI()
 
 # This call is automatically traced by Langfuse
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -601,7 +623,7 @@ prompt = await px_client.prompts.create(
     prompt_description="Basic recipe assistant prompt",
     version=PromptVersion(
         [{"role": "system", "content": "You are a recipe assistant..."}],
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.5-mini",
     ),
 )
 ```
@@ -618,7 +640,7 @@ langwatch.prompts.create(
         {"role": "system", "content": "You are a recipe assistant..."},
         {"role": "user", "content": "{{question}}"}
     ],
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     temperature=0.7
 )
 
@@ -898,7 +920,7 @@ Generate 1 unique, realistic query:"""
 queries = []
 for t in dimension_tuples:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         messages=[{"role": "user", "content": QUERY_GEN_PROMPT.format(
             tuple_description=str(t)
         )}],
@@ -921,7 +943,7 @@ Generate 1 unique, realistic query:
 queries_result = llm_generate(
     dataframe=query_df,
     template=query_template,
-    model=OpenAIModel(model="gpt-4o-mini", temperature=0.9)
+    model=OpenAIModel(model="gpt-5.5-mini", temperature=0.9)
 )
 ```
 
@@ -941,7 +963,7 @@ queries = []
 for t in dimension_tuples:
     result = langwatch.completion(
         prompt=QUERY_GEN_PROMPT.format(tuple_description=str(t)),
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         temperature=0.9
     )
     queries.append(result.text)
@@ -957,7 +979,7 @@ client = OpenAI()  # Auto-traced
 queries = []
 for t in dimension_tuples:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         messages=[{"role": "user", "content": QUERY_GEN_PROMPT.format(
             tuple_description=str(t)
         )}],
@@ -1466,14 +1488,14 @@ import langwatch
 results = langwatch.evaluate.batch(
     dataset=traces_df,
     evaluators=["dietary_compliance"],  # Built-in evaluator
-    model="gpt-4o"
+    model="gpt-5.6"
 )
 
 # Or create custom evaluator
 custom_evaluator = langwatch.evaluators.create(
     name="dietary_adherence",
     prompt=LABELING_PROMPT,
-    model="gpt-4o"
+    model="gpt-5.6"
 )
 
 results = langwatch.evaluate.batch(
@@ -1494,7 +1516,7 @@ client = OpenAI()
 labels = []
 for trace in traces:
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5.6",
         messages=[{"role": "user", "content": LABELING_PROMPT.format(**trace)}],
         temperature=0
     )
@@ -1674,7 +1696,7 @@ import langwatch
 judge_evaluator = langwatch.evaluators.create(
     name="dietary-judge-v1",
     prompt=judge_prompt_template,
-    model="gpt-4o",
+    model="gpt-5.6",
     temperature=0
 )
 
@@ -1756,6 +1778,8 @@ TPR = True Positives / (True Positives + False Negatives)
 TNR = True Negatives / (True Negatives + False Positives)
 ```
 
+> **注意本書的慣例：這裡的「positive」指的是 PASS。** TPR 講的是正確認出*好的*軌跡；TNR 講的是正確抓到*壞的*軌跡。這跟 QA 的直覺（positive = 抓到缺陷）正好相反：在這裡，**false positive 是漏掉的缺陷**（真的失敗卻被 judge 判成 PASS），**false negative 是誤報**（好的軌跡被 judge 判成 FAIL）。防護機制的文獻（以及第 13 章便宜評審的驗證流程）通常反過來計，以 1 = fail/flag。兩種慣例都沒有錯；沒標明是哪一種才危險。任何人引用 TPR 時，先要求他說清楚「positive」指什麼。
+
 ### 真實結果：為什麼迭代很重要
 
 **經過仔細的提示迭代後（生產等級品質的 judge）：**
@@ -1802,8 +1826,8 @@ Test Set Performance:
 1. **在 Dev 集上測試你的 judge**
 2. **計算 TPR 和 TNR**
 3. **檢視錯誤：**
-   - 它在哪裡漏掉了真正的失敗？（False Negatives，偽陰性）
-   - 它在哪裡誤報了？（False Positives，偽陽性）
+   - 它在哪裡漏掉了真正的失敗？（False Positives，偽陽性）
+   - 它在哪裡誤報了？（False Negatives，偽陰性）
 4. **更新提示：**
    - 將漏掉的情境加入評估標準
    - 將誤報的情境加入「NOT a failure」（不算失敗）區段
@@ -1842,7 +1866,7 @@ from phoenix.evals import llm_generate, OpenAIModel
 results = llm_generate(
     dataframe=all_traces_df,
     template=judge_prompt_template,
-    model=OpenAIModel(model="gpt-4o", temperature=0),
+    model=OpenAIModel(model="gpt-5.6", temperature=0),
     concurrency=20,
 )
 ```
@@ -1889,7 +1913,7 @@ client = openai.OpenAI()
 
 def run_judge(trace):
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5.6",
         messages=[{"role": "user", "content": judge_prompt.format(**trace)}],
         temperature=0,
     )
@@ -1937,7 +1961,7 @@ with ThreadPoolExecutor(max_workers=20) as executor:
 
 1. **優先選一個至少與受測系統一樣強、最好更強的 judge。** judge 必須完全理解任務才能評定它。如果你的產品跑在一個快速又便宜的模型上，用前沿模型（Claude Opus 4.8、GPT-5.6、Gemini 3.1 Pro）來評判，通常能換來與人類標註明顯更高的一致度。一個比生成器更弱的 judge，往往會正好漏掉那些你最需要抓出來的細微失敗。
 2. **使用與生成器不同的模型家族**，以避開上面提到的自我偏好偏誤。這會與「用最強的模型」產生張力，所以當最強的模型同時就是負責生成的那一個時，要嘛把生成器的家族換成 judge，要嘛用來自不同家族的兩個 judge 評分，並觀察它們意見相左的地方。
-3. **便宜的 judge 一樣可以用，前提是你有校準它。** 「盡可能最強」是個起點，不是強制規定。一個較小或較便宜的模型（DeepSeek V4 Flash、Gemini 3.1 Flash、Claude Fable 5）「只要它在 Test 集上跨過你的 TPR/TNR 門檻」，就可以是一個完全合格的 judge。那套 7 步驟工作流程，正是讓你能信任一個便宜 judge 的校準程序：驗證它，如果它達到目標，價格標籤對它的有效性就毫無影響。許多團隊會發現，在一個範圍狹窄、規格明確的二元任務上，便宜的 judge 與昂貴的只差一兩個百分點，而這正是合規閘門最常見的情況。
+3. **便宜的 judge 一樣可以用，前提是你有校準它。** 「盡可能最強」是個起點，不是強制規定。一個較小或較便宜的模型（DeepSeek V4 Flash、Gemini 3.1 Flash、Claude Haiku 4.5）「只要它在 Test 集上跨過你的 TPR/TNR 門檻」，就可以是一個完全合格的 judge。那套 7 步驟工作流程，正是讓你能信任一個便宜 judge 的校準程序：驗證它，如果它達到目標，價格標籤對它的有效性就毫無影響。許多團隊會發現，在一個範圍狹窄、規格明確的二元任務上，便宜的 judge 與昂貴的只差一兩個百分點，而這正是合規閘門最常見的情況。
 4. **刻意地在成本與一致度之間做取捨，並在規模化時重新評估這個取捨。** 用前沿模型評判每一筆生產軌跡，可能比提供產品本身還貴。正確的做法通常是一條分層管線：用一個便宜、已校準的 judge 處理 100% 的流量，只把意見相左或邊界案例升級給昂貴的 judge。第 13 章（Cost, Latency & Scaling Evals）會深入探討這種分層、抽樣與快取；把 judge 模型的選擇當成一個成本決策，跟它是準確度決策一樣看待。
 
 決策程序：先從你負擔得起的最強 judge 開始，藉此確立可達成的一致度上限，然後測試一個較便宜的 judge 在你的 Test 集上能不能落在那個上限可接受的誤差範圍內。如果可以，就推出便宜的那個，把省下來的成本收進口袋。如果不行，你就已經精確量化出這個便宜 judge 在漏掉的失敗上讓你付出多少代價，而那是一個你可以擺在利害關係人面前的數字。
@@ -3503,7 +3527,7 @@ for state_name in STATES:
     results = llm_generate(
         dataframe=spans_df,
         template=PromptTemplate(eval_prompt),
-        model=OpenAIModel(model="gpt-4o"),
+        model=OpenAIModel(model="gpt-5.6"),
         output_parser=parse_label_and_explanation,
     )
 
@@ -3538,7 +3562,7 @@ for state_name in STATES:
     evaluator = langwatch.evaluators.create(
         name=f"{state_name}_eval",
         prompt=eval_prompt,
-        model="gpt-4o"
+        model="gpt-5.6"
     )
 
     # Run evaluation
@@ -3911,13 +3935,18 @@ def run_simulated_conversation(assistant_fn, max_turns=12):
 
 隨著成熟度提升，還有兩個值得加入：**解決率**（到達了明確結束狀態的對話，無論是完成或正確升級，相對於那些未解決就淡出的對話）以及**升級精確率／召回率**（在本應升級的對話中有多少升級了，而在升級之中又有多少是正當的）。
 
+**pass^k（重複執行可靠度）。** Agent 與多輪系統是隨機的：同一個情境可能週一通過、週二失敗。把每個情境跑 k 次（k=4 是常見的預算），回報 pass^k：*k 次全部*成功的情境所佔比例。
+公式：`pass^k = (k 次中 k 次都成功的情境數) / (情境總數)`。如果單次成功機率是 p，pass^k 的期望值就是 p^k：一個 90% 機率通過某情境的系統，在 pass^4 之下只有 66% 的可靠度。
+目標：取決於你對不穩定（flakiness）的容忍度；核心情境套件達到 >= 0.80 的 pass^4，對面向客戶的助理來說是紮實的門檻。
+如何衡量：把合成情境（策略 3）各重跑 k 次、每次重新取樣（不要用快取），統計每個情境的成功次數。單次通過率與 pass^k 之間的落差*就是*被量化出來的不穩定度。落差很大就代表：先去獵捕非決定性（temperature、檢索抖動、工具的競態條件），再去獵捕能力問題。
+
 #### 工具：追蹤讓多輪可被除錯
 
 彙整出來的比率告訴你有東西回歸了；追蹤（trace）告訴你是哪一輪、為什麼。把一段對話當成單一個 trace、每輪一個 span（再用子 span 表示檢索與工具呼叫），這樣你就能重播模型在出錯那一輪所看到的確切對話記錄。這就是「矛盾率上升了 3 個百分點」和「在工作階段 abc123 裡，第 5 輪與第 2 輪矛盾，因為檢索回傳了一個過時的政策片段」之間的差別。
 
 - **Phoenix（Arize）：**開源、以 OpenTelemetry 為基礎。把 span 歸組在一個 session／trace id 之下，它就會把整段多輪對話渲染出來；把評判結果以 span 標註的形式附上，這樣一個矛盾失敗的判決就會直接連到出問題的那一輪。對本地／離線迭代很強。
 - **Langfuse：**開源，第一等公民的 **sessions** 把多輪縫成單一條時間軸，搭配逐輪分數與以資料集為本的評估執行。適合長期追蹤某個指標跨越各提示版本的變化。
-- **LangWatch：**託管式，主打對話層級分析與線上護欄；當你想要上面那些比率的生產儀表板、外加對突增的告警時很有用。
+- **LangWatch：**開源、亦有託管雲端，主打對話層級分析與線上護欄；當你想要上面那些比率的生產儀表板、外加對突增的告警時很有用。
 
 無論你用哪一個，不可妥協的幾點是：一個串起各輪次的穩定 session id、每輪儲存的已解析提示（檢索後、截斷後）以便你看到模型實際上是以什麼為條件來生成的、以及附在特定輪次上的評判判決，好讓定位性一路存續到你的儀表板裡。
 
@@ -5179,7 +5208,7 @@ PM 與 QA 往往能產出比工程師更好的標籤，因為：
 
 ### 成本問題 {#the-cost-problem}
 
-在 10,000 筆追蹤紀錄上用 GPT-4o 當評審所費不貲。以下是控制成本的方法：
+在 10,000 筆追蹤紀錄上用旗艦評審（Claude Opus 4.8、GPT-5.6）所費不貲。以下是控制成本的方法：
 
 #### 在動手架構之前，先把算術算清楚
 
@@ -5223,25 +5252,17 @@ PM 與 QA 往往能產出比工程師更好的標籤，因為：
 
 ### 策略 1：用較便宜的模型當評審 {#strategy-1-cheaper-judges}
 
-並非每個評估都需要最好的模型：
+並非每個評估都需要最好的模型。**原則：** 先用強大的評審建立品質上限，驗證你的評審提示，然後測試較便宜的模型是否能給出相近的 TPR/TNR。通常是可以的。
 
-| 評審模型 | 成本（每 1K 筆追蹤） | 何時使用 |
-|---|---|---|
-| GPT-4o / Claude Opus | 約 $5-15 | 複雜的主觀判斷、安全關鍵情境 |
-| GPT-4o-mini / Claude Haiku | 約 $0.50-1.50 | 明確的標準、定義良好的評分準則 |
-| 基於程式碼 | $0 | 格式檢查、模式比對、驗證 |
+#### 評審分級階梯（能力 vs 成本 vs 一致性）
 
-**提示：** 先從強大的模型開始，驗證你的評審提示，然後測試較便宜的模型是否能給出相近的 TPR/TNR。通常是可以的。
-
-#### 更完整的評審分級階梯（能力 vs 成本 vs 一致性）
-
-上面那張兩列的表方向是對的，但太粗略，沒法拿來規劃。以下是 2026 年大多數團隊實際上會在其中做取捨的階梯。「與人類的一致性」是相對於一份金標籤集（gold-labeled set）的 Cohen's kappa；把這些數字當成「你應該預期量到的典型區間」，而不是承諾，因為一致性是因任務而異的，你必須自己驗證（見下文）。
+以下是 2026 年大多數團隊實際上會在其中做取捨的階梯。「與人類的一致性」是相對於一份金標籤集（gold-labeled set）的 Cohen's kappa；把這些數字當成「你應該預期量到的典型區間」，而不是承諾，因為一致性是因任務而異的，你必須自己驗證（見下文）。
 
 | 級別 | 範例評審（2026 年 6 月） | 相對每次評估成本 | 典型人類一致性（kappa） | 最適合 | 哪裡會失靈 |
 |---|---|---|---|---|---|
 | 程式碼／確定性 | regex、JSON schema、`assert` | $0 | 不適用（精確） | 格式、長度、髒話清單、必填欄位是否存在、合法 SQL 解析 | 任何主觀的東西；對換句話說很脆弱 |
 | 嵌入／分類器 | `text-embedding-3-large` + 閾值、微調過的 DistilBERT 毒性偵測頭 | 約 $0.0001 | 窄任務上 0.55-0.75 | 主題／PII 路由、毒性閘門、「這是否切題」 | 沒有推理能力；單一閾值很少能適配所有類別 |
-| 微型 LLM 評審 | Gemini 3.1 Flash、DeepSeek V4 Flash、Claude Fable 5 | 約 $0.0005 | 清楚評分準則上 0.60-0.80 | 定義明確的是／非評分準則、成對的「A 或 B 較好」 | 細微的事實性、多步推理、長脈絡 |
+| 微型 LLM 評審 | Gemini 3.1 Flash、DeepSeek V4 Flash、Claude Haiku 4.5 | 約 $0.0005 | 清楚評分準則上 0.60-0.80 | 定義明確的是／非評分準則、成對的「A 或 B 較好」 | 細微的事實性、多步推理、長脈絡 |
 | 中階 LLM 評審 | GPT-5.5 mini、Gemini 3.1 Pro | 約 $0.003-0.009 | 0.70-0.85 | 大多數生產評分：有用性、帶檢索脈絡的有據性（groundedness） | 對抗式安全、專家領域正確性 |
 | 前沿評審 | Claude Opus 4.8、GPT-5.6、DeepSeek V4 Pro（推理） | 約 $0.015-0.020 | 0.80-0.90 | 安全關鍵、細膩的主觀判斷、以及建立金標集本身 | 規模化下的成本；在高風險情境下仍無法取代人工簽核 |
 
@@ -5257,7 +5278,7 @@ PM 與 QA 往往能產出比工程師更好的標籤，因為：
 2. **用兩個評審都為這份金標集評分。** 把人類標籤當成真值。
 3. **計算一致性指標**，而不只是準確率（accuracy）。當類別不平衡時準確率會騙人（如果 95% 的追蹤都通過，一個永遠說「通過」的評審準確率有 95%，卻毫無用處）。
 
-關鍵指標，附公式與目標值：
+關鍵指標，附公式與目標值。注意慣例在這裡翻轉了：驗證閘門時，positive 類別是 **1 = fail/flag**（你量的是*偵測器*），所以這裡的 TPR 是對壞類別的召回率，與第 4 章以 PASS 為 positive 的設定互為鏡像（見該章的慣例說明框）：
 
 - **TPR（召回率 / 敏感度）** = TP / (TP + FN)。「在真正壞的追蹤裡，評審抓到了多少？」對一個安全閘門，你會想要 **>= 0.95**；漏掉壞輸出才是昂貴的失敗。
 - **TNR（特異度）** = TN / (TN + FP)。「在真正好的追蹤裡，它正確放行了多少？」TNR 低代表會有假警報，浪費審查者時間；防護機制要瞄準 **>= 0.90**，才不會狼來了喊太多次。
@@ -5373,13 +5394,13 @@ def required_n(margin=0.03, conf_z=1.96, p=0.5):
 # Tier 1: Run on ALL traces (code-based, free)
 tier1_results = [eval_format(t) for t in all_traces]
 
-# Tier 2: Run on traces that passed Tier 1 (cheap LLM, ~$0.50/1K)
+# Tier 2: Run on traces that passed Tier 1 (cheap LLM, ~$1.50/1K)
 tier1_passed = [t for t, r in zip(all_traces, tier1_results) if r['passed']]
-tier2_results = run_llm_eval(tier1_passed, model="gpt-4o-mini")
+tier2_results = run_llm_eval(tier1_passed, model="gpt-5.5-mini")
 
-# Tier 3: Run on a sample (expensive LLM, ~$5/1K)
+# Tier 3: Run on a sample (expensive LLM, ~$15/1K)
 sample = random.sample(tier1_passed, 500)
-tier3_results = run_llm_eval(sample, model="gpt-4o")
+tier3_results = run_llm_eval(sample, model="gpt-5.6")
 ```
 
 #### 把級聯（cascade）想成漏斗：便宜的濾掉顯而易見的，昂貴的評判倖存者
@@ -5485,7 +5506,7 @@ def cache_key(trace, judge_model):
 | 正規表示式/程式碼檢查 | <1ms | 是 |
 | 嵌入相似度 | 10-50ms | 是 |
 | 小型 LLM（Haiku 等級） | 200-500ms | 勉強（會增加可察覺的延遲） |
-| 大型 LLM（GPT-4o 等級） | 1-3s | 否（僅供離線使用） |
+| 大型 LLM（GPT-5.6 / Opus 4.8 等級） | 1-3s | 否（僅供離線使用） |
 
 離線評估在乎的是*成本*；線上評估（位於請求路徑上的防護機制）在乎的是*成本與延遲*，而延遲是比較難搞的限制。防護機制每多加一毫秒，使用者在每一次請求都會感受到，所以這裡的紀律是一個嚴格的預算，而不是憑感覺。
 
@@ -5524,7 +5545,7 @@ async def guard_input(text):
 
 - **程式碼與 regex**（<1ms）：封鎖清單、schema 有效性、長度、必要的免責聲明。免費又即時；永遠是你的第一道防線。
 - **微調過的分類器／嵌入閘門**（10-50ms）：一個 DistilBERT 等級的毒性或越獄偵測頭，或一個對照已知壞模式的嵌入相似度檢查。這是輸入防護機制的甜蜜點：在*窄*任務上以分類器的速度與成本，達到接近 LLM 的品質。Llama Guard 式的小型安全分類器就屬於這一類。
-- **微型 LLM**（Gemini 3.1 Flash、Claude Fable 5，約 150-400ms）：當一個檢查真的需要分類器所缺乏的語言理解時才用，而且只用在*輸出*側，因為你在那裡已經付過生成延遲了。即使在這裡，也偏好把它當成快速失敗（fast-fail）：短提示、`max_tokens` 限制成一個單詞判定、`temperature=0`。
+- **微型 LLM**（Gemini 3.1 Flash、Claude Haiku 4.5，約 150-400ms）：當一個檢查真的需要分類器所缺乏的語言理解時才用，而且只用在*輸出*側，因為你在那裡已經付過生成延遲了。即使在這裡，也偏好把它當成快速失敗（fast-fail）：短提示、`max_tokens` 限制成一個單詞判定、`temperature=0`。
 - **前沿 LLM：** 只供離線／非同步。你一旦把一次 2 秒的 Opus 呼叫放進請求路徑，你就讓延遲翻倍了；別這麼做。
 
 #### 串流（streaming）的考量
@@ -5995,7 +6016,7 @@ plot_dashboard(failure_rates)
 
 **代價：** 你以極高的精準度衡量了錯誤的東西。每一個下游產物（評審、儀表板、告警）都建立在對「什麼會失敗」的猜測之上，所以它一片自信的綠燈，而真正的失敗卻無人衡量。你通常要等到客戶申訴升級之後才會發現這件事。
 
-**修正方式：** 永遠從開放式編碼的錯誤分析開始。靜下心來檢視真實的追蹤紀錄，用你自己的話標註實際出了什麼錯，然後做分群。只為你「親眼看過」的失敗模式建立評審，而不是你「想像」的那些。見第 2 章。
+**修正方式：** 永遠從開放式編碼的錯誤分析開始。靜下心來檢視真實的追蹤紀錄，用你自己的話標註實際出了什麼錯，然後做分群。只為你「親眼看過」的失敗模式建立評審，而不是你「想像」的那些。見第 3 章。
 
 **嗅探測試：** 如果你無法說出你前三大的失敗模式，並各自附上一個大略的發生頻率，那你就是跳過了錯誤分析。
 
@@ -6009,7 +6030,7 @@ plot_dashboard(failure_rates)
 
 **代價：** 你上線了一個找不到你當初打造它就是要找的那些失敗的評審，而且你還信任它，因為那個頭條數字很高。這個偏差在你逐一稽核每一筆標記之前都是看不見的。
 
-**修正方式：** 永遠在一個類別平衡的已標註資料集上，分別計算 TPR（對真實失敗的召回率）與 TNR（特異度）。兩者都必須通過你的標準（見第 4 章的目標值）。把它們成對回報，絕不要塌縮成單一的準確率數字。
+**修正方式：** 永遠在一個類別平衡的已標註資料集上，分別計算 TPR 與 TNR：TPR 告訴你好的軌跡有沒有被認出來（誤報少），TNR 告訴你真實的失敗有沒有被抓到。兩者都必須通過你的標準（見第 4 章的目標值）。把它們成對回報，絕不要塌縮成單一的準確率數字。
 
 **嗅探測試：** 如果你的驗證只有一個數字，那它就是錯的數字。
 
@@ -6069,19 +6090,19 @@ plot_dashboard(failure_rates)
 
 **嗅探測試：** 如果團隊瞄一眼評估儀表板就把視線移開，那就代表你的評估太多、信任太少。
 
-### 錯誤 #7：低 TNR（忽略偽陽性）
+### 錯誤 #7：只顧一邊的比率，忽略另一邊
 
-**實際情況：** 「我的評估能抓到所有真實問題（TPR=95%），夠好了。」但它同時也對完全沒問題的追蹤紀錄大聲尖叫（TNR 大約 22%，這是經典的天真初版嘗試）。一週之內值班工程師就把告警靜音了，所以那 95% 的 TPR 現在什麼都抓不到，因為根本沒人在聽。
+**實際情況：** 兩種互為鏡像的失敗。*神經質的*評審：「它抓得到每一個真實的失敗（TNR 接近 100%），夠好了」，但它同時對完全沒問題的追蹤紀錄大聲尖叫（TPR 只有 22% 左右）。一週之內值班工程師就把告警靜音了，於是那些靈敏度什麼都抓不到，因為根本沒人在聽。另一種是*寬鬆的*評審，也就是第 4 章那個經典的天真初版（TPR 90%、TNR 22%）：儀表板一片綠，但大多數真實的違規都被蓋上 PASS 放行。
 
-**為何不對：** TPR 與 TNR 是一種取捨，而一個高 TPR、低 TNR 的評估就像一個你在烤吐司時就會大響的煙霧偵測器。人們會把吵人的告警關掉，而一個被關掉的評估，無論試算表上怎麼寫，它的有效 TPR 都是 0。
+**為何不對：** TPR 與 TNR 是一組必須*同時*守住的取捨。神經質的評估就像一個你烤個吐司就大響的煙霧偵測器：人們會把它關掉，而一個被關掉的評估，無論試算表上怎麼寫，它的有效 TNR 都是 0。寬鬆的評估則像一個被拔掉電池的煙霧偵測器：安靜，卻在它存在的意義所在的那一刻毫無用處。
 
-**為何會發生：** 為召回率做優化讓人覺得安全（「寧可過度標記，也不要漏掉一個真正的 bug」）。偽陽性的代價是之後才付出的，而且由另一個人（負責分流的那個）來付，所以在開發時很容易把它低估。
+**為何會發生：** 單獨優化任何一邊都讓人覺得安全。「寧可過度標記，也不要漏掉一個真正的 bug」悄悄毀掉 TPR；「讓通過率看起來像話」悄悄毀掉 TNR。無論哪一種，代價都是之後才付、由另一個人付（負責分流雜訊的人，或是把回歸推上線的人），所以在開發時很容易把它低估。
 
-**代價：** 每一筆標記都變得可疑，分流時間暴增，最終這個評估被靜音。你完全失去了這個評估，外加在你放棄它之前花在追逐幻影失敗上的那些工時。
+**代價：** 評估被靜音，你就完全失去了這個評估，外加大家在放棄它之前花在追逐幻影失敗上的那些工時。評估太寬鬆，你就是在出貨虛假的信心，比沒有評估更糟，因為綠色的儀表板會主動勸你不要細看。
 
-**修正方式：** 讓 TPR「和」TNR 都守住一個標準（見第 4 章）。如果 TNR 偏低，就反覆調整評審提示、把通過/失敗的定義磨得更銳利，並針對那些被它錯誤標記的好案例加入少樣本範例。一個人們信任的精準評估，勝過一個人們會靜音的敏感評估。
+**修正方式：** 讓 TPR「和」TNR 都守住門檻（>80%，見第 4 章），而且永遠成對回報，絕不混成單一的準確率數字。TPR 偏低（誤報多）：加入「什麼不算失敗」的條款，並為那些被它誤判的好案例加入少樣本範例。TNR 偏低（漏抓缺陷）：把 FAIL 的定義磨得更銳利，加入真實違規的範例。一個人們信任的精準評估，勝過一個人們會靜音的敏感評估。
 
-**嗅探測試：** 如果有人把這個評估的告警設成貪睡，那它的 TNR 就是太低了。
+**嗅探測試：** 如果有人把這個評估的告警設成貪睡，是 TPR 太低。如果儀表板綠了一個月、客服工單卻說著另一回事，是 TNR 太低。
 
 ### 錯誤 #8：沒有測試評估本身
 
@@ -6215,7 +6236,7 @@ plot_dashboard(failure_rates)
 
 | 框架 | 在以下情況動用它 | 它獨佔的利基 | 誠實的取捨 |
 |-----------|----------------------|---------------|-----------------|
-| **RAGAS** | 你有檢索管線，需要忠實度、答案相關性、脈絡精確率／召回率 | 把 RAG 品質拆解成檢索 vs 生成的失敗（見第 7 章） | 指標由 LLM 評判，在小資料集上很吵；信任數字前先校準 |
+| **RAGAS** | 你有檢索管線，需要忠實度、答案相關性、脈絡精確率／召回率 | 把 RAG 品質拆解成檢索 vs 生成的失敗（見第 6 章） | 指標由 LLM 評判，在小資料集上很吵；信任數字前先校準 |
 | **DeepEval** | 你的團隊用 `pytest` 的思維；你想把評估斷言放進 CI | 「LLM 的單元測試」：`assert_test`、metric 類別，迴歸時讓建置失敗 | 沉重的 LLM 評審指標若每次 commit 都跑，可能又慢又花錢 |
 | **promptfoo** | 你想從一個 YAML 檔掃過許多 提示 x 模型 x 案例，且不寫程式碼 | 由設定檔驅動的矩陣測試，以及快速的紅隊／越獄掃描 | 遇到複雜的分支邏輯或自訂 Python 評分器時，YAML 會變得難以駕馭 |
 | **Inspect** | 你在跑嚴謹、可重現的模型評估或安全／能力基準 | 英國 AI 安全研究院的框架：solvers、scorers、沙箱化工具使用、強大的日誌 | 針對結構化的基準評估，比起快速的應用層檢查需要更多設定 |
@@ -6380,14 +6401,14 @@ Confusion Matrix:
 Predicted Pos    |      TP        |       FP        |
 Predicted Neg    |      FN        |       TN        |
 
-TPR (Recall) = TP / (TP + FN)      "Catches real positives"
-TNR (Specificity) = TN / (TN + FP) "Avoids false alarms"
+TPR (Recall) = TP / (TP + FN)      "Recognizes real passes"
+TNR (Specificity) = TN / (TN + FP) "Catches real failures"
 Precision = TP / (TP + FP)
 F1 Score = 2 * (Precision * Recall) / (Precision + Recall)
 
 Target for evals:
-- TPR > 80% (catches real issues)
-- TNR > 80% (doesn't false alarm)
+- TPR > 80% (good traces recognized, few false alarms)
+- TNR > 80% (real failures get caught)
 ```
 
 ### 資料切分比例
@@ -6408,6 +6429,32 @@ Test:  ~45%  (final, unbiased evaluation - use ONCE)
 | 建立 LLM judge（完整管線） | 4-6 小時 | 視需要 |
 | 在 dev 集上驗證評估 | 1 小時 | 每次迭代 |
 | 每週維護 | 30 分鐘 | 每週 |
+
+### 平台快速上手
+
+**Phoenix（自架）：**
+```bash
+pip install arize-phoenix openai openinference-instrumentation-openai
+phoenix serve
+```
+```python
+from phoenix.otel import register
+register(project_name="my-app", auto_instrument=True)  # Auto-traces OpenAI
+```
+
+**LangWatch（最快）：**
+```python
+import langwatch
+langwatch.init()
+# Done! Auto-tracing enabled
+```
+
+**Langfuse（直接替換 import）：**
+```python
+from langfuse.openai import OpenAI
+client = OpenAI()
+# Set LANGFUSE_* environment variables first
+```
 
 ---
 
@@ -6607,19 +6654,21 @@ Return your evaluation as JSON:
 ```
 
 **常見迭代模式：**
-- TPR 太低 → Judge 漏掉了真實的失敗。加入更多 Fail 範例，讓失敗準則更明確。
-- TNR 太低 → Judge 誤報太多。加入「什麼不算失敗」的段落，為邊界案例加入 Pass 範例。
+- TPR 太低 → Judge 誤報太多：好的軌跡被判成 FAIL。加入「什麼不算失敗」的段落，為它誤判的邊界案例加入 Pass 範例。
+- TNR 太低 → Judge 漏掉了真實的失敗。加入更多 Fail 範例，讓失敗準則更明確。
 - 兩者皆低 → 準則含糊不清。以更清楚的定義從頭重寫。
 
 ### 9. Judge 的模型選擇
 
 | 模型層級 | 何時使用 | 典型準確性 |
 |------------|------------|-----------------|
-| GPT-4o / Claude Sonnet 4.6 | 高風險評估、複雜推理 | 85–95% |
-| GPT-4o-mini / Claude Haiku | 成本敏感、高流量評估 | 75–90% |
-| 開源（Llama、Mistral） | 自架、隱私敏感 | 70–85% |
+| Claude Opus 4.8 / GPT-5.6 | 高風險評估、複雜推理 | 85–95% |
+| GPT-5.5 mini / Gemini 3.1 Flash / DeepSeek V4 Flash | 成本敏感、高流量評估 | 75–90% |
+| 開放權重（Llama 4、Qwen 3.x、GLM-5.2） | 自架、隱私敏感 | 70–85% |
 
 **提示：** 從最強的模型開始，以建立效能上限。接著測試較便宜的模型能否在你的特定使用情境中與之匹敵。通常是可以的，尤其是搭配良好的 few-shot 範例時。
+
+價格與降階前的驗證流程，見第 13 章的評審分級階梯。
 
 ### 10. 提示版本管理
 
@@ -6648,7 +6697,7 @@ langwatch.prompts.create(
     name="dietary-judge-v3",
     description="Added edge cases for keto",
     template=judge_prompt_text,
-    model="gpt-4o",
+    model="gpt-5.6",
     temperature=0,
 )
 
@@ -6659,6 +6708,20 @@ langfuse.create_prompt(
     labels=["staging"],  # promote to "production" after validation
 )
 ```
+
+### 11. 當一個 Judge 不夠用：評審團與多數決 {#judge-panels}
+
+單一個 judge，提示寫得再好，帶的都是同一個模型的偏誤。**評審團（panel of judges，PoLL）**的做法是讓數個*不同的* judge 對同一筆軌跡評分，再取多數決。在二元評分準則上，三個多樣化的便宜 judge 常常追平甚至超越一個旗艦 judge，成本卻只是零頭，而且它們能給你單一 judge 給不了的東西：不一致訊號。
+
+把評審團跑好的方法：
+
+- **多樣性就是重點。** 用不同的模型家族（例如 Gemini 3.1 Flash + DeepSeek V4 Flash + Claude Haiku 4.5），或同一個模型搭配實質不同的提示。同一個模型在 temperature 0.7 下跑三份不是評審團，那是一個 judge 加上雜訊。
+- **對標籤投票，把每份解釋留下。** 多數決的 PASS/FAIL 決定結果；解釋是拿來除錯不一致用的。
+- **把不一致當成路由訊號。** 全票一致的判定在規模化下值得信任。2 比 1 的分歧就是你的邊界案例：把它們送給旗艦 judge 或人工佇列。實務上 80-90% 的軌跡會是全票一致，所以昂貴的那一層永遠只看到最難的 10-20%。
+- **像驗證任何 judge 一樣驗證評審團。** 多數決的判定比照單一 judge 處理：先在你的標註測試集上算 TPR/TNR（第 4 章），再做 judgy 修正（第 10 章）。
+- **成本帳：** 三次 Flash 級呼叫大約 $0.0015/次評估，仍比一次 Opus 4.8 呼叫便宜約 10 倍（見第 13 章的階梯表）。評審團唯一輸的是延遲，所以放在離線用；行內防護機制維持單一 judge。
+
+什麼時候*不必*動用：評分準則客觀到程式碼或一個便宜 judge 就能達到 90%+ 的 TPR/TNR。評審團真正值回票價的地方是主觀判斷（語氣、有沒有幫助、「使用者會不會覺得煩」），因為那正是單一 judge 偏誤最嚴重的地方。
 
 ---
 
@@ -6736,7 +6799,7 @@ from phoenix.evals import OpenAIModel, PromptTemplate, llm_generate, llm_classif
 results = llm_generate(
     dataframe=traces_df,
     template=PromptTemplate("Evaluate: {input}"),
-    model=OpenAIModel(model="gpt-4o"),
+    model=OpenAIModel(model="gpt-5.6"),
     output_parser=my_parser,
     concurrency=20,
 )
@@ -6752,7 +6815,7 @@ prompt = await px_client.prompts.create(
     version=PromptVersion(
         [{"role": "system", "content": "..."},
          {"role": "user", "content": "{{question}}"}],
-        model_name="gpt-4o",
+        model_name="gpt-5.6",
     ),
 )
 ```
@@ -6799,8 +6862,8 @@ spans_df = langwatch.get_spans(
 # Get spans within a time range
 spans_df = langwatch.get_spans(
     filters={
-        "timestamp_gte": "2025-02-01",
-        "timestamp_lte": "2025-02-09"
+        "timestamp_gte": "2026-06-01",
+        "timestamp_lte": "2026-06-09"
     }
 )
 ```
@@ -6882,7 +6945,7 @@ prompt = langwatch.prompts.create(
         {"role": "system", "content": "You are a recipe assistant..."},
         {"role": "user", "content": "{{question}}"}
     ],
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     temperature=0.7
 )
 
@@ -7001,7 +7064,7 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 
 | 天 | 活動 | 時間 | 角色重點 |
 |-----|----------|------|------------|
-| 1 | 挑選你的平台（Phoenix 或 Langfuse），並安裝它 | 1h | 全部 |
+| 1 | 挑選你的平台（Phoenix、LangWatch 或 Langfuse），並安裝它 | 1h | 全部 |
 | 2 | 為你的應用導入自動追蹤 | 2h | 工程師 |
 | 2 | 瀏覽追蹤檢視器 UI，以視覺方式理解追蹤紀錄 | 1h | PM/QA |
 | 3 | 以維度抽樣建立測試資料集 | 2h | 全部 |
@@ -7076,7 +7139,7 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 
 9. **安全性評估並非可有可無** - 提示注入、PII 外洩與越獄偵測，應該在你開始煩惱品質評估之前就已經在運作。
 
-10. **先用昂貴的，再最佳化** - 用 GPT-4o/Claude Sonnet 建立你的效能上限，接著測試較便宜的模型能否與之匹敵。通常是可以的。
+10. **先用昂貴的，再最佳化** - 用旗艦評審（Claude Opus 4.8 或 GPT-5.6）建立你的效能上限，接著測試較便宜的模型能否與之匹敵。通常是可以的。
 
 11. **抽樣勝過窮舉式評估** - 以統計嚴謹性評估 10% 的追蹤紀錄，會比用一個糟糕的 judge 評估 100% 給你更好的答案。
 
@@ -7087,6 +7150,32 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 13. **依你的限制條件選平台，而非依風潮** - Phoenix 勝在免費自架，LangWatch 勝在速度與內建評估器，Langfuse 勝在彈性與社群。這三者都能跑本指南中相同的方法論。
 
 14. **內建評估器省下實實在在的開發時間** - 如果某個平台已經內建了你需要的安全檢查或 RAG 指標（LangWatch 內建 40 多個），就直接用它，別重新發明。
+
+---
+
+## 面試問題 {#interview-questions}
+
+本書其他章節都在各章附有面試題；這裡的五題是用來檢驗上面的內容有沒有真的內化。這五題都以某種形式出現在真實的 staff 級 AI 系統設計面試裡。
+
+### Q：你的 LLM judge 與人工標籤的一致率有 92%。為什麼它仍然可能毫無用處？你會改量什麼？
+
+**強力答案：** 一致率被多數類別主導。如果實際上只有 8% 的軌跡會失敗，一個無條件回答 PASS 的 judge 也有 92% 的一致率，卻抓不到任何失敗。應該在類別平衡的標註集上分別計算 TPR 與 TNR，兩者都高於約 80% 才能信任。接著用 judgy 這類工具修正殘餘的 judge 誤差，回報修正後的估計值與信賴區間，而不是 judge 的原始輸出。（第 4 章與第 10 章。）
+
+### Q：一個 agent 每次執行的工具呼叫順序都不一樣，你要怎麼評估它？
+
+**強力答案：** 不要再用固定路徑當閘門。改用部分給分、容忍順序差異的軌跡評分：目標與子目標完成度、動作有效性（工具呼叫是否格式正確且被允許）、效率（最佳步數 / 實際步數），加上迴圈懲罰。因為兩次正確的執行可以長得不一樣，還要量可靠度而不只是能力：每個情境跑 k 次，回報 pass^k（k 次全部成功）；pass@1 與 pass^k 的落差就是被量化的不穩定度。精確比對軌跡的測試會懲罰合法的替代解，而且立刻過時。（第 7-8 章。）
+
+### Q：你每天有 50 萬筆生產軌跡與有限的評估預算。請設計這套評估堆疊。
+
+**強力答案：** 分層。第 1 層：程式碼檢查（格式、PII regex、工具呼叫有效性）跑 100% 流量，免費。第 2 層：一個驗證過的便宜 judge（Flash 級）跑第 1 層的存活者或 5-10% 抽樣。第 3 層：旗艦 judge 或人工，只處理第 2 層的分歧案例加上每週校準樣本。便宜 judge 先對 150-300 筆黃金集用 Cohen's kappa 驗證再信任，重複的評估要快取，流量漂移就重新驗證。這就是每月約 $300k 與約 $1-2k 之間的差別，訊號品質卻相近。（第 13 章。）
+
+### Q：你的 RAG 系統 faithfulness 分數是 0.92。什麼情況下你不會相信這個數字？
+
+**強力答案：** 當產生這個分數的 judge 從未被校準過。Faithfulness 是 LLM 評的，所以它繼承了 judge 的雜訊與偏誤：先用約 50 筆人工標籤驗證 judge（kappa 高於約 0.7）、確保評分模型不是生成答案的那個模型（自我偏好會灌水）、跑 temperature 0，而且在為 2 個百分點的變動慶祝之前先看樣本數。也要問 0.92 藏了什麼：「我沒有足夠的資訊」完全忠實卻完全沒用，這正是 faithfulness 必須跟 answer relevance 一起讀的原因。（第 6 章。）
+
+### Q：PM 問：「我們已經有 LLM judge 在評 helpfulness 了，為什麼還需要錯誤分析？」
+
+**強力答案：** 因為 judge 量的是某人想像出來的失敗模式，錯誤分析找的是實際存在的那些。用開放式編碼讀約 100 筆軌跡、再做分群（軸向編碼），就能得到帶頻率的真實失敗分類法；每個高頻模式再配一個針對性的評估器，能用程式判定的用程式，主觀的交給 LLM judge。一個泛用的 helpfulness 分數幾乎抓不到錯誤分析一個下午就能挖出來的那些具體、可修的失敗（掉了限制條件、呼叫錯工具、在簡訊裡用 markdown）。評估回答「多常發生」；錯誤分析回答「發生了什麼」。（第 3 章。）
 
 ---
 
@@ -7185,6 +7274,16 @@ AI 評估不只是「測試」，它們是一套橫跨工程、產品管理與�
 | **Comet Opik** | LLM 追蹤與評估 | 是（Apache 2.0） | 端到端可觀測性 | 框架整合、線上評估規則 |
 | **METR** | 災難性風險 | 研究 | 政策指引 | 自主能力評估 |
 
+### 本書接下來可以讀什麼 {#where-to-go-next}
+
+這份學習指南是 AI 系統設計指南評估相關章節的實作篇：
+
+- [LLM 評估](14-evaluation-and-observability/01-llm-evaluation.md)：本書評估指標與方法論的核心章節，包括評估在系統設計面試中的考法
+- [LLM 可觀測性](14-evaluation-and-observability/02-observability.md)：追蹤架構與生產環境監控，比第 2 章更深入
+- [基準測試與排行榜](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md)：如何批判性地解讀 MMLU、SWE-bench 與 Arena Elo 的宣稱；公開基準測試與這裡建立的私有評估互補
+- [評估代理式系統](07-agentic-systems/10-evaluating-agentic-systems.md)：軌跡基準測試與 agent 可靠度，延伸第 7-8 章
+- [RAG 評估模式](06-retrieval-systems/13-rag-evaluation-patterns.md)：RAG 三元組與以評估把關的 CI/CD，延伸第 6 章
+
 ### 與我聯絡
 - Om Bharatiya：[@ombharatiya](https://twitter.com/ombharatiya)
 
@@ -7198,4 +7297,4 @@ AI 評估不只是「測試」，它們是一套橫跨工程、產品管理與�
 
 *本指南受 Hamel Husain 與 Shreya Shankar 的 AI Evals for Engineers & PMs 課程啟發並以其為基礎，並補充了額外研究、可用於生產環境的程式碼範例，以及涵蓋 Phoenix、LangWatch、Langfuse 與更廣泛評估工具生態系的多平台指南。*
 
-*作者：Om Bharatiya | 建立時間：2026 年 2 月*
+*作者：Om Bharatiya | 建立時間：2026 年 2 月 | 最後更新：2026 年 6 月*

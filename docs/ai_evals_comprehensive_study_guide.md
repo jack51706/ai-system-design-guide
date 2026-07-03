@@ -68,7 +68,7 @@ There's a debate in the AI community: some people say "just vibe check your app"
 
 **Everyone needs evals.** The people who say they don't need evals are actually benefiting from evals that someone else did upstream.
 
-Example: If you're building a coding assistant with GPT-4, OpenAI already tested GPT-4 on massive code benchmarks. So you can "vibe check" your app. But for most applications that aren't simple uses of foundation models, you need your own evals.
+Example: If you're building a coding assistant with GPT-5.6, OpenAI already tested GPT-5.6 on massive code benchmarks. So you can "vibe check" your app. But for most applications that aren't simple uses of foundation models, you need your own evals.
 
 #### The upstream-evals nuance (why "I don't need evals" is a half-truth)
 
@@ -390,6 +390,28 @@ All of these support the same core concepts: traces, spans, datasets, evaluation
 - **LangWatch:** cloud or self-hosted, the fastest setup (a 3-line integration) and ships 40+ built-in evaluators.
 - **Langfuse:** cloud or self-hosted, the most flexible for custom pipelines, with the largest community and more integrations.
 
+### The Portability Layer: OpenTelemetry GenAI Semantic Conventions {#otel-genai-semconv}
+
+One more thing to check before you commit to a platform: whether your instrumentation will outlive it. All three platforms in this guide speak OpenTelemetry, and by 2026 the OTel **GenAI semantic conventions** (the standard attribute names for LLM spans) are stable enough to design around. Instrument once with standard attributes and your traces can move between backends, or feed two at once, without touching application code.
+
+The attributes that matter in practice:
+
+| Attribute | What it records | Example |
+|---|---|---|
+| `gen_ai.operation.name` | The kind of operation | `chat`, `embeddings`, `execute_tool` |
+| `gen_ai.request.model` / `gen_ai.response.model` | Model requested vs model that actually answered | `gpt-5.5-mini` |
+| `gen_ai.usage.input_tokens` / `gen_ai.usage.output_tokens` | Token counts, the basis of every cost dashboard | `2500` / `300` |
+| `gen_ai.input.messages` / `gen_ai.output.messages` | Prompt and completion payloads (opt-in: PII implications, see above) | full message arrays |
+| `gen_ai.tool.name` | Which tool an agent invoked | `get_availability` |
+
+Why this matters for evals specifically:
+
+1. **Your history survives a platform switch.** Eval datasets are built from traces. Standard attributes keep last year's traces queryable after a migration, so golden datasets and regression sets do not die with the old backend.
+2. **One instrumentation, many consumers.** A common production pattern is fanning the same OTLP stream to a tracing platform for humans and to cheap object storage for later reprocessing. Standard attributes make both consumers trivial.
+3. **Mixed frameworks stop meaning mixed schemas.** Phoenix's OpenInference instrumentors, Langfuse's OTLP endpoint, and LangWatch's collectors all map to or accept these conventions, so a LangChain service and a hand-rolled one can land in the same dashboards.
+
+The caveat: the conventions cover *telemetry*, not workflow. Datasets, experiments, annotation queues, and prompt management remain platform-specific APIs (Appendix F). Standardize the spans; accept the platform SDK for the rest.
+
 ### Setting Up Phoenix (Open-Source, Self-Hosted)
 
 Phoenix is an open-source AI observability platform built on OpenTelemetry. It provides tracing, evaluation, datasets, experiments, and prompt management, all for free.
@@ -426,7 +448,7 @@ client = openai.OpenAI()
 
 # This call is automatically traced by Phoenix!
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -486,7 +508,7 @@ import openai
 client = openai.OpenAI()
 
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -555,7 +577,7 @@ client = OpenAI()
 
 # This call is automatically traced by Langfuse
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     messages=[
         {"role": "system", "content": "You are a recipe assistant."},
         {"role": "user", "content": "How do I make pancakes?"}
@@ -599,7 +621,7 @@ prompt = await px_client.prompts.create(
     prompt_description="Basic recipe assistant prompt",
     version=PromptVersion(
         [{"role": "system", "content": "You are a recipe assistant..."}],
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.5-mini",
     ),
 )
 ```
@@ -616,7 +638,7 @@ langwatch.prompts.create(
         {"role": "system", "content": "You are a recipe assistant..."},
         {"role": "user", "content": "{{question}}"}
     ],
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     temperature=0.7
 )
 
@@ -894,7 +916,7 @@ Generate 1 unique, realistic query:"""
 queries = []
 for t in dimension_tuples:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         messages=[{"role": "user", "content": QUERY_GEN_PROMPT.format(
             tuple_description=str(t)
         )}],
@@ -917,7 +939,7 @@ Generate 1 unique, realistic query:
 queries_result = llm_generate(
     dataframe=query_df,
     template=query_template,
-    model=OpenAIModel(model="gpt-4o-mini", temperature=0.9)
+    model=OpenAIModel(model="gpt-5.5-mini", temperature=0.9)
 )
 ```
 
@@ -937,7 +959,7 @@ queries = []
 for t in dimension_tuples:
     result = langwatch.completion(
         prompt=QUERY_GEN_PROMPT.format(tuple_description=str(t)),
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         temperature=0.9
     )
     queries.append(result.text)
@@ -953,7 +975,7 @@ client = OpenAI()  # Auto-traced
 queries = []
 for t in dimension_tuples:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5.5-mini",
         messages=[{"role": "user", "content": QUERY_GEN_PROMPT.format(
             tuple_description=str(t)
         )}],
@@ -1461,14 +1483,14 @@ import langwatch
 results = langwatch.evaluate.batch(
     dataset=traces_df,
     evaluators=["dietary_compliance"],  # Built-in evaluator
-    model="gpt-4o"
+    model="gpt-5.6"
 )
 
 # Or create custom evaluator
 custom_evaluator = langwatch.evaluators.create(
     name="dietary_adherence",
     prompt=LABELING_PROMPT,
-    model="gpt-4o"
+    model="gpt-5.6"
 )
 
 results = langwatch.evaluate.batch(
@@ -1489,7 +1511,7 @@ client = OpenAI()
 labels = []
 for trace in traces:
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5.6",
         messages=[{"role": "user", "content": LABELING_PROMPT.format(**trace)}],
         temperature=0
     )
@@ -1669,7 +1691,7 @@ import langwatch
 judge_evaluator = langwatch.evaluators.create(
     name="dietary-judge-v1",
     prompt=judge_prompt_template,
-    model="gpt-4o",
+    model="gpt-5.6",
     temperature=0
 )
 
@@ -1751,6 +1773,8 @@ TPR = True Positives / (True Positives + False Negatives)
 TNR = True Negatives / (True Negatives + False Positives)
 ```
 
+> **Watch the convention: in this guide, the "positive" class is PASS.** TPR is about correctly recognizing *good* traces; TNR is about correctly catching *bad* ones. That flips the usual QA instinct where "positive" means "found a defect": here a **false positive is a missed defect** (the judge said PASS on a real failure) and a **false negative is a false alarm** (the judge said FAIL on a good trace). The guardrail literature, and the cheap-judge validation protocol in Chapter 13, usually counts the other way, with 1 = fail/flag. Neither is wrong; unlabeled, both are dangerous. Whenever someone quotes a TPR, make them say what "positive" means first.
+
 ### Real Results: Why Iteration Matters
 
 **After careful prompt iteration (production-quality judge):**
@@ -1797,8 +1821,8 @@ Notice the first attempt had a TNR of only 22.2%, meaning when a recipe actually
 1. **Test your judge** on Dev set
 2. **Calculate TPR and TNR**
 3. **Look at errors:**
-   - Where did it miss real failures? (False Negatives)
-   - Where did it false alarm? (False Positives)
+   - Where did it miss real failures? (False Positives)
+   - Where did it false alarm? (False Negatives)
 4. **Update the prompt:**
    - Add missed scenarios to criteria
    - Add false alarm scenarios to "NOT a failure" section
@@ -1837,7 +1861,7 @@ from phoenix.evals import llm_generate, OpenAIModel
 results = llm_generate(
     dataframe=all_traces_df,
     template=judge_prompt_template,
-    model=OpenAIModel(model="gpt-4o", temperature=0),
+    model=OpenAIModel(model="gpt-5.6", temperature=0),
     concurrency=20,
 )
 ```
@@ -1884,7 +1908,7 @@ client = openai.OpenAI()
 
 def run_judge(trace):
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5.6",
         messages=[{"role": "user", "content": judge_prompt.format(**trace)}],
         temperature=0,
     )
@@ -1932,7 +1956,7 @@ The model you pick as judge matters as much as the prompt. A few principles, rou
 
 1. **Prefer a judge at least as capable as the system under test, ideally stronger.** A judge has to fully understand the task to grade it. If your product runs on a fast cheap model, judging with a frontier model (Claude Opus 4.8, GPT-5.6, Gemini 3.1 Pro) usually buys you meaningfully higher agreement with human labels. A judge weaker than the generator tends to miss exactly the subtle failures you most need caught.
 2. **Use a different model family than the generator** to sidestep the self-preference bias above. This is in tension with "use the strongest model," so when the strongest model is also the one generating, either switch the generator's family for the judge or score with two judges from different families and look at where they disagree.
-3. **A cheap judge can still work, if you calibrate it.** "Strongest possible" is a starting point, not a mandate. A smaller or cheaper model (DeepSeek V4 Flash, Gemini 3.1 Flash, Claude Fable 5) can be a perfectly good judge *if it clears your TPR/TNR bar on the Test set*. The 7-step workflow is exactly the calibration that lets you trust a cheap judge: validate it, and if it hits the targets, the price tag is irrelevant to its validity. Many teams discover the cheap judge is within a point or two of the expensive one on a narrow, well-specified binary task, which is the common case for a compliance gate.
+3. **A cheap judge can still work, if you calibrate it.** "Strongest possible" is a starting point, not a mandate. A smaller or cheaper model (DeepSeek V4 Flash, Gemini 3.1 Flash, Claude Haiku 4.5) can be a perfectly good judge *if it clears your TPR/TNR bar on the Test set*. The 7-step workflow is exactly the calibration that lets you trust a cheap judge: validate it, and if it hits the targets, the price tag is irrelevant to its validity. Many teams discover the cheap judge is within a point or two of the expensive one on a narrow, well-specified binary task, which is the common case for a compliance gate.
 4. **Trade cost against agreement deliberately, and re-run the tradeoff at scale.** Judging every production trace with a frontier model can cost more than serving the product itself. The right move is usually a tiered pipeline: a cheap calibrated judge on 100% of traffic, escalating only disagreements or borderline cases to an expensive judge. Chapter 13 (Cost, Latency & Scaling Evals) covers this tiering, sampling, and caching in depth; treat judge-model choice as a cost decision as much as an accuracy one.
 
 The decision procedure: start with the strongest judge you can afford to establish a ceiling on achievable agreement, then test whether a cheaper judge gets within an acceptable margin of that ceiling on your Test set. If it does, ship the cheap one and bank the savings. If it does not, you have quantified exactly what the cheap judge is costing you in missed failures, which is a number you can put in front of a stakeholder.
@@ -3495,7 +3519,7 @@ for state_name in STATES:
     results = llm_generate(
         dataframe=spans_df,
         template=PromptTemplate(eval_prompt),
-        model=OpenAIModel(model="gpt-4o"),
+        model=OpenAIModel(model="gpt-5.6"),
         output_parser=parse_label_and_explanation,
     )
 
@@ -3530,7 +3554,7 @@ for state_name in STATES:
     evaluator = langwatch.evaluators.create(
         name=f"{state_name}_eval",
         prompt=eval_prompt,
-        model="gpt-4o"
+        model="gpt-5.6"
     )
 
     # Run evaluation
@@ -3902,13 +3926,18 @@ How to measure: count assistant turns directly from the transcript; no LLM neede
 
 Two more worth adding as you mature: **resolution rate** (conversations that reached a clear end state, completed or correctly escalated, versus those that trailed off unresolved) and **escalation precision/recall** (of conversations that should have escalated, how many did, and of escalations, how many were warranted).
 
+**pass^k (repeated-run reliability).** Agents and multi-turn systems are stochastic: the same scenario can pass on Monday and fail on Tuesday. Run each scenario k times (k=4 is a common budget) and report pass^k, the fraction of scenarios where *all k* runs succeed.
+Formula: `pass^k = (scenarios with k successes out of k) / (total scenarios)`. If a scenario's single-run success probability is p, expected pass^k is p^k: a system that passes a scenario 90% of the time is only 66% reliable at pass^4.
+Target: set by your tolerance for flakiness; >= 0.80 pass^4 on your core scenario suite is a solid bar for a customer-facing assistant.
+How to measure: rerun the synthetic scenarios (Strategy 3) k times each with fresh sampling (no caching), count per-scenario successes. The gap between the single-run pass rate and pass^k *is* your flakiness, quantified. A large gap says: hunt nondeterminism (temperature, retrieval churn, tool race conditions) before hunting capability.
+
 #### Tooling: tracing makes multi-turn debuggable
 
 Aggregate rates tell you something regressed; traces tell you which turn and why. Treat a conversation as a single trace with one span per turn (and child spans for retrieval and tool calls), so you can replay the exact transcript the model saw at the failing turn. This is the difference between "contradiction rate went up 3 points" and "in session abc123, turn 5 contradicted turn 2 because retrieval returned a stale policy chunk."
 
 - **Phoenix (Arize):** open-source, OpenTelemetry-based. Group spans under a session/trace id and it renders the full multi-turn conversation; attach judge results as span annotations so a failed-contradiction verdict links straight to the offending turn. Strong for local/offline iteration.
 - **Langfuse:** open-source, first-class **sessions** that stitch turns into one timeline, with per-turn scores and dataset-based eval runs. Good for tracking a metric across prompt versions over time.
-- **LangWatch:** managed, geared to conversation-level analytics and online guardrails; useful when you want production dashboards of the rates above plus alerting on spikes.
+- **LangWatch:** open-source with a managed cloud, geared to conversation-level analytics and online guardrails; useful when you want production dashboards of the rates above plus alerting on spikes.
 
 Whatever you use, the non-negotiables are: a stable session id linking the turns, the resolved prompt (post-retrieval, post-truncation) stored per turn so you can see what the model actually conditioned on, and judge verdicts attached to the specific turn so locality survives into your dashboards.
 
@@ -5163,7 +5192,7 @@ Evaluation is not free. Once you move from "I ran 50 evals by hand" to "I score 
 
 ### The Cost Problem {#the-cost-problem}
 
-Running GPT-4o as a judge on 10,000 traces is expensive. Here's how to manage costs:
+Running a frontier judge (Claude Opus 4.8, GPT-5.6) on 10,000 traces is expensive. Here's how to manage costs:
 
 #### Work the arithmetic before you architect
 
@@ -5207,25 +5236,17 @@ That spread is the whole chapter in one table: same coverage, **a 36x cost diffe
 
 ### Strategy 1: Use Cheaper Models for Judges {#strategy-1-cheaper-judges}
 
-Not every eval needs the best model:
+Not every eval needs the best model. **The rule:** start with a strong judge to establish the quality ceiling, validate the prompt, then test whether a cheaper model gives similar TPR/TNR. Often it does.
 
-| Judge Model | Cost (per 1K traces) | When to Use |
-|---|---|---|
-| GPT-4o / Claude Opus | ~$5-15 | Complex subjective judgments, safety-critical |
-| GPT-4o-mini / Claude Haiku | ~$0.50-1.50 | Clear-cut criteria, well-defined rubrics |
-| Code-based | $0 | Format checks, pattern matching, validation |
+#### The judge-tier ladder (capability vs cost vs agreement)
 
-**Tip:** Start with a strong model, validate your judge prompt, then test if a cheaper model gives similar TPR/TNR. Often it does.
-
-#### A fuller judge-tier ladder (capability vs cost vs agreement)
-
-The two-row table above is the right idea but too coarse to plan with. Here is the ladder most teams actually choose between in 2026. "Agreement with humans" is Cohen's kappa against a gold-labeled set; treat the numbers as the *typical band you should expect to measure*, not a promise, because agreement is task-specific and you must verify it yourself (see below).
+Here is the ladder most teams actually choose between in 2026. "Agreement with humans" is Cohen's kappa against a gold-labeled set; treat the numbers as the *typical band you should expect to measure*, not a promise, because agreement is task-specific and you must verify it yourself (see below).
 
 | Tier | Example judge (June 2026) | Rel. cost/eval | Typical human agreement (kappa) | Best for | Where it breaks |
 |---|---|---|---|---|---|
 | Code / deterministic | regex, JSON schema, `assert` | $0 | n/a (exact) | Format, length, profanity lists, required-field presence, valid SQL parse | Anything subjective; brittle to paraphrase |
 | Embedding / classifier | `text-embedding-3-large` + threshold, a fine-tuned DistilBERT toxicity head | ~$0.0001 | 0.55-0.75 on narrow tasks | Topic/PII routing, toxicity gate, "is this on-topic" | No reasoning; one threshold rarely fits all classes |
-| Tiny LLM judge | Gemini 3.1 Flash, DeepSeek V4 Flash, Claude Fable 5 | ~$0.0005 | 0.60-0.80 on clear rubrics | Well-defined yes/no rubrics, pairwise "A or B better" | Subtle factuality, multi-step reasoning, long context |
+| Tiny LLM judge | Gemini 3.1 Flash, DeepSeek V4 Flash, Claude Haiku 4.5 | ~$0.0005 | 0.60-0.80 on clear rubrics | Well-defined yes/no rubrics, pairwise "A or B better" | Subtle factuality, multi-step reasoning, long context |
 | Mid LLM judge | GPT-5.5 mini, Gemini 3.1 Pro | ~$0.003-0.009 | 0.70-0.85 | Most production grading: helpfulness, groundedness with retrieved context | Adversarial safety, expert-domain correctness |
 | Frontier judge | Claude Opus 4.8, GPT-5.6, DeepSeek V4 Pro (reasoning) | ~$0.015-0.020 | 0.80-0.90 | Safety-critical, nuanced subjective calls, building the gold set itself | Cost at scale; still not a substitute for human sign-off on high-stakes |
 
@@ -5241,7 +5262,7 @@ Never swap Opus for Flash on faith. Run a head-to-head on a labeled set first. T
 2. **Score the gold set with both judges.** Treat human labels as truth.
 3. **Compute agreement metrics**, not just accuracy. Accuracy lies when classes are imbalanced (if 95% of traces pass, a judge that says "pass" always is 95% accurate and useless).
 
-Key metrics, with formulas and targets:
+Key metrics, with formulas and targets. Note the convention flip: for gate validation the positive class is **1 = fail/flag** (you are measuring the *detector*), so TPR here is recall on the bad class, the mirror image of Chapter 4's PASS-positive setup (see the convention callout there):
 
 - **TPR (recall / sensitivity)** = TP / (TP + FN). "Of the truly-bad traces, how many did the judge catch?" For a safety gate you want **>= 0.95**; missing bad outputs is the expensive failure.
 - **TNR (specificity)** = TN / (TN + FP). "Of the truly-good traces, how many did it correctly pass?" Low TNR means false alarms that waste reviewer time; aim **>= 0.90** for guardrails so you are not crying wolf.
@@ -5357,13 +5378,13 @@ Run cheap evals on everything, expensive evals on a sample:
 # Tier 1: Run on ALL traces (code-based, free)
 tier1_results = [eval_format(t) for t in all_traces]
 
-# Tier 2: Run on traces that passed Tier 1 (cheap LLM, ~$0.50/1K)
+# Tier 2: Run on traces that passed Tier 1 (cheap LLM, ~$1.50/1K)
 tier1_passed = [t for t, r in zip(all_traces, tier1_results) if r['passed']]
-tier2_results = run_llm_eval(tier1_passed, model="gpt-4o-mini")
+tier2_results = run_llm_eval(tier1_passed, model="gpt-5.5-mini")
 
-# Tier 3: Run on a sample (expensive LLM, ~$5/1K)
+# Tier 3: Run on a sample (expensive LLM, ~$15/1K)
 sample = random.sample(tier1_passed, 500)
-tier3_results = run_llm_eval(sample, model="gpt-4o")
+tier3_results = run_llm_eval(sample, model="gpt-5.6")
 ```
 
 #### The cascade as a funnel: cheap filters out the obvious, expensive judges the survivors
@@ -5469,7 +5490,7 @@ Rule of thumb: cache freely for deterministic code checks and for prompt prefixe
 | Regex/code checks | <1ms | Yes |
 | Embedding similarity | 10-50ms | Yes |
 | Small LLM (Haiku-class) | 200-500ms | Marginal (adds noticeable delay) |
-| Large LLM (GPT-4o-class) | 1-3s | No (use offline only) |
+| Large LLM (GPT-5.6 / Opus 4.8-class) | 1-3s | No (use offline only) |
 
 Offline eval cares about *cost*; online eval (a guardrail in the request path) cares about *cost and latency*, and latency is the harder constraint. Every millisecond a guardrail adds is felt by the user on every request, so the discipline here is a strict budget, not a vibe.
 
@@ -5508,7 +5529,7 @@ Frontier LLMs (1-3s) are simply too slow to block on. The inline tier is built f
 
 - **Code and regex** (<1ms): blocklists, schema validity, length, required disclaimers. Free and instant; always your first line.
 - **Fine-tuned classifiers / embedding gates** (10-50ms): a DistilBERT-class toxicity or jailbreak head, or an embedding-similarity check against known-bad patterns. This is the sweet spot for input guardrails: near-LLM quality on a *narrow* task at classifier speed and cost. Llama Guard-style small safety classifiers live here.
-- **Tiny LLMs** (Gemini 3.1 Flash, Claude Fable 5, ~150-400ms): use when a check genuinely needs language understanding the classifier lacks, and only on the *output* side where you have already paid the generation latency. Even here, prefer it as a fast-fail: short prompt, `max_tokens` capped at a one-word verdict, `temperature=0`.
+- **Tiny LLMs** (Gemini 3.1 Flash, Claude Haiku 4.5, ~150-400ms): use when a check genuinely needs language understanding the classifier lacks, and only on the *output* side where you have already paid the generation latency. Even here, prefer it as a fast-fail: short prompt, `max_tokens` capped at a one-word verdict, `temperature=0`.
 - **Frontier LLMs:** offline/async only. The moment you put a 2s Opus call in the request path you have doubled your latency; do not.
 
 #### Streaming considerations
@@ -5976,7 +5997,7 @@ These are the twelve mistakes that show up in almost every eval post-mortem. Non
 
 **The cost:** You measure the wrong thing with great precision. Every downstream artifact (the judge, the dashboard, the alerting) is built on a guess about what fails, so it is confidently green while real failures go unmeasured. You usually discover this only after a customer escalation.
 
-**The fix:** Always start with open-coded error analysis. Sit with real traces, label what actually went wrong in your own words, then cluster. Only build judges for failure modes you have *seen*, not the ones you *imagine*. See Chapter 2.
+**The fix:** Always start with open-coded error analysis. Sit with real traces, label what actually went wrong in your own words, then cluster. Only build judges for failure modes you have *seen*, not the ones you *imagine*. See Chapter 3.
 
 **Smell test:** If you cannot name your top three failure modes with a rough frequency for each, you skipped error analysis.
 
@@ -5990,7 +6011,7 @@ These are the twelve mistakes that show up in almost every eval post-mortem. Non
 
 **The cost:** You ship a judge that cannot find the failures you built it to find, and you trust it because the headline number was high. The bias is invisible until you audit individual flags.
 
-**The fix:** Always compute TPR (recall on real failures) and TNR (specificity) separately, on a class-balanced labeled set. Both must clear your bar (see Chapter 4's targets). Report them as a pair, never collapse to one accuracy number.
+**The fix:** Always compute TPR and TNR separately, on a class-balanced labeled set: TPR tells you whether good traces get recognized (few false alarms), TNR whether real failures get caught. Both must clear your bar (see Chapter 4's targets). Report them as a pair, never collapse to one accuracy number.
 
 **Smell test:** If your validation is one number, it is the wrong number.
 
@@ -6050,19 +6071,19 @@ These are the twelve mistakes that show up in almost every eval post-mortem. Non
 
 **Smell test:** If the team glances at the eval dashboard and looks away, you have too many evals and too little trust.
 
-### Mistake #7: Low TNR (Ignoring False Positives)
+### Mistake #7: Optimizing One Rate and Ignoring the Other
 
-**In the wild:** "My eval catches all real problems (TPR=95%), good enough." But it also screams on perfectly good traces (TNR around 22%, the classic naive first attempt). Within a week the on-call engineer has muted the alert, so the 95% TPR now catches nothing because nobody is listening.
+**In the wild:** Two mirror-image failures. The *trigger-happy* judge: "it catches every real failure (TNR near 100%), good enough," except it also screams on perfectly good traces (TPR around 22%). Within a week the on-call engineer has muted the alert, so all that sensitivity catches nothing because nobody is listening. And the *lenient* judge, the classic naive first attempt from Chapter 4 (TPR 90%, TNR 22%): the dashboard glows green while most real violations sail through labeled PASS.
 
-**Why it's wrong:** TPR and TNR are a tradeoff, and a high-TPR / low-TNR eval is a smoke detector that goes off when you make toast. People disable noisy alerts, and a disabled eval has an effective TPR of 0 no matter what the spreadsheet says.
+**Why it's wrong:** TPR and TNR are a tradeoff you must hold *simultaneously*. A trigger-happy eval is a smoke detector that goes off when you make toast: people disable it, and a disabled eval has an effective TNR of 0 no matter what the spreadsheet says. A lenient eval is a smoke detector with the battery removed: quieter, and useless in the exact moment it exists for.
 
-**Why it happens:** Optimizing for recall feels safe ("better to over-flag than miss a real bug"). The false-positive cost is paid later, by a different person (whoever triages), so it is easy to discount during development.
+**Why it happens:** Each rate feels safe to optimize alone. "Better to over-flag than miss a real bug" quietly destroys TPR; "keep the pass rate believable" quietly destroys TNR. Either way the cost lands later, on a different person (whoever triages the noise, or whoever ships the regression), so it is easy to discount during development.
 
-**The cost:** Every flag becomes suspect, triage time balloons, and eventually the eval is muted. You lose the eval entirely, plus the hours spent chasing phantom failures before you gave up on it.
+**The cost:** With a muted eval you lose the eval entirely, plus the hours spent chasing phantom failures before the team gave up on it. With a lenient one you ship false confidence, which is worse than no eval because a green dashboard actively argues against looking closer.
 
-**The fix:** Hold both TPR *and* TNR to a bar (see Chapter 4). If TNR is low, iterate the judge prompt, sharpen the PASS/FAIL definitions, and add few-shot examples of the good cases it is wrongly flagging. A precise eval people trust beats a sensitive eval people mute.
+**The fix:** Hold both TPR *and* TNR to a bar (>80%, see Chapter 4) and report them as a pair, never blended into one accuracy number. If TPR is low (false alarms), add "what does NOT count as a failure" clauses and few-shot examples of the good traces it wrongly flags. If TNR is low (missed defects), sharpen the FAIL definitions and add examples of real violations. A precise eval people trust beats a sensitive eval people mute.
 
-**Smell test:** If someone has put the eval's alert on snooze, its TNR was too low.
+**Smell test:** If someone has put the eval's alert on snooze, TPR was too low. If the dashboard has been green for a month while support tickets say otherwise, TNR was.
 
 ### Mistake #8: Not Testing the Evals Themselves
 
@@ -6194,7 +6215,7 @@ Observability platforms answer "what happened in production." Eval *frameworks* 
 
 | Framework | Reach for it when... | Niche it owns | Honest tradeoff |
 |-----------|----------------------|---------------|-----------------|
-| **RAGAS** | You have a retrieval pipeline and need faithfulness, answer relevancy, context precision/recall | Decomposing RAG quality into retrieval vs generation failures (see Chapter 7) | Metrics are LLM-judged and noisy on small sets; calibrate before you trust the numbers |
+| **RAGAS** | You have a retrieval pipeline and need faithfulness, answer relevancy, context precision/recall | Decomposing RAG quality into retrieval vs generation failures (see Chapter 6) | Metrics are LLM-judged and noisy on small sets; calibrate before you trust the numbers |
 | **DeepEval** | Your team thinks in `pytest`; you want eval assertions in CI | "Unit tests for LLMs": `assert_test`, metric classes, fails the build on regressions | Heavy LLM-judge metrics can be slow and costly to run on every commit |
 | **promptfoo** | You want to sweep many prompts x models x cases from a YAML file with no code | Config-driven matrix testing and fast red-team/jailbreak scans | YAML gets unwieldy for complex branching logic or custom Python graders |
 | **Inspect** | You are running rigorous, reproducible model evals or safety/capability benchmarks | The UK AI Safety Institute's framework: solvers, scorers, sandboxed tool use, strong logs | Aimed at structured benchmark eval, more setup than a quick app-level check |
@@ -6358,14 +6379,14 @@ Confusion Matrix:
 Predicted Pos    |      TP        |       FP        |
 Predicted Neg    |      FN        |       TN        |
 
-TPR (Recall) = TP / (TP + FN)      "Catches real positives"
-TNR (Specificity) = TN / (TN + FP) "Avoids false alarms"
+TPR (Recall) = TP / (TP + FN)      "Recognizes real passes"
+TNR (Specificity) = TN / (TN + FP) "Catches real failures"
 Precision = TP / (TP + FP)
 F1 Score = 2 * (Precision * Recall) / (Precision + Recall)
 
 Target for evals:
-- TPR > 80% (catches real issues)
-- TNR > 80% (doesn't false alarm)
+- TPR > 80% (good traces recognized, few false alarms)
+- TNR > 80% (real failures get caught)
 ```
 
 ### Data Split Ratios
@@ -6613,19 +6634,21 @@ Return your evaluation as JSON:
 ```
 
 **Common iteration patterns:**
-- TPR too low → Judge is missing real failures. Add more Fail examples, make fail criteria more explicit.
-- TNR too low → Judge has too many false alarms. Add "what does NOT count as a failure" section, add Pass examples for edge cases.
+- TPR too low → Judge has too many false alarms: good traces are getting flagged FAIL. Add a "what does NOT count as a failure" section, add Pass examples for the edge cases it wrongly flags.
+- TNR too low → Judge is missing real failures. Add more Fail examples, make fail criteria more explicit.
 - Both low → Criteria are ambiguous. Rewrite from scratch with clearer definitions.
 
 ### 9. Model Selection for Judges
 
 | Model Tier | When to Use | Typical Accuracy |
 |------------|------------|-----------------|
-| GPT-4o / Claude Sonnet 4.6 | High-stakes evals, complex reasoning | 85–95% |
-| GPT-4o-mini / Claude Haiku | Cost-sensitive, high-volume evals | 75–90% |
-| Open-source (Llama, Mistral) | Self-hosted, privacy-sensitive | 70–85% |
+| Claude Opus 4.8 / GPT-5.6 | High-stakes evals, complex reasoning | 85–95% |
+| GPT-5.5 mini / Gemini 3.1 Flash / DeepSeek V4 Flash | Cost-sensitive, high-volume evals | 75–90% |
+| Open-weight (Llama 4, Qwen 3.x, GLM-5.2) | Self-hosted, privacy-sensitive | 70–85% |
 
 **Tip:** Start with the most capable model to establish a performance ceiling. Then test whether a cheaper model can match it for your specific use case. Often it can, especially with good few-shot examples.
+
+For prices and the validation protocol for stepping down a tier, see the judge-tier ladder in Chapter 13.
 
 ### 10. Prompt Versioning
 
@@ -6654,7 +6677,7 @@ langwatch.prompts.create(
     name="dietary-judge-v3",
     description="Added edge cases for keto",
     template=judge_prompt_text,
-    model="gpt-4o",
+    model="gpt-5.6",
     temperature=0,
 )
 
@@ -6665,6 +6688,20 @@ langfuse.create_prompt(
     labels=["staging"],  # promote to "production" after validation
 )
 ```
+
+### 11. When One Judge Isn't Enough: Panels and Majority Voting {#judge-panels}
+
+A single judge, however well-prompted, carries one model's biases. A **panel of judges** (PoLL, a Panel of LLM judges) runs several *different* judges on the same trace and takes a majority vote. On binary rubrics, three diverse cheap judges routinely match or beat one frontier judge, at a fraction of the cost, and they produce something a single judge cannot: a disagreement signal.
+
+How to run one well:
+
+- **Diversity is the whole point.** Use different model families (for example Gemini 3.1 Flash + DeepSeek V4 Flash + Claude Haiku 4.5), or the same model with meaningfully different prompts. Three copies of one model at temperature 0.7 is not a panel; it is one judge with noise.
+- **Vote on the label, keep every explanation.** Majority PASS/FAIL decides; the explanations are for debugging disagreements.
+- **Treat disagreement as routing.** Unanimous verdicts are trustworthy at scale. The 2-1 splits are your borderline cases: route them to a frontier judge or a human queue. In practice 80-90% of traces come back unanimous, so the expensive tier only ever sees the hard 10-20%.
+- **Validate the panel like any judge.** The majority verdict gets the same treatment as a single judge: TPR/TNR on your labeled test set (Chapter 4), then judgy correction (Chapter 10).
+- **Cost math:** three Flash-class calls are roughly $0.0015/eval, still ~10x cheaper than one Opus 4.8 call (Chapter 13's ladder). The panel loses only on latency, so use it offline; inline guardrails stay single-judge.
+
+When *not* to bother: rubrics so objective that code or one cheap judge already clears 90%+ TPR/TNR. The panel earns its keep on subjective calls (tone, helpfulness, "would a user be annoyed?") where single-judge bias is worst.
 
 ---
 
@@ -6742,7 +6779,7 @@ from phoenix.evals import OpenAIModel, PromptTemplate, llm_generate, llm_classif
 results = llm_generate(
     dataframe=traces_df,
     template=PromptTemplate("Evaluate: {input}"),
-    model=OpenAIModel(model="gpt-4o"),
+    model=OpenAIModel(model="gpt-5.6"),
     output_parser=my_parser,
     concurrency=20,
 )
@@ -6758,7 +6795,7 @@ prompt = await px_client.prompts.create(
     version=PromptVersion(
         [{"role": "system", "content": "..."},
          {"role": "user", "content": "{{question}}"}],
-        model_name="gpt-4o",
+        model_name="gpt-5.6",
     ),
 )
 ```
@@ -6805,8 +6842,8 @@ spans_df = langwatch.get_spans(
 # Get spans within a time range
 spans_df = langwatch.get_spans(
     filters={
-        "timestamp_gte": "2025-02-01",
-        "timestamp_lte": "2025-02-09"
+        "timestamp_gte": "2026-06-01",
+        "timestamp_lte": "2026-06-09"
     }
 )
 ```
@@ -6888,7 +6925,7 @@ prompt = langwatch.prompts.create(
         {"role": "system", "content": "You are a recipe assistant..."},
         {"role": "user", "content": "{{question}}"}
     ],
-    model="gpt-4o-mini",
+    model="gpt-5.5-mini",
     temperature=0.7
 )
 
@@ -7007,7 +7044,7 @@ compiled = prompt.compile(role="chef", question="Best pasta recipe?")
 
 | Day | Activity | Time | Role Focus |
 |-----|----------|------|------------|
-| 1 | Pick your platform (Phoenix or Langfuse), install it | 1h | All |
+| 1 | Pick your platform (Phoenix, LangWatch, or Langfuse), install it | 1h | All |
 | 2 | Instrument your app with auto-tracing | 2h | Engineer |
 | 2 | Browse the trace viewer UI, understand traces visually | 1h | PM/QA |
 | 3 | Create a test dataset with dimensional sampling | 2h | All |
@@ -7082,7 +7119,7 @@ Real lessons from implementing complete eval pipelines in production:
 
 9. **Safety evals are not optional** - Prompt injection, PII leakage, and jailbreak detection should be running before you worry about quality evals.
 
-10. **Start expensive, then optimize** - Use GPT-4o/Claude Sonnet to establish your performance ceiling, then test whether a cheaper model can match it. Often it can.
+10. **Start expensive, then optimize** - Use a frontier judge (Claude Opus 4.8 or GPT-5.6) to establish your performance ceiling, then test whether a cheaper model can match it. Often it can.
 
 11. **Sampling beats exhaustive evaluation** - Evaluating 10% of traces with statistical rigor gives you a better answer than evaluating 100% with a bad judge.
 
@@ -7093,6 +7130,32 @@ Real lessons from implementing complete eval pipelines in production:
 13. **Match the platform to your constraints, not the hype** - Phoenix wins on free self-hosting, LangWatch wins on speed and built-in evaluators, Langfuse wins on flexibility and community. All three run the same methodology in this guide.
 
 14. **Built-in evaluators save real dev time** - If a platform already ships a safety check or RAG metric you need (LangWatch ships 40+), use it instead of reinventing it.
+
+---
+
+## Interview Questions {#interview-questions}
+
+The rest of this book asks interview questions per chapter; here are five that test whether the material above actually stuck. All five come up, in some form, in real staff-level AI system design interviews.
+
+### Q: Your LLM judge agrees with human labels 92% of the time. Why might it still be useless, and what would you measure instead?
+
+**Strong answer:** Agreement is dominated by the majority class. If only 8% of traces actually fail, a judge that answers PASS unconditionally scores 92% agreement and catches zero failures. Measure TPR and TNR separately on a class-balanced labeled set, and hold both above ~80% before trusting it. Then correct the production pass rate for residual judge error with a tool like judgy and report the corrected estimate with its confidence interval, not the raw judge output. (Chapters 4 and 10.)
+
+### Q: How would you evaluate an agent whose tool-call sequence is different on every run?
+
+**Strong answer:** Stop gating on a fixed path. Score the trajectory with partial credit and order tolerance: goal and sub-goal completion, action validity (were the tool calls well-formed and permitted), efficiency (optimal steps / actual steps), and a loop penalty. Because two correct runs can differ, also measure reliability, not just capability: run each scenario k times and report pass^k (all k runs succeed); the gap between pass@1 and pass^k quantifies flakiness. Exact-match trajectory tests punish valid alternatives and rot immediately. (Chapters 7-8.)
+
+### Q: You have 500,000 production traces per day and a finite eval budget. Design the evaluation stack.
+
+**Strong answer:** Tier it. Tier 1: code-based checks (format, PII regex, tool-call validity) on 100% of traffic, free. Tier 2: a cheap validated judge (Flash-class) on the Tier-1 survivors or a 5-10% sample. Tier 3: a frontier judge or humans, only on Tier-2 disagreements plus a weekly calibration sample. Validate the cheap judge against a 150-300 trace gold set with Cohen's kappa before trusting it, cache duplicate evals, and re-validate when traffic drifts. That is the difference between ~$300k/month and ~$1-2k/month at similar signal quality. (Chapter 13.)
+
+### Q: Your RAG system's faithfulness score is 0.92. When would you distrust that number?
+
+**Strong answer:** When the judge that produced it was never calibrated. Faithfulness is LLM-judged, so it inherits judge noise and bias: check the judge against ~50 human labels (kappa above ~0.7), make sure the judging model is not the same model that generated the answers (self-preference inflates scores), run it at temperature 0, and mind the sample size before celebrating a 2-point move. Also ask what the 0.92 hides: "I don't have enough information" is perfectly faithful and completely useless, which is why faithfulness must be read jointly with answer relevance. (Chapter 6.)
+
+### Q: A PM asks, "why do we need error analysis when we already have an LLM judge scoring helpfulness?"
+
+**Strong answer:** Because the judge measures the failure modes someone imagined, and error analysis discovers the ones that exist. Reading ~100 traces with open coding, then clustering (axial coding), yields the actual failure taxonomy with frequencies; each frequent mode then gets a targeted evaluator, code-based where deterministic, LLM-judged where subjective. A generic helpfulness score catches almost none of the specific, fixable failures (dropped constraints, wrong tool, markdown in SMS) that error analysis surfaces in an afternoon. Evals answer "how often"; error analysis answers "what." (Chapter 3.)
 
 ---
 
@@ -7191,6 +7254,16 @@ Start today. Your future self will thank you.
 | **Comet Opik** | LLM Tracing & Evals | Yes (Apache 2.0) | End-to-end observability | Framework integrations, online evaluation rules |
 | **METR** | Catastrophic Risk | Research | Policy guidance | Autonomous capability assessment |
 
+### Where to Go Next in This Book {#where-to-go-next}
+
+This study guide is the hands-on companion to the evaluation chapters of the AI System Design Guide:
+
+- [LLM Evaluation](14-evaluation-and-observability/01-llm-evaluation.md): the book's core chapter on eval metrics and methodology, including how evals show up in system design interviews
+- [LLM Observability](14-evaluation-and-observability/02-observability.md): tracing architecture and production monitoring, in more depth than Chapter 2
+- [Benchmarks and Leaderboards](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md): how to read MMLU, SWE-bench, and Arena Elo claims critically; public benchmarks complement the private evals built here
+- [Evaluating Agentic Systems](07-agentic-systems/10-evaluating-agentic-systems.md): trajectory benchmarks and agent reliability, expanding on Chapters 7-8
+- [RAG Evaluation Patterns](06-retrieval-systems/13-rag-evaluation-patterns.md): the RAG Triad and eval-gated CI/CD, expanding on Chapter 6
+
 ### Contact Me
 - Om Bharatiya: [@ombharatiya](https://twitter.com/ombharatiya)
 
@@ -7204,4 +7277,4 @@ This guide was built on the foundation of the following people's work and ideas.
 
 *This guide was inspired by and builds upon the AI Evals for Engineers & PMs course by Hamel Husain and Shreya Shankar, extended with additional research, production-ready code examples, and multi-platform guides covering Phoenix, LangWatch, Langfuse, and the broader eval tooling ecosystem.*
 
-*Author: Om Bharatiya | Created: February 2026*
+*Author: Om Bharatiya | Created: February 2026 | Last updated: June 2026*
