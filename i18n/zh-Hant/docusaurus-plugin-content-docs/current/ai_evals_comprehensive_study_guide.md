@@ -6430,6 +6430,32 @@ Test:  ~45%  (final, unbiased evaluation - use ONCE)
 | 在 dev 集上驗證評估 | 1 小時 | 每次迭代 |
 | 每週維護 | 30 分鐘 | 每週 |
 
+### 平台快速上手
+
+**Phoenix（自架）：**
+```bash
+pip install arize-phoenix openai openinference-instrumentation-openai
+phoenix serve
+```
+```python
+from phoenix.otel import register
+register(project_name="my-app", auto_instrument=True)  # Auto-traces OpenAI
+```
+
+**LangWatch（最快）：**
+```python
+import langwatch
+langwatch.init()
+# Done! Auto-tracing enabled
+```
+
+**Langfuse（直接替換 import）：**
+```python
+from langfuse.openai import OpenAI
+client = OpenAI()
+# Set LANGFUSE_* environment variables first
+```
+
 ---
 
 ## 附錄 C：來自生產環境的完整 Judge 提示 {#appendix-c}
