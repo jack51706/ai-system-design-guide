@@ -1751,6 +1751,8 @@ TPR = True Positives / (True Positives + False Negatives)
 TNR = True Negatives / (True Negatives + False Positives)
 ```
 
+> **Watch the convention: in this guide, the "positive" class is PASS.** TPR is about correctly recognizing *good* traces; TNR is about correctly catching *bad* ones. That flips the usual QA instinct where "positive" means "found a defect": here a **false positive is a missed defect** (the judge said PASS on a real failure) and a **false negative is a false alarm** (the judge said FAIL on a good trace). The guardrail literature, and the cheap-judge validation protocol in Chapter 13, usually counts the other way, with 1 = fail/flag. Neither is wrong; unlabeled, both are dangerous. Whenever someone quotes a TPR, make them say what "positive" means first.
+
 ### Real Results: Why Iteration Matters
 
 **After careful prompt iteration (production-quality judge):**
@@ -1797,8 +1799,8 @@ Notice the first attempt had a TNR of only 22.2%, meaning when a recipe actually
 1. **Test your judge** on Dev set
 2. **Calculate TPR and TNR**
 3. **Look at errors:**
-   - Where did it miss real failures? (False Negatives)
-   - Where did it false alarm? (False Positives)
+   - Where did it miss real failures? (False Positives)
+   - Where did it false alarm? (False Negatives)
 4. **Update the prompt:**
    - Add missed scenarios to criteria
    - Add false alarm scenarios to "NOT a failure" section
@@ -3908,7 +3910,7 @@ Aggregate rates tell you something regressed; traces tell you which turn and why
 
 - **Phoenix (Arize):** open-source, OpenTelemetry-based. Group spans under a session/trace id and it renders the full multi-turn conversation; attach judge results as span annotations so a failed-contradiction verdict links straight to the offending turn. Strong for local/offline iteration.
 - **Langfuse:** open-source, first-class **sessions** that stitch turns into one timeline, with per-turn scores and dataset-based eval runs. Good for tracking a metric across prompt versions over time.
-- **LangWatch:** managed, geared to conversation-level analytics and online guardrails; useful when you want production dashboards of the rates above plus alerting on spikes.
+- **LangWatch:** open-source with a managed cloud, geared to conversation-level analytics and online guardrails; useful when you want production dashboards of the rates above plus alerting on spikes.
 
 Whatever you use, the non-negotiables are: a stable session id linking the turns, the resolved prompt (post-retrieval, post-truncation) stored per turn so you can see what the model actually conditioned on, and judge verdicts attached to the specific turn so locality survives into your dashboards.
 
@@ -5241,7 +5243,7 @@ Never swap Opus for Flash on faith. Run a head-to-head on a labeled set first. T
 2. **Score the gold set with both judges.** Treat human labels as truth.
 3. **Compute agreement metrics**, not just accuracy. Accuracy lies when classes are imbalanced (if 95% of traces pass, a judge that says "pass" always is 95% accurate and useless).
 
-Key metrics, with formulas and targets:
+Key metrics, with formulas and targets. Note the convention flip: for gate validation the positive class is **1 = fail/flag** (you are measuring the *detector*), so TPR here is recall on the bad class, the mirror image of Chapter 4's PASS-positive setup (see the convention callout there):
 
 - **TPR (recall / sensitivity)** = TP / (TP + FN). "Of the truly-bad traces, how many did the judge catch?" For a safety gate you want **>= 0.95**; missing bad outputs is the expensive failure.
 - **TNR (specificity)** = TN / (TN + FP). "Of the truly-good traces, how many did it correctly pass?" Low TNR means false alarms that waste reviewer time; aim **>= 0.90** for guardrails so you are not crying wolf.
@@ -5976,7 +5978,7 @@ These are the twelve mistakes that show up in almost every eval post-mortem. Non
 
 **The cost:** You measure the wrong thing with great precision. Every downstream artifact (the judge, the dashboard, the alerting) is built on a guess about what fails, so it is confidently green while real failures go unmeasured. You usually discover this only after a customer escalation.
 
-**The fix:** Always start with open-coded error analysis. Sit with real traces, label what actually went wrong in your own words, then cluster. Only build judges for failure modes you have *seen*, not the ones you *imagine*. See Chapter 2.
+**The fix:** Always start with open-coded error analysis. Sit with real traces, label what actually went wrong in your own words, then cluster. Only build judges for failure modes you have *seen*, not the ones you *imagine*. See Chapter 3.
 
 **Smell test:** If you cannot name your top three failure modes with a rough frequency for each, you skipped error analysis.
 
@@ -5990,7 +5992,7 @@ These are the twelve mistakes that show up in almost every eval post-mortem. Non
 
 **The cost:** You ship a judge that cannot find the failures you built it to find, and you trust it because the headline number was high. The bias is invisible until you audit individual flags.
 
-**The fix:** Always compute TPR (recall on real failures) and TNR (specificity) separately, on a class-balanced labeled set. Both must clear your bar (see Chapter 4's targets). Report them as a pair, never collapse to one accuracy number.
+**The fix:** Always compute TPR and TNR separately, on a class-balanced labeled set: TPR tells you whether good traces get recognized (few false alarms), TNR whether real failures get caught. Both must clear your bar (see Chapter 4's targets). Report them as a pair, never collapse to one accuracy number.
 
 **Smell test:** If your validation is one number, it is the wrong number.
 
@@ -6050,19 +6052,19 @@ These are the twelve mistakes that show up in almost every eval post-mortem. Non
 
 **Smell test:** If the team glances at the eval dashboard and looks away, you have too many evals and too little trust.
 
-### Mistake #7: Low TNR (Ignoring False Positives)
+### Mistake #7: Optimizing One Rate and Ignoring the Other
 
-**In the wild:** "My eval catches all real problems (TPR=95%), good enough." But it also screams on perfectly good traces (TNR around 22%, the classic naive first attempt). Within a week the on-call engineer has muted the alert, so the 95% TPR now catches nothing because nobody is listening.
+**In the wild:** Two mirror-image failures. The *trigger-happy* judge: "it catches every real failure (TNR near 100%), good enough," except it also screams on perfectly good traces (TPR around 22%). Within a week the on-call engineer has muted the alert, so all that sensitivity catches nothing because nobody is listening. And the *lenient* judge, the classic naive first attempt from Chapter 4 (TPR 90%, TNR 22%): the dashboard glows green while most real violations sail through labeled PASS.
 
-**Why it's wrong:** TPR and TNR are a tradeoff, and a high-TPR / low-TNR eval is a smoke detector that goes off when you make toast. People disable noisy alerts, and a disabled eval has an effective TPR of 0 no matter what the spreadsheet says.
+**Why it's wrong:** TPR and TNR are a tradeoff you must hold *simultaneously*. A trigger-happy eval is a smoke detector that goes off when you make toast: people disable it, and a disabled eval has an effective TNR of 0 no matter what the spreadsheet says. A lenient eval is a smoke detector with the battery removed: quieter, and useless in the exact moment it exists for.
 
-**Why it happens:** Optimizing for recall feels safe ("better to over-flag than miss a real bug"). The false-positive cost is paid later, by a different person (whoever triages), so it is easy to discount during development.
+**Why it happens:** Each rate feels safe to optimize alone. "Better to over-flag than miss a real bug" quietly destroys TPR; "keep the pass rate believable" quietly destroys TNR. Either way the cost lands later, on a different person (whoever triages the noise, or whoever ships the regression), so it is easy to discount during development.
 
-**The cost:** Every flag becomes suspect, triage time balloons, and eventually the eval is muted. You lose the eval entirely, plus the hours spent chasing phantom failures before you gave up on it.
+**The cost:** With a muted eval you lose the eval entirely, plus the hours spent chasing phantom failures before the team gave up on it. With a lenient one you ship false confidence, which is worse than no eval because a green dashboard actively argues against looking closer.
 
-**The fix:** Hold both TPR *and* TNR to a bar (see Chapter 4). If TNR is low, iterate the judge prompt, sharpen the PASS/FAIL definitions, and add few-shot examples of the good cases it is wrongly flagging. A precise eval people trust beats a sensitive eval people mute.
+**The fix:** Hold both TPR *and* TNR to a bar (>80%, see Chapter 4) and report them as a pair, never blended into one accuracy number. If TPR is low (false alarms), add "what does NOT count as a failure" clauses and few-shot examples of the good traces it wrongly flags. If TNR is low (missed defects), sharpen the FAIL definitions and add examples of real violations. A precise eval people trust beats a sensitive eval people mute.
 
-**Smell test:** If someone has put the eval's alert on snooze, its TNR was too low.
+**Smell test:** If someone has put the eval's alert on snooze, TPR was too low. If the dashboard has been green for a month while support tickets say otherwise, TNR was.
 
 ### Mistake #8: Not Testing the Evals Themselves
 
@@ -6194,7 +6196,7 @@ Observability platforms answer "what happened in production." Eval *frameworks* 
 
 | Framework | Reach for it when... | Niche it owns | Honest tradeoff |
 |-----------|----------------------|---------------|-----------------|
-| **RAGAS** | You have a retrieval pipeline and need faithfulness, answer relevancy, context precision/recall | Decomposing RAG quality into retrieval vs generation failures (see Chapter 7) | Metrics are LLM-judged and noisy on small sets; calibrate before you trust the numbers |
+| **RAGAS** | You have a retrieval pipeline and need faithfulness, answer relevancy, context precision/recall | Decomposing RAG quality into retrieval vs generation failures (see Chapter 6) | Metrics are LLM-judged and noisy on small sets; calibrate before you trust the numbers |
 | **DeepEval** | Your team thinks in `pytest`; you want eval assertions in CI | "Unit tests for LLMs": `assert_test`, metric classes, fails the build on regressions | Heavy LLM-judge metrics can be slow and costly to run on every commit |
 | **promptfoo** | You want to sweep many prompts x models x cases from a YAML file with no code | Config-driven matrix testing and fast red-team/jailbreak scans | YAML gets unwieldy for complex branching logic or custom Python graders |
 | **Inspect** | You are running rigorous, reproducible model evals or safety/capability benchmarks | The UK AI Safety Institute's framework: solvers, scorers, sandboxed tool use, strong logs | Aimed at structured benchmark eval, more setup than a quick app-level check |
@@ -6358,14 +6360,14 @@ Confusion Matrix:
 Predicted Pos    |      TP        |       FP        |
 Predicted Neg    |      FN        |       TN        |
 
-TPR (Recall) = TP / (TP + FN)      "Catches real positives"
-TNR (Specificity) = TN / (TN + FP) "Avoids false alarms"
+TPR (Recall) = TP / (TP + FN)      "Recognizes real passes"
+TNR (Specificity) = TN / (TN + FP) "Catches real failures"
 Precision = TP / (TP + FP)
 F1 Score = 2 * (Precision * Recall) / (Precision + Recall)
 
 Target for evals:
-- TPR > 80% (catches real issues)
-- TNR > 80% (doesn't false alarm)
+- TPR > 80% (good traces recognized, few false alarms)
+- TNR > 80% (real failures get caught)
 ```
 
 ### Data Split Ratios
@@ -6613,8 +6615,8 @@ Return your evaluation as JSON:
 ```
 
 **Common iteration patterns:**
-- TPR too low → Judge is missing real failures. Add more Fail examples, make fail criteria more explicit.
-- TNR too low → Judge has too many false alarms. Add "what does NOT count as a failure" section, add Pass examples for edge cases.
+- TPR too low → Judge has too many false alarms: good traces are getting flagged FAIL. Add a "what does NOT count as a failure" section, add Pass examples for the edge cases it wrongly flags.
+- TNR too low → Judge is missing real failures. Add more Fail examples, make fail criteria more explicit.
 - Both low → Criteria are ambiguous. Rewrite from scratch with clearer definitions.
 
 ### 9. Model Selection for Judges
