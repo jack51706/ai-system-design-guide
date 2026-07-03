@@ -390,6 +390,28 @@ All of these support the same core concepts: traces, spans, datasets, evaluation
 - **LangWatch:** cloud or self-hosted, the fastest setup (a 3-line integration) and ships 40+ built-in evaluators.
 - **Langfuse:** cloud or self-hosted, the most flexible for custom pipelines, with the largest community and more integrations.
 
+### The Portability Layer: OpenTelemetry GenAI Semantic Conventions {#otel-genai-semconv}
+
+One more thing to check before you commit to a platform: whether your instrumentation will outlive it. All three platforms in this guide speak OpenTelemetry, and by 2026 the OTel **GenAI semantic conventions** (the standard attribute names for LLM spans) are stable enough to design around. Instrument once with standard attributes and your traces can move between backends, or feed two at once, without touching application code.
+
+The attributes that matter in practice:
+
+| Attribute | What it records | Example |
+|---|---|---|
+| `gen_ai.operation.name` | The kind of operation | `chat`, `embeddings`, `execute_tool` |
+| `gen_ai.request.model` / `gen_ai.response.model` | Model requested vs model that actually answered | `gpt-5.5-mini` |
+| `gen_ai.usage.input_tokens` / `gen_ai.usage.output_tokens` | Token counts, the basis of every cost dashboard | `2500` / `300` |
+| `gen_ai.input.messages` / `gen_ai.output.messages` | Prompt and completion payloads (opt-in: PII implications, see above) | full message arrays |
+| `gen_ai.tool.name` | Which tool an agent invoked | `get_availability` |
+
+Why this matters for evals specifically:
+
+1. **Your history survives a platform switch.** Eval datasets are built from traces. Standard attributes keep last year's traces queryable after a migration, so golden datasets and regression sets do not die with the old backend.
+2. **One instrumentation, many consumers.** A common production pattern is fanning the same OTLP stream to a tracing platform for humans and to cheap object storage for later reprocessing. Standard attributes make both consumers trivial.
+3. **Mixed frameworks stop meaning mixed schemas.** Phoenix's OpenInference instrumentors, Langfuse's OTLP endpoint, and LangWatch's collectors all map to or accept these conventions, so a LangChain service and a hand-rolled one can land in the same dashboards.
+
+The caveat: the conventions cover *telemetry*, not workflow. Datasets, experiments, annotation queues, and prompt management remain platform-specific APIs (Appendix F). Standardize the spans; accept the platform SDK for the rest.
+
 ### Setting Up Phoenix (Open-Source, Self-Hosted)
 
 Phoenix is an open-source AI observability platform built on OpenTelemetry. It provides tracing, evaluation, datasets, experiments, and prompt management, all for free.
@@ -3904,6 +3926,11 @@ How to measure: count assistant turns directly from the transcript; no LLM neede
 
 Two more worth adding as you mature: **resolution rate** (conversations that reached a clear end state, completed or correctly escalated, versus those that trailed off unresolved) and **escalation precision/recall** (of conversations that should have escalated, how many did, and of escalations, how many were warranted).
 
+**pass^k (repeated-run reliability).** Agents and multi-turn systems are stochastic: the same scenario can pass on Monday and fail on Tuesday. Run each scenario k times (k=4 is a common budget) and report pass^k, the fraction of scenarios where *all k* runs succeed.
+Formula: `pass^k = (scenarios with k successes out of k) / (total scenarios)`. If a scenario's single-run success probability is p, expected pass^k is p^k: a system that passes a scenario 90% of the time is only 66% reliable at pass^4.
+Target: set by your tolerance for flakiness; >= 0.80 pass^4 on your core scenario suite is a solid bar for a customer-facing assistant.
+How to measure: rerun the synthetic scenarios (Strategy 3) k times each with fresh sampling (no caching), count per-scenario successes. The gap between the single-run pass rate and pass^k *is* your flakiness, quantified. A large gap says: hunt nondeterminism (temperature, retrieval churn, tool race conditions) before hunting capability.
+
 #### Tooling: tracing makes multi-turn debuggable
 
 Aggregate rates tell you something regressed; traces tell you which turn and why. Treat a conversation as a single trace with one span per turn (and child spans for retrieval and tool calls), so you can replay the exact transcript the model saw at the failing turn. This is the difference between "contradiction rate went up 3 points" and "in session abc123, turn 5 contradicted turn 2 because retrieval returned a stale policy chunk."
@@ -6662,6 +6689,20 @@ langfuse.create_prompt(
 )
 ```
 
+### 11. When One Judge Isn't Enough: Panels and Majority Voting {#judge-panels}
+
+A single judge, however well-prompted, carries one model's biases. A **panel of judges** (PoLL, a Panel of LLM judges) runs several *different* judges on the same trace and takes a majority vote. On binary rubrics, three diverse cheap judges routinely match or beat one frontier judge, at a fraction of the cost, and they produce something a single judge cannot: a disagreement signal.
+
+How to run one well:
+
+- **Diversity is the whole point.** Use different model families (for example Gemini 3.1 Flash + DeepSeek V4 Flash + Claude Haiku 4.5), or the same model with meaningfully different prompts. Three copies of one model at temperature 0.7 is not a panel; it is one judge with noise.
+- **Vote on the label, keep every explanation.** Majority PASS/FAIL decides; the explanations are for debugging disagreements.
+- **Treat disagreement as routing.** Unanimous verdicts are trustworthy at scale. The 2-1 splits are your borderline cases: route them to a frontier judge or a human queue. In practice 80-90% of traces come back unanimous, so the expensive tier only ever sees the hard 10-20%.
+- **Validate the panel like any judge.** The majority verdict gets the same treatment as a single judge: TPR/TNR on your labeled test set (Chapter 4), then judgy correction (Chapter 10).
+- **Cost math:** three Flash-class calls are roughly $0.0015/eval, still ~10x cheaper than one Opus 4.8 call (Chapter 13's ladder). The panel loses only on latency, so use it offline; inline guardrails stay single-judge.
+
+When *not* to bother: rubrics so objective that code or one cheap judge already clears 90%+ TPR/TNR. The panel earns its keep on subjective calls (tone, helpfulness, "would a user be annoyed?") where single-judge bias is worst.
+
 ---
 
 ## Appendix F: Platform Methods Reference (Phoenix, LangWatch & Langfuse) {#appendix-f}
@@ -7092,6 +7133,32 @@ Real lessons from implementing complete eval pipelines in production:
 
 ---
 
+## Interview Questions {#interview-questions}
+
+The rest of this book asks interview questions per chapter; here are five that test whether the material above actually stuck. All five come up, in some form, in real staff-level AI system design interviews.
+
+### Q: Your LLM judge agrees with human labels 92% of the time. Why might it still be useless, and what would you measure instead?
+
+**Strong answer:** Agreement is dominated by the majority class. If only 8% of traces actually fail, a judge that answers PASS unconditionally scores 92% agreement and catches zero failures. Measure TPR and TNR separately on a class-balanced labeled set, and hold both above ~80% before trusting it. Then correct the production pass rate for residual judge error with a tool like judgy and report the corrected estimate with its confidence interval, not the raw judge output. (Chapters 4 and 10.)
+
+### Q: How would you evaluate an agent whose tool-call sequence is different on every run?
+
+**Strong answer:** Stop gating on a fixed path. Score the trajectory with partial credit and order tolerance: goal and sub-goal completion, action validity (were the tool calls well-formed and permitted), efficiency (optimal steps / actual steps), and a loop penalty. Because two correct runs can differ, also measure reliability, not just capability: run each scenario k times and report pass^k (all k runs succeed); the gap between pass@1 and pass^k quantifies flakiness. Exact-match trajectory tests punish valid alternatives and rot immediately. (Chapters 7-8.)
+
+### Q: You have 500,000 production traces per day and a finite eval budget. Design the evaluation stack.
+
+**Strong answer:** Tier it. Tier 1: code-based checks (format, PII regex, tool-call validity) on 100% of traffic, free. Tier 2: a cheap validated judge (Flash-class) on the Tier-1 survivors or a 5-10% sample. Tier 3: a frontier judge or humans, only on Tier-2 disagreements plus a weekly calibration sample. Validate the cheap judge against a 150-300 trace gold set with Cohen's kappa before trusting it, cache duplicate evals, and re-validate when traffic drifts. That is the difference between ~$300k/month and ~$1-2k/month at similar signal quality. (Chapter 13.)
+
+### Q: Your RAG system's faithfulness score is 0.92. When would you distrust that number?
+
+**Strong answer:** When the judge that produced it was never calibrated. Faithfulness is LLM-judged, so it inherits judge noise and bias: check the judge against ~50 human labels (kappa above ~0.7), make sure the judging model is not the same model that generated the answers (self-preference inflates scores), run it at temperature 0, and mind the sample size before celebrating a 2-point move. Also ask what the 0.92 hides: "I don't have enough information" is perfectly faithful and completely useless, which is why faithfulness must be read jointly with answer relevance. (Chapter 6.)
+
+### Q: A PM asks, "why do we need error analysis when we already have an LLM judge scoring helpfulness?"
+
+**Strong answer:** Because the judge measures the failure modes someone imagined, and error analysis discovers the ones that exist. Reading ~100 traces with open coding, then clustering (axial coding), yields the actual failure taxonomy with frequencies; each frequent mode then gets a targeted evaluator, code-based where deterministic, LLM-judged where subjective. A generic helpfulness score catches almost none of the specific, fixable failures (dropped constraints, wrong tool, markdown in SMS) that error analysis surfaces in an afternoon. Evals answer "how often"; error analysis answers "what." (Chapter 3.)
+
+---
+
 ## Conclusion
 
 AI evals are not just "testing"; they're a product development methodology that touches engineering, product management, and quality assurance.
@@ -7186,6 +7253,16 @@ Start today. Your future self will thank you.
 | **Galileo** | Hallucinations | No | Quality assurance | ChainPoll, real-time monitoring |
 | **Comet Opik** | LLM Tracing & Evals | Yes (Apache 2.0) | End-to-end observability | Framework integrations, online evaluation rules |
 | **METR** | Catastrophic Risk | Research | Policy guidance | Autonomous capability assessment |
+
+### Where to Go Next in This Book {#where-to-go-next}
+
+This study guide is the hands-on companion to the evaluation chapters of the AI System Design Guide:
+
+- [LLM Evaluation](14-evaluation-and-observability/01-llm-evaluation.md): the book's core chapter on eval metrics and methodology, including how evals show up in system design interviews
+- [LLM Observability](14-evaluation-and-observability/02-observability.md): tracing architecture and production monitoring, in more depth than Chapter 2
+- [Benchmarks and Leaderboards](14-evaluation-and-observability/03-benchmarks-and-leaderboards.md): how to read MMLU, SWE-bench, and Arena Elo claims critically; public benchmarks complement the private evals built here
+- [Evaluating Agentic Systems](07-agentic-systems/10-evaluating-agentic-systems.md): trajectory benchmarks and agent reliability, expanding on Chapters 7-8
+- [RAG Evaluation Patterns](06-retrieval-systems/13-rag-evaluation-patterns.md): the RAG Triad and eval-gated CI/CD, expanding on Chapter 6
 
 ### Contact Me
 - Om Bharatiya: [@ombharatiya](https://twitter.com/ombharatiya)
