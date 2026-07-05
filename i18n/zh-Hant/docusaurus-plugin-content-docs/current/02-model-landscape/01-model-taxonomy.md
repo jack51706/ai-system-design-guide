@@ -2,7 +2,9 @@
 
 本章提供一份截至 **2026 年 6 月** 的完整模型生態指南，涵蓋模型家族、能力，以及生產系統的選型準則。
 
-> **最後驗證：2026 年 6 月 28 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+> **最後驗證：2026 年 7 月 5 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+>
+> **2026 年 6 月 30 日至 7 月 5 日更新：** Anthropic 發布了 **Claude Sonnet 5**（6 月 30 日，`claude-sonnet-5`），是其代理能力最強的 Sonnet 模型，具備原生 1M token 上下文視窗，促銷價每 1M tokens 為 $2/$10（至 8 月 31 日為止，之後恢復標準價 $3/$15）（[Anthropic 發布文](https://www.anthropic.com/news/claude-sonnet-5)；[TechCrunch](https://techcrunch.com/2026/06/30/anthropic-launches-claude-sonnet-5-as-a-cheaper-way-to-run-agents/)）。Anthropic 回報 SWE-bench Verified 為 85.2%、SWE-bench Pro 為 63.2%（相較 Sonnet 4.6 的 58.1% 與 Opus 4.8 的 69.2%），在多項評測上縮小了與 Opus 4.8 的差距（[基準測試比較，MarkTechPost](https://www.marktechpost.com/2026/06/30/anthropic-claude-sonnet-5-vs-sonnet-4-6-vs-opus-4-8-agentic-coding-benchmarks-api-pricing-and-cost-performance-tradeoffs-compared/)）；現已成為 Claude Code 與 Claude.ai 免費／Pro 方案的預設模型。另外，7 月 1 日 Anthropic 在美國商務部解除 6 月 12 日出口管制命令後，於全球重新部署了 **Claude Fable 5** 與 **Claude Mythos 5**，Anthropic 同意增加網路安全保護措施並回報未來的模型風險；兩者已在 Claude API、Claude.ai、Claude Code 與 Claude Cowork 上重新全面可用，Fable 5 的用量在 7 月 7 日前可計入每週方案額度的最多 50%（[Anthropic：重新部署 Claude Fable 5](https://www.anthropic.com/news/redeploying-fable-5)；[CNBC](https://www.cnbc.com/2026/06/30/anthropic-says-trump-admin-has-lifted-export-controls-on-claude-fable-5-and-mythos-5.html)）。此外本週 OpenAI 的說明中心公布了限量預覽的 GPT-5.6 系列 API 定價（該系列於 6 月 26 日預覽）：Sol 每 1M tokens $5/$30、Terra $2.50/$15、Luna $1/$6；截至 7 月 5 日，廣泛一般可用的時程仍未確認（[OpenAI 說明中心](https://help.openai.com/en/articles/20001325-a-preview-of-gpt-56-sol-terra-and-luna)）。
 >
 > **2026 年 6 月重點：** Anthropic 發布了 **Claude Fable 5**（6 月 9 日，`claude-fable-5`，每 1M 為 $10/$50，1M 上下文），這是其能力最強的廣泛發布模型：一款經過安全處理、可供一般使用的 Mythos 級模型，在敏感主題上配有 Opus 4.8 後援保護機制。**Claude Mythos 5** 於同日推出，作為提供給 Project Glasswing 合作夥伴的無限制版本，以不到 Mythos Preview 一半的價格接替之。
 >
@@ -50,6 +52,25 @@
 
 ## 前沿模型（2026 年 6 月）
 
+### Claude Sonnet 5（Anthropic）- 2026 年 7 月新品
+
+| 屬性 | 數值 |
+|-----------|-------|
+| 模型 ID | `claude-sonnet-5` |
+| 上下文視窗 | 1M tokens |
+| 輸入成本 | 每 1M tokens $2.00（促銷價至 2026 年 8 月 31 日；之後恢復標準價 $3.00） |
+| 輸出成本 | 每 1M tokens $10.00（促銷價至 2026 年 8 月 31 日；之後恢復標準價 $15.00） |
+| SWE-bench Verified | 85.2% |
+| SWE-bench Pro | 63.2%（Sonnet 4.6 為 58.1%，Opus 4.8 為 69.2%） |
+| 多模態 | 文字 + 視覺 |
+| 發布 | 2026 年 6 月 30 日（Claude API、Claude Platform、Claude.ai、Claude Code、Amazon Bedrock、Microsoft Foundry） |
+
+**這是什麼：** Anthropic 至今代理能力最強的 Sonnet 發布版本，在編碼與工具使用評測上大幅縮小與 Opus 4.8 的差距，價格卻只是其一小部分（[Anthropic：介紹 Claude Sonnet 5](https://www.anthropic.com/news/claude-sonnet-5)）。它是 Claude.ai 免費與 Pro 方案以及 Claude Code 的預設模型，並提供給 Max、Team 與 Enterprise 使用（[TechCrunch](https://techcrunch.com/2026/06/30/anthropic-launches-claude-sonnet-5-as-a-cheaper-way-to-run-agents/)）。
+
+**最適合：** 過去需要 Opus 等級品質、但對成本敏感的代理式編碼與工具使用工作負載。
+
+**考量：** 取代 Sonnet 4.6 成為 Anthropic 的生產主力模型；本章稍後提及 Sonnet 4.6 的段落早於此次發布，尚未全數對照 Sonnet 5 重新驗證。促銷價格將於 2026 年 8 月 31 日後恢復為標準價 $3/$15。
+
 ### Claude Fable 5（Anthropic）- 2026 年 6 月新品
 
 | 屬性 | 數值 |
@@ -71,6 +92,8 @@
 **最適合：** 最高要求的推理、長週期代理式工作、視覺密集的任務，以及能力上限比單位成本更重要的工作負載。Anthropic 回報它維持自主運作的時間比以往任何 Claude 模型都長。
 
 **考量：** 每 token 價格是 Opus 4.8 的 2 倍（$10/$50 對比 $5/$25），因此只應將觸及能力上限的工作路由給它。Mythos 級流量帶有 30 天的資料保留要求（不用於訓練；有存取紀錄；在幾乎所有情況下 30 天後刪除），這對合規審查很重要。在訂閱方案上，6 月 9 至 22 日免額外費用納入，之後改為消耗用量點數。發布時並無 Fable 級的快速模式，也無公布的快取/批次折扣；請查看價格頁面。
+
+**更新（2026 年 7 月 1 日）：** 美國商務部解除了 6 月 12 日的出口管制命令，Anthropic 同意增加網路安全保護措施並回報未來的模型風險；Fable 5 與 Mythos 5 已在 Claude API、Claude.ai、Claude Code 與 Claude Cowork 上恢復全球可用，Fable 5 的用量在 7 月 7 日前可計入每週方案額度的最多 50%（[Anthropic：重新部署 Claude Fable 5](https://www.anthropic.com/news/redeploying-fable-5)；[CNBC](https://www.cnbc.com/2026/06/30/anthropic-says-trump-admin-has-lifted-export-controls-on-claude-fable-5-and-mythos-5.html)）。
 
 ### Claude Mythos 5（Anthropic）- 受限存取
 
