@@ -17,6 +17,7 @@
 - How to use statistical correction to account for judge errors
 - How to close the loop: turn eval results into system improvements
 - How to do all of this with your observability platform of choice (Phoenix, LangWatch, Langfuse, Braintrust, LangSmith, or your own)
+- How it all fits together: Chapter 17 is a capstone that builds one complete working application (bot, dataset, judges, CI gate, monitoring, improvement loop) file by file, with real numbers at every step
 
 **Platform Examples:** This guide uses three open-source platforms as primary examples: **Arize Phoenix** (self-hosted), **LangWatch** (cloud or self-hosted), and **Langfuse** (cloud or self-hosted). The methodology is platform-agnostic, so adapt it to whichever tool you use. Where code differs by platform, this guide shows the Phoenix, LangWatch, and Langfuse variants side by side so you can pick one without reading three guides.
 
@@ -40,6 +41,7 @@
 14. [Practical Implementation Guide](#chapter-14)
 15. [Common Mistakes to Avoid](#chapter-15)
 16. [Tools and Resources](#chapter-16)
+17. [Capstone: The Complete Application, End to End](#chapter-17)
 
 **Appendices:**
 - [A: Glossary for PMs & QAs](#appendix-a)
@@ -6281,6 +6283,718 @@ That is one platform, two or three libraries, and zero custom infrastructure. Ad
 8. **Correct for bias** - Use judgy for honest metrics
 9. **Version your prompts** - Track what changed when
 10. **Iterate based on data** - Not hunches
+
+---
+
+## Chapter 17: Capstone: The Complete Application, End to End {#chapter-17}
+
+Every chapter so far taught one instrument: tracing in Chapter 2, error analysis in Chapter 3, judges in Chapter 4, gates and monitors in Chapters 9 and 14. This chapter plays the whole orchestra. We build **one small but real application and its entire eval stack, file by file**, with nothing elided: the app code, the seed dataset, the actual error-analysis notes, the judge prompt with its calibration numbers, the CI workflow, the monitoring worker, and one full improvement loop with before/after measurements. If the rest of this guide felt like theory, this chapter is the part you can type in and run this week.
+
+Two ground rules for the chapter. First, every number below is *internally consistent*: the label counts, the TPR/TNR values, and the judgy correction all reconcile, so you can check the arithmetic yourself (and you should; that habit is the job). Second, the walkthrough uses **Phoenix** as the platform because it runs fully local with no signup (`pip install`, one process, done), but every integration point is listed in the [swap table](#capstone-swap) so you can do the identical build on LangWatch or Langfuse with Appendix F.
+
+#### Table of Contents
+
+- [What You Are Building](#capstone-scope)
+- [The Repo, File by File](#capstone-layout)
+- [Step 1: The Application Itself](#capstone-app)
+- [Step 2: Tracing You Can See](#capstone-tracing)
+- [Step 3: A Dataset From Nothing](#capstone-dataset)
+- [Step 4: Error Analysis, With the Actual Notes](#capstone-error-analysis)
+- [Step 5: Code Evals for the Objective Failures](#capstone-code-evals)
+- [Step 6: The Dietary Judge, Calibrated Honestly](#capstone-judge)
+- [Step 7: The CI Gate](#capstone-ci)
+- [Step 8: Production Monitoring](#capstone-monitoring)
+- [Step 9: Find, Fix, Prove: One Full Improvement Loop](#capstone-improvement)
+- [What the Whole Thing Cost](#capstone-cost)
+- [The Same Build on LangWatch or Langfuse](#capstone-swap)
+- [Run-It-Yourself Checklist](#capstone-checklist)
+- [Key Takeaways](#capstone-takeaways)
+
+---
+
+### What You Are Building {#capstone-scope}
+
+The app is the guide's running example made concrete: a **Recipe Bot that answers by SMS**. A user texts "easy vegan Italian dinner for 4", the bot parses the request, retrieves candidate recipes from a small corpus with BM25 (Chapter 6), and composes a plain-text reply with one recommended recipe. Three nodes, deliberately compact; the full 7-state version of this pipeline is Chapter 7's subject, and everything here extends to it node by node.
+
+```
+User SMS query
+    |
+[1. ParseRequest]     gpt-5.5, JSON out          defended by: constraint_preserved (code)
+    |
+[2. GetRecipes]       BM25 + dietary tag filter  defended by: constraint_preserved (code)
+    |
+[3. ComposeResponse]  gpt-5.5, plain text        defended by: no_markdown, has_structure (code)
+    |                                             + dietary judge (LLM, calibrated)
+SMS reply
+```
+
+The product constraints that make evaluation non-optional:
+
+- **Dietary restrictions are safety-adjacent.** Telling someone with celiac disease that a recipe is gluten-free when it is not is real harm, not a UX blemish. This becomes the LLM judge.
+- **SMS is plain text.** Markdown renders as literal `**asterisks**` on a phone. This becomes a free code eval.
+- **A recipe answer has a checkable shape.** An ingredient list and numbered steps, or the reply is useless at the stove. Another free code eval.
+
+Who does what, per the roles table in Chapter 14: the engineer builds Steps 1-3 and 7-8, the PM personally does Step 4 and the labeling pass in Step 6, and QA owns the judge calibration numbers and signs off before the gate goes live.
+
+Models used: `gpt-5.5` for the app itself, `gpt-5.5-mini` for query generation and as the judge (per Chapter 14's starter-stack advice: start with a cheap judge and escalate to Opus 4.8 or GPT-5.6 only if it will not calibrate). Total spend to run this entire chapter, including mistakes: about $12, itemized [at the end](#capstone-cost).
+
+### The Repo, File by File {#capstone-layout}
+
+```
+recipe-bot-evals/
+├── app/
+│   ├── bot.py                 # the 3-node pipeline, instrumented (Step 1)
+│   └── retriever.py           # BM25 over data/recipes.json (Step 1)
+├── data/
+│   ├── recipes.json           # 200-recipe corpus with dietary tags
+│   ├── queries.jsonl          # 150 generated test queries (Step 3)
+│   ├── batch_results.jsonl    # bot outputs for those queries (Step 3)
+│   ├── error_notes.csv        # open-coding notes from Step 4
+│   └── golden_set.jsonl       # labeled traces; grows over time (Steps 6-9)
+├── evals/
+│   ├── code_checks.py         # deterministic evaluators + their own tests (Step 5)
+│   ├── judge_dietary.py       # the LLM judge + TPR/TNR validation (Step 6)
+│   └── run_ci_eval.py         # the gate CI executes (Step 7)
+├── scripts/
+│   ├── gen_queries.py         # dimensional sampling -> queries.jsonl (Step 3)
+│   ├── run_batch.py           # replay queries through the bot (Step 3)
+│   └── monitor.py             # hourly production sampling + alerting (Step 8)
+├── .github/workflows/evals.yml
+└── requirements.txt           # openai, arize-phoenix, openinference-instrumentation-openai,
+                               # rank-bm25, judgy
+```
+
+Each file maps to the chapter that explains it in depth: `bot.py` and tracing to Chapter 2, `gen_queries.py` to Chapter 3, `judge_dietary.py` to Chapters 4 and 12, `code_checks.py` to Chapter 5, `retriever.py` to Chapter 6, `run_ci_eval.py` to Chapters 11 and 14, `monitor.py` to Chapters 9 and 13, and the correction arithmetic in Step 9 to Chapter 10.
+
+### Step 1: The Application Itself {#capstone-app}
+
+An eval guide that starts with evals is lying to you; you need something to evaluate. Here is the whole app. First the retriever, which is Chapter 6's BM25 advice in its smallest usable form:
+
+```python
+# app/retriever.py
+import json
+import re
+
+from rank_bm25 import BM25Okapi
+
+# Recipe-aware tokenizer: keeps numbers and fractions ("375", "1/2"),
+# because they are real search terms in this domain (Chapter 6).
+_TOKEN_RE = re.compile(r"(?:\d+/?\d+)|(?:\d+(?:\.\d+)?)|[a-z]+")
+
+def tokenize(text: str) -> list[str]:
+    return _TOKEN_RE.findall((text or "").lower())
+
+class RecipeRetriever:
+    def __init__(self, path: str):
+        with open(path, encoding="utf-8") as f:
+            self.recipes = json.load(f)
+        corpus = [
+            tokenize(f"{r['title']} {' '.join(r['ingredients'])} {r['instructions']}")
+            for r in self.recipes
+        ]
+        self.index = BM25Okapi(corpus)
+
+    def search(self, keywords: list[str], dietary_restriction: str | None = None,
+               k: int = 3) -> list[dict]:
+        scores = self.index.get_scores(tokenize(" ".join(keywords)))
+        ranked = sorted(zip(self.recipes, scores), key=lambda p: -p[1])
+        if dietary_restriction:
+            # Hard filter: a recipe without the tag never reaches the composer.
+            ranked = [(r, s) for r, s in ranked if dietary_restriction in r["tags"]]
+        return [r for r, _ in ranked[:k]]
+```
+
+One entry of `data/recipes.json`, so the shape is unambiguous:
+
+```json
+{
+  "id": "r-042",
+  "title": "One-Pot Vegan Mushroom Risotto",
+  "tags": ["vegan", "vegetarian", "dairy-free"],
+  "minutes": 35,
+  "servings": 4,
+  "ingredients": ["arborio rice 300g", "mushrooms 400g", "olive oil 2 tbsp",
+                  "vegetable stock 1l", "nutritional yeast 3 tbsp"],
+  "instructions": "1. Saute mushrooms in olive oil... 6. Stir in nutritional yeast."
+}
+```
+
+Seed the corpus however you like (an open recipe dataset, or a generation script), but heed one warning: **if an LLM generates the corpus, hand-verify the dietary tags on a sample.** A mistagged corpus turns tag errors into ground-truth errors, and every eval downstream inherits them silently.
+
+Now the bot. Read `COMPOSE_PROMPT_V1` carefully; it is hiding at least three distinct bugs that this chapter's eval loop will catch in Steps 5 and 9. If you spot some of them now, pretend you did not. The point of the exercise is that the *process* finds them, because in your own app you will not spot yours.
+
+```python
+# app/bot.py
+import json
+
+import openai
+from phoenix.otel import register
+
+from app.retriever import RecipeRetriever
+
+tracer_provider = register(
+    project_name="recipe-bot",
+    endpoint="http://localhost:6006/v1/traces",
+    auto_instrument=True,   # every OpenAI call is traced for free (Chapter 2)
+)
+tracer = tracer_provider.get_tracer(__name__)
+
+client = openai.OpenAI()
+retriever = RecipeRetriever("data/recipes.json")
+
+PARSE_PROMPT = """Extract the structured requirements from this recipe request.
+Return only a JSON object with keys: intent, dietary_restriction (one of the
+16 restrictions defined in our policy, or null), servings (int or null),
+max_minutes (int or null), keywords (list of search terms).
+
+Request: """
+
+COMPOSE_PROMPT_V1 = """You are a friendly recipe assistant replying by SMS.
+Using the retrieved recipes below, recommend ONE recipe with its ingredients
+and preparation. Feel free to suggest ingredient substitutions to make the
+dish easier or cheaper.
+
+User request: {query}
+Retrieved recipes: {recipes}"""
+
+@tracer.chain
+def parse_request(query: str) -> dict:
+    resp = client.chat.completions.create(
+        model="gpt-5.5",
+        messages=[{"role": "user", "content": PARSE_PROMPT + query}],
+        temperature=0,
+        response_format={"type": "json_object"},
+    )
+    return json.loads(resp.choices[0].message.content)
+
+@tracer.tool
+def get_recipes(parsed: dict) -> list[dict]:
+    return retriever.search(
+        keywords=parsed.get("keywords", []),
+        dietary_restriction=parsed.get("dietary_restriction"),
+        k=3,
+    )
+
+@tracer.chain
+def compose_response(query: str, recipes: list[dict]) -> str:
+    prompt = COMPOSE_PROMPT_V1.format(query=query, recipes=json.dumps(recipes))
+    resp = client.chat.completions.create(
+        model="gpt-5.5",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
+    return resp.choices[0].message.content
+
+@tracer.chain
+def answer(query: str) -> dict:
+    """Returns the intermediates, not just the reply. This one design choice
+    makes every offline eval in this chapter trivial to write."""
+    parsed = parse_request(query)
+    recipes = get_recipes(parsed)
+    reply = compose_response(query, recipes)
+    return {
+        "query": query,
+        "parsed": parsed,
+        "recipe_ids": [r["id"] for r in recipes],
+        "output": reply,
+    }
+```
+
+That is the entire application: about 90 lines. Notice `answer()` returns a dict of intermediates rather than a bare string. Chapter 14's instrumentation trap ("teams declare victory after logging the final completion") is dodged structurally: the parse result and retrieved IDs are first-class values you can assert against, both in traces and in offline runs.
+
+### Step 2: Tracing You Can See {#capstone-tracing}
+
+```bash
+pip install -r requirements.txt
+phoenix serve          # UI at http://localhost:6006
+python -c "from app.bot import answer; print(answer('gluten-free pancakes for two')['output'])"
+```
+
+Open the Phoenix UI and you should see one `answer` trace containing four spans: `parse_request` (with its JSON output), `get_recipes` (tool span, with the returned IDs), the raw `gpt-5.5` LLM spans, and `compose_response`. Chapter 14's definition of done applies verbatim: a non-author can find this trace and see everything the model saw, not just the final string. If the parse JSON or the retrieved IDs are missing from the trace, stop and fix instrumentation now; every later step reads them.
+
+### Step 3: A Dataset From Nothing {#capstone-dataset}
+
+We are pre-launch, the cold-start case from Chapter 3, so we manufacture diversity with dimensional sampling instead of praying an LLM invents it:
+
+```python
+# scripts/gen_queries.py
+import json
+import random
+
+import openai
+
+DIMENSIONS = {
+    "dietary_restriction": ["vegan", "vegetarian", "gluten-free", "keto",
+                            "dairy-free", "nut-free", "no restrictions"],
+    "cuisine_type": ["Italian", "Asian", "Mexican", "Mediterranean", "American"],
+    "meal_type": ["breakfast", "lunch", "dinner", "snack", "dessert"],
+    "skill_level": ["beginner", "intermediate", "advanced"],
+    "phrasing": ["polite full sentence", "terse mobile shorthand",
+                 "rambling with irrelevant detail", "contains a typo"],
+}
+
+QUERY_GEN_PROMPT = """Convert this dimension tuple into ONE realistic SMS from a
+user to a recipe bot. Write it in the given phrasing style. Do not mention the
+dimensions explicitly; a real user would not say "dietary_restriction".
+
+Dimension tuple: """
+
+client = openai.OpenAI()
+random.seed(42)
+
+with open("data/queries.jsonl", "w", encoding="utf-8") as f:
+    for i in range(150):
+        tup = {dim: random.choice(vals) for dim, vals in DIMENSIONS.items()}
+        resp = client.chat.completions.create(
+            model="gpt-5.5-mini",
+            messages=[{"role": "user", "content": QUERY_GEN_PROMPT + json.dumps(tup)}],
+            temperature=0.9,
+        )
+        f.write(json.dumps({"id": f"q-{i:03d}", "dims": tup,
+                            "query": resp.choices[0].message.content.strip()}) + "\n")
+```
+
+The `phrasing` dimension is the one teams forget. Without it every synthetic query is a tidy, well-punctuated sentence, and your first contact with "gf dinner 4 ppl asap no nuts" happens in production. Three of the 150 generated rows:
+
+| id | dims (abbreviated) | query |
+|---|---|---|
+| q-007 | vegan, Italian, dinner, beginner, terse | "vegan pasta dinner easy pls" |
+| q-031 | gluten-free, American, breakfast, intermediate, typo | "gluten free pancakes that dont fall apart?? for my duaghter" |
+| q-118 | keto, Asian, lunch, advanced, rambling | "so my trainer has me on keto again and honestly the lunch situation is grim, I love stir fry, what can I actually make..." |
+
+Then replay all 150 through the bot, which both populates Phoenix with traces and writes a local file for labeling:
+
+```python
+# scripts/run_batch.py
+import json
+
+from app.bot import answer
+
+with open("data/queries.jsonl", encoding="utf-8") as f, \
+     open("data/batch_results.jsonl", "w", encoding="utf-8") as out:
+    for line in f:
+        row = json.loads(line)
+        result = answer(row["query"])
+        out.write(json.dumps({**row, **result}) + "\n")
+```
+
+Cost of this step: 150 mini calls plus 150 full pipeline runs, about $4. You now have 150 traces in Phoenix and the same 150 rows on disk.
+
+### Step 4: Error Analysis, With the Actual Notes {#capstone-error-analysis}
+
+The PM now reads the first 100 traces in the Phoenix UI and open-codes them (Chapter 3): one freeform note per problem, 30-60 seconds per trace, 75 minutes total. No categories yet. Five representative rows from `data/error_notes.csv`:
+
+| trace | note |
+|---|---|
+| q-004 | asked vegan, reply suggests "swap in butter if you have it". that swap is not vegan |
+| q-013 | reply is full of `**bold**` and `##` headers, unreadable as SMS |
+| q-031 | pancake recipe has no numbered steps, just a paragraph. useless at the stove |
+| q-046 | user said nut-free, retrieved recipes fine, but reply garnishes with "crushed peanuts" |
+| q-072 | user asked keto, parse extracted dietary_restriction=null, retrieval returned rice bowls |
+
+After 100 traces the notes were repeating (theoretical saturation, Chapter 3), so we stopped. Axial coding groups the 54 notes into five failure modes:
+
+| Failure mode | Count | Objective or semantic? |
+|---|---|---|
+| Dietary violation in the composed reply (often via substitutions or garnish) | 19 | Semantic: needs an LLM judge |
+| Markdown in an SMS reply | 11 | Objective: string check |
+| Missing structure (no ingredient list or no numbered steps) | 9 | Objective: regex |
+| User's stated restriction dropped before retrieval (parse or filter) | 8 | Objective: compare fields |
+| Overlong reply when the user signalled "quick" | 7 | Semantic-ish: deferred |
+
+This table is the build order for everything below, straight from Chapter 14's rule: cheapest trustworthy signal first. Three of the five modes are objectively checkable, so they become code evals today, no labeling required. The dietary mode is semantic and dangerous, so it gets the full judge treatment. The overlong mode is real but lowest-frequency and fuzziest, so it is *deliberately deferred*; building six evals badly is worse than four well (Mistake #6).
+
+### Step 5: Code Evals for the Objective Failures {#capstone-code-evals}
+
+One file, three checks, and (per Chapter 5) tests for the evaluators themselves, because an eval with a bug is worse than no eval:
+
+```python
+# evals/code_checks.py
+import re
+
+FORBIDDEN_MD = ("**", "##", "](", "```")
+STEP_RE = re.compile(r"(?m)^\s*\d+[.)]\s")
+
+def eval_no_markdown(result: dict) -> dict:
+    found = [tok for tok in FORBIDDEN_MD if tok in result["output"]]
+    return {"name": "no_markdown_sms", "passed": not found,
+            "detail": f"found {found}" if found else "ok"}
+
+def eval_has_structure(result: dict) -> dict:
+    text = result["output"].lower()
+    ok = ("ingredient" in text) and bool(STEP_RE.search(result["output"]))
+    return {"name": "has_structure", "passed": ok,
+            "detail": "ok" if ok else "missing ingredient list or numbered steps"}
+
+def eval_constraint_preserved(result: dict, expected_restriction: str | None,
+                              recipes_by_id: dict) -> dict:
+    """The user's stated restriction must survive parsing AND filter retrieval.
+    This is Chapter 7's tool-call check 3, applied to our two upstream nodes."""
+    if expected_restriction in (None, "no restrictions"):
+        return {"name": "constraint_preserved", "passed": True, "detail": "n/a"}
+    parsed_ok = result["parsed"].get("dietary_restriction") == expected_restriction
+    recipes_ok = all(expected_restriction in recipes_by_id[rid]["tags"]
+                     for rid in result["recipe_ids"])
+    passed = parsed_ok and recipes_ok
+    detail = "ok" if passed else f"parse_ok={parsed_ok} retrieval_ok={recipes_ok}"
+    return {"name": "constraint_preserved", "passed": passed, "detail": detail}
+
+# The evals get tested too (Chapter 5). Each tuple: (description, input, expected).
+SELF_TESTS = [
+    ("markdown caught",   {"output": "Try **this**"},                 False),
+    ("plain text passes", {"output": "Try this: 1. mix 2. bake"},     True),
+    ("steps with parens", {"output": "ingredients: x\n1) mix\n2) bake"}, True),
+]
+
+def run_self_tests():
+    for desc, fake, expected in SELF_TESTS:
+        got = eval_no_markdown(fake)["passed"] if "markdown" in desc \
+            else eval_has_structure(fake)["passed"]
+        assert got == expected, f"self-test failed: {desc}"
+
+if __name__ == "__main__":
+    run_self_tests()
+    print("code_checks self-tests: OK")
+```
+
+Run the three checks over the 150-row batch from Step 3 and you get your first real numbers, minutes after error analysis, at zero marginal cost: `no_markdown_sms` fails 10.7%, `has_structure` fails 8.7%, `constraint_preserved` fails 7.9% of the applicable rows. Those match the error-analysis frequencies, which is exactly the sanity check you want between Steps 4 and 5.
+
+The two composer-side failures also get their fix today, because for objective format rules the fix is as cheap as the eval. Two instruction lines go into the compose prompt ("Reply in plain text only, no markdown syntax" and "Always include a short ingredient list and numbered steps"), and, because instructions reduce but never eliminate a formatting habit the model learned in training, a deterministic sanitizer backstops the markdown rule in code:
+
+```python
+# app/bot.py, appended to compose_response before returning (add `import re` up top)
+def sanitize_sms(text: str) -> str:
+    """Objective format rules get enforced in code, not begged from the model."""
+    text = text.replace("**", "").replace("```", "")
+    text = re.sub(r"(?m)^#{1,6}\s*", "", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)   # [text](url) -> text
+    return text
+```
+
+Rerun the batch: `no_markdown_sms` failures go from 10.7% to 0% (the sanitizer makes perfection cheap), and `has_structure` from 8.7% to 3.3% (instructions help; the residual is prose-paragraph replies at temperature 0.7, which no post-processor can fix). Two of the five failure modes are dead within a day of being discovered, and both now have a permanent tripwire.
+
+### Step 6: The Dietary Judge, Calibrated Honestly {#capstone-judge}
+
+The dietary failure mode needs an LLM judge, which means it needs ground truth first (Chapter 4, all seven steps, compressed here to what we actually did).
+
+**Label.** The PM labels all 150 batch rows as PASS or FAIL for dietary adherence only (one criterion per judge; Mistake #9's cousin). Protocol from Chapter 12: binary labels, a written one-page guideline first, ambiguous rows adjudicated with a second person. Time: about 2.5 hours. Outcome: **121 PASS / 29 FAIL** (a 19.3% violation rate, agreeing with Step 4's 19/100).
+
+**Split.** Stratified 15/40/45 (Chapter 4): train 22 rows (18 PASS / 4 FAIL) for few-shot examples, dev 60 (48/12) for iteration, test 68 (55/13) touched exactly once.
+
+**The judge file:**
+
+```python
+# evals/judge_dietary.py
+import json
+
+import openai
+
+client = openai.OpenAI()
+
+JUDGE_PROMPT_V3 = """You are an expert nutritionist evaluating whether a recipe
+reply adheres to the user's dietary restriction.
+
+[DIETARY RESTRICTION DEFINITIONS: the 16 definitions from Appendix C go here]
+
+EVALUATION CRITERIA:
+- PASS: every ingredient, substitution suggestion, and garnish in the reply
+  satisfies the stated restriction, considering preparation methods too.
+- FAIL: anything in the reply (including optional swaps and garnishes)
+  violates the restriction.
+
+WHAT DOES NOT COUNT AS A FAILURE:
+- Mentioning a violating ingredient only to warn against it ("skip the honey").
+- Trace amounts inherent to a permitted packaged ingredient.
+- Violating the user's cuisine or time preferences (other judges cover those).
+
+[FEW-SHOT: 2 examples from the train split, including one substitution-trap
+FAIL, verbatim. See Appendix C for the full assembled prompt.]
+
+Query: {query}
+Dietary restriction: {restriction}
+Reply: {reply}
+
+Return JSON: {"label": "PASS" or "FAIL", "explanation": "..."}"""
+
+def judge_one(query: str, restriction: str, reply: str) -> dict:
+    prompt = (JUDGE_PROMPT_V3
+              .replace("{query}", query)
+              .replace("{restriction}", restriction or "none stated")
+              .replace("{reply}", reply))
+    resp = client.chat.completions.create(
+        model="gpt-5.5-mini",          # cheap judge first; escalate only if
+        messages=[{"role": "user", "content": prompt}],  # it will not calibrate
+        temperature=0,
+        response_format={"type": "json_object"},
+    )
+    return json.loads(resp.choices[0].message.content)
+
+def tpr_tnr(rows: list[dict]) -> tuple[float, float]:
+    """rows: [{"truth": "PASS"/"FAIL", "judge": "PASS"/"FAIL"}]. PASS-positive
+    convention (Chapter 4): TPR = good traces recognized, TNR = violations caught."""
+    tp = sum(r["truth"] == "PASS" and r["judge"] == "PASS" for r in rows)
+    fn = sum(r["truth"] == "PASS" and r["judge"] == "FAIL" for r in rows)
+    tn = sum(r["truth"] == "FAIL" and r["judge"] == "FAIL" for r in rows)
+    fp = sum(r["truth"] == "FAIL" and r["judge"] == "PASS" for r in rows)
+    return tp / (tp + fn), tn / (tn + fp)
+```
+
+**Iterate on dev.** This is the part most writeups hide, so here it is with the failures left in:
+
+| Judge version | Change | Dev TPR | Dev TNR | What the dev errors taught us |
+|---|---|---|---|---|
+| v1 | criteria only, no few-shot | 95.8% (46/48) | 41.7% (5/12) | 7 of 12 real violations sailed through as PASS. Reading them: 5 were substitution-tip violations ("swap in butter") that the judge excused as "optional" |
+| v2 | added the NOT-a-failure block, added "substitutions and garnishes count" | 93.8% (45/48) | 75.0% (9/12) | catches swaps now; still excuses cooking-method violations (honey glaze on "vegan") and false-alarms one warning-only mention |
+| v3 | added 2 train-split few-shot examples (one substitution trap, one method trap) | 95.8% (46/48) | 91.7% (11/12) | good enough: both metrics clear Chapter 4's 90% bar for a "great judge" |
+
+Remember the convention (Chapter 4's callout): the positive class is PASS, so v1's TNR of 41.7% means **the judge missed most real violations**, and each miss is a false positive, the dangerous direction for a safety-adjacent criterion. If we had validated with plain agreement, v1 would have scored a healthy-looking 85% (51 of 60 dev rows correct) and shipped. TNR is what exposed it.
+
+**Test once.** Freeze v3, run the untouched test split a single time: **TPR 94.5% (52/55), TNR 92.3% (12/13)**. Those two numbers now describe this judge, and they feed the correction in Step 9. No further prompt edits without re-splitting; a test set consulted twice is a dev set (Mistake #4).
+
+QA signs off (both metrics > 0.9 on held-out data), which per Chapter 14 is the admission ticket to CI.
+
+### Step 7: The CI Gate {#capstone-ci}
+
+The golden set is the 150 labeled rows, serialized with their dimensions so evals can use them:
+
+```json
+{"id": "q-002", "query": "easy vegetarian tacos tonight pls", "dietary_restriction": "vegetarian",
+ "label": "PASS", "must_pass": false, "source": "batch-2026-06-08"}
+```
+
+The stored `label` is the human ground truth for the *original* run; the gate does not consume it (it is kept for judge recalibration, Chapter 12). What the gate does is replay each golden query through the *current* code and prompts, run all four evaluators on the fresh output, and fail the build on any breach. It also enforces `must_pass` rows, the regression mechanism from Chapter 11 (Step 9 will add six of them):
+
+```python
+# evals/run_ci_eval.py  -- exits non-zero to fail the build
+import json
+import sys
+
+from app.bot import answer
+from app.retriever import RecipeRetriever
+from evals.code_checks import (eval_constraint_preserved, eval_has_structure,
+                               eval_no_markdown)
+from evals.judge_dietary import judge_one
+
+THRESHOLDS = {
+    "no_markdown_sms": 1.00,        # objective + sanitizer: perfect or broken
+    "has_structure": 0.95,
+    "constraint_preserved": 1.00,   # day one this floor was 0.92 (the then-baseline);
+    "dietary_judge": 0.90,          # this one 0.75. Step 9's fix PR ratcheted both.
+}
+
+recipes_by_id = {r["id"]: r for r in RecipeRetriever("data/recipes.json").recipes}
+golden = [json.loads(l) for l in open("data/golden_set.jsonl", encoding="utf-8")]
+
+rates = {name: [] for name in THRESHOLDS}
+broken_must_pass = []
+
+for row in golden:
+    result = answer(row["query"])
+    checks = [
+        eval_no_markdown(result),
+        eval_has_structure(result),
+        eval_constraint_preserved(result, row.get("dietary_restriction"), recipes_by_id),
+    ]
+    verdict = judge_one(row["query"], row.get("dietary_restriction"), result["output"])
+    checks.append({"name": "dietary_judge", "passed": verdict["label"] == "PASS"})
+
+    for c in checks:
+        if c["name"] in rates:
+            rates[c["name"]].append(c["passed"])
+    if row.get("must_pass") and not all(c["passed"] for c in checks):
+        broken_must_pass.append(row["id"])
+
+exit_code = 0
+for name, results in rates.items():
+    rate = sum(results) / len(results)
+    status = "PASS" if rate >= THRESHOLDS[name] else "FAIL"
+    print(f"[{status}] {name}: {rate:.1%} (gate {THRESHOLDS[name]:.0%})")
+    if status == "FAIL":
+        exit_code = 1
+for rid in broken_must_pass:
+    print(f"[FAIL] must_pass regression: {rid}")
+    exit_code = 1
+
+sys.exit(exit_code)
+```
+
+```yaml
+# .github/workflows/evals.yml
+name: evals
+on: [pull_request]
+jobs:
+  eval-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - run: python -m evals.code_checks        # evaluator self-tests first
+      - run: python -m evals.run_ci_eval        # then the gate
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+Gate design notes, learned the standard painful ways (Chapter 14). First, **day-one thresholds sit slightly below the day-one baseline, and improvements ratchet them up**: the gate went live at `constraint_preserved: 0.92` and `dietary_judge: 0.75` (just under the then-measured 92.1% and 77.8%), because a gate set at aspiration instead of reality is red from its first run and gets disabled within a week. When Step 9's fix PR lands, the same PR raises both floors, so the gate permanently protects the new level. Second, the gate ran warn-only for its first week before becoming blocking. Third, cost: a full run is about $1.10 (150 pipeline replays on gpt-5.5 plus 150 mini judge calls); if PR volume makes that sting, trim to a 60-row core set (every FAIL plus a stratified sample of PASSes) for roughly $0.40 a run.
+
+### Step 8: Production Monitoring {#capstone-monitoring}
+
+Launch. Traffic is ~2,000 requests/day, far too many to judge exhaustively, so we tier exactly as Chapter 13 prescribes: code checks on everything (free), the judge on a 10% random sample, deep dives on demand.
+
+```python
+# scripts/monitor.py  -- run hourly (cron). Chapter 9's offline/online split:
+# the CI gate defends deploys; this defends against drift that arrives without one.
+import json
+import random
+
+import requests
+
+from evals.code_checks import eval_no_markdown
+from evals.judge_dietary import judge_one
+
+SLACK_WEBHOOK = "https://hooks.slack.com/services/..."
+BASELINE_FILE = "data/monitor_baseline.json"   # trailing 7-day mean per eval
+
+def fetch_last_hour_traces() -> list[dict]:
+    """Pull answer() traces from Phoenix via span query (Chapter 7 shows the
+    SpanQuery pattern; swap per Appendix F for LangWatch/Langfuse)."""
+    ...
+
+def main():
+    traces = fetch_last_hour_traces()
+    alerts = []
+
+    # Tier 1: code checks on every trace, free
+    md_fail = sum(not eval_no_markdown(t)["passed"] for t in traces) / max(len(traces), 1)
+
+    # Tier 2: calibrated judge on a 10% sample
+    sample = random.sample(traces, max(1, len(traces) // 10))
+    judged = [judge_one(t["query"], t["parsed"].get("dietary_restriction"),
+                        t["output"])["label"] == "PASS" for t in sample]
+    dietary_pass = sum(judged) / len(judged)
+
+    baseline = json.load(open(BASELINE_FILE, encoding="utf-8"))
+    for name, rate in [("no_markdown_sms", md_fail),
+                       ("dietary_judge_fail", 1 - dietary_pass)]:
+        if rate > baseline[name] * 1.5:        # tune vs daily noise (Chapter 14)
+            alerts.append(f"{name} at {rate:.1%}, baseline {baseline[name]:.1%}")
+
+    for msg in alerts:
+        requests.post(SLACK_WEBHOOK, json={"text": f"[recipe-bot evals] {msg}"})
+
+if __name__ == "__main__":
+    main()
+```
+
+Every judge verdict is also written back to its trace as a score (Appendix F shows the write-back call per platform), so "the dietary failure rate spiked" is always one click away from the actual failing traces. The dashboard is Phoenix's built-in project view plus one bookmark; per Chapter 14, resist building more until someone asks a question it cannot answer.
+
+### Step 9: Find, Fix, Prove: One Full Improvement Loop {#capstone-improvement}
+
+A week of monitoring accumulates 1,400 judged samples. Raw judged pass rate: **86.1%**. Before anyone panics (or relaxes), correct for the judge's known imperfection with the Chapter 10 arithmetic and the test-set numbers from Step 6 (TPR 0.945, TNR 0.923):
+
+```
+true_rate = (observed - (1 - TNR)) / (TPR + TNR - 1)
+          = (0.861 - 0.077) / (0.945 + 0.923 - 1)
+          = 0.784 / 0.868
+          = 0.903
+```
+
+So the honest estimate is a **90.3% true pass rate** (roughly a 9.7% violation rate), not 86.1%; this judge leans toward false alarms, so the raw rate reads too grim. Run `judgy.estimate_success_rate` on the same three arrays to get the bootstrap interval, [87.6%, 93.0%] here, and report *that* (Chapter 10's rule: a point estimate without an interval invites overreaction to noise).
+
+A 9.7% violation rate on a safety-adjacent criterion is the week's top priority. Root-cause it with Chapter 11's context-injection test: take 30 judge-flagged traces, re-run `compose_response` with hand-verified correct recipes injected, and see what survives.
+
+- **24 of 30 still fail with perfect retrieval.** The bug is in generation, not retrieval. Reading those 24: 17 are substitution tips that violate the restriction ("swap in butter", on a vegan request) and 5 are garnish suggestions never checked against the restriction. Now re-read `COMPOSE_PROMPT_V1`: it says "suggest ingredient substitutions to make the dish easier or cheaper" and **never mentions the dietary restriction at all**. The composer literally does not know it exists; retrieval filtering was carrying everything.
+- The other 6 replays pass, meaning those failures were upstream: the parse dropped the restriction, exactly what `eval_constraint_preserved` flags deterministically.
+
+Two fixes, each defended by the eval that found it:
+
+```python
+COMPOSE_PROMPT_V2 = """You are a friendly recipe assistant replying by SMS.
+The user's dietary restriction is: {dietary_restriction}.
+Every recipe you recommend, every substitution you suggest, and every garnish
+you mention MUST satisfy that restriction. If a retrieved recipe conflicts
+with it, skip that recipe rather than adapting it.
+
+Using the retrieved recipes below, recommend ONE recipe. Reply in plain text
+only (no markdown), with a short ingredient list and numbered steps.
+
+User request: {query}
+Retrieved recipes: {recipes}"""
+```
+
+And `PARSE_PROMPT` gains one line ("Never return null for dietary_restriction if the request states or implies one") plus two few-shot examples of implied restrictions ("my daughter is celiac" implies gluten-free). Both prompts are versioned in the repo, so the diff is reviewable (Mistake #10).
+
+The PR that ships both changes must clear the Step 7 gate, and the gate is the proof:
+
+| Metric (on the golden set) | Before the fix PR | After the fix PR |
+|---|---|---|
+| constraint_preserved (code) | 92.1% (floor: 0.92) | 100% (floor ratcheted to 1.00) |
+| dietary_judge judged pass rate | 77.8% (floor: 0.75) | 92.8% (floor ratcheted to 0.90) |
+| no_markdown_sms / has_structure | 100% / 96.7% | 100% / 96.7% (untouched, verified not regressed) |
+
+Do not be alarmed that the golden set reads harsher than production (77.8% judged here vs 86.1% out there). Two known reasons, both by design: dimensional sampling gives six of every seven golden rows a dietary restriction, so the set stresses exactly the thing that breaks, and the judge false-alarms about 5% of genuinely good replies (TPR 94.5%), so even a perfect bot would score around 95%, not 100%, on a judged metric. That second point is also why the ratcheted floor is 0.90 and not 0.95: leave the gate headroom for judge noise or it will flap (Chapter 14).
+
+The six nastiest traces from the root-cause reading (the butter-swap, the peanut garnish, a celiac-implication miss, three method violations) are added to `golden_set.jsonl` with `"must_pass": true`, so this exact bug class can never return silently (Chapter 11's regression rule: a fixed bug becomes a permanent test).
+
+The following week's monitoring closes the loop in production: raw judged pass 91.5%, corrected `(0.915 - 0.077) / 0.868 = 0.965`, a **96.5% true pass rate**. The violation rate went from 9.7% to 3.5%, measured with a calibrated instrument, corrected for that instrument's bias, and defended by a gate. That sentence is what "we improved the model" should mean.
+
+### What the Whole Thing Cost {#capstone-cost}
+
+| Item | One-time | Recurring |
+|---|---|---|
+| Phoenix setup (local) | 1 hour | $0 |
+| Corpus + 150 queries + batch replay | ~$4 API | rerun as needed |
+| PM error analysis (100 traces) | 75 minutes | monthly, 50 traces (Chapter 14 cadence) |
+| PM labeling for ground truth (150 rows) | ~2.5 hours | ~30 min/month for fresh labels (judge drift check) |
+| Judge iteration (3 dev runs + 1 test run) | ~$0.60 API | on judge changes only |
+| CI gate | | ~$1.10 per PR run ($0.40 with the 60-row core set) |
+| Monitoring (code checks all + judge on 10% of 2,000/day) | | ~$9/month |
+
+Under $15 to build and under $25/month to run, comfortably inside Chapter 14's "under $50/month" envelope. The dominant cost is not compute, it is the PM's ~5 hours of trace reading and labeling, and that is the part you cannot skip: every calibrated number above stands on those labels.
+
+### The Same Build on LangWatch or Langfuse {#capstone-swap}
+
+The methodology is platform-agnostic; only six integration points touch platform APIs. Appendix F has the exact method calls for each cell:
+
+| Integration point | Phoenix (this build) | LangWatch | Langfuse |
+|---|---|---|---|
+| Tracing init | `phoenix.otel.register(auto_instrument=True)` | `langwatch.init()` | `from langfuse.openai import OpenAI` |
+| Judge validation runs | `run_experiment` + TP/TN/FP/FN evaluators (Chapter 4) | `evaluate.batch` with built-in TPR/TNR metrics | `run_experiment` + manual TPR/TNR |
+| Score write-back | log evaluations onto spans | evaluations attach automatically | `create_score` per trace |
+| Fetching production traces | `SpanQuery` (Chapter 7) | spans API / built-in monitors | traces API |
+| Alerting | your webhook (as in `monitor.py`) | built-in Slack/email/webhook alerts | via your monitoring stack |
+| Prompt versioning | Phoenix prompts (Chapter 2) | LangWatch prompts | Langfuse prompts |
+
+Everything else in this chapter (the app, the dataset script, the code checks, the judge prompt, the gate logic, the correction arithmetic) is plain Python and moves unchanged.
+
+### Run-It-Yourself Checklist {#capstone-checklist}
+
+Work through the steps in order; each box is blocked by the one above it (Chapter 14's dependency rule):
+
+- ▢ App runs and returns intermediates (`answer()` gives parsed + recipe_ids + output)
+- ▢ Traces visible in the platform UI with all four spans, findable by a non-author
+- ▢ 150 dimensional queries generated and replayed (`queries.jsonl`, `batch_results.jsonl`)
+- ▢ 100 traces open-coded by the domain owner personally; axial table with counts exists
+- ▢ Code evals written for every objective failure mode, with passing self-tests
+- ▢ 150 rows labeled for the top semantic failure mode; stratified 15/40/45 split
+- ▢ Judge iterated on dev only; TPR and TNR both > 0.9 on the untouched test set; QA sign-off
+- ▢ CI gate live on every PR, thresholds committed, warn-only week completed, then blocking
+- ▢ Monitoring worker sampling production hourly, scores written back, alert channel quiet-but-armed
+- ▢ One improvement loop completed: root-caused, fixed, gate-proven, regression rows added, corrected production rate reported with an interval
+
+Check all ten and you have not read about an eval pipeline; you have one.
+
+### Key Takeaways {#capstone-takeaways}
+
+- **The whole stack is ~400 lines of code and one week of part-time work.** The barrier to real evals is sequencing and discipline, not engineering effort.
+- **Intermediates are the API of evaluation.** `answer()` returning parsed fields and recipe IDs is what made three of four evaluators free code checks.
+- **The build order came from the error-analysis table, not from a framework.** Three objective modes became code evals the same day; one semantic mode justified a judge; one mode was deliberately deferred.
+- **Agreement would have shipped the broken judge.** v1 looked fine at 85% agreement while missing 7 of 12 real violations; TNR under the PASS-positive convention is what caught it.
+- **The bug was in the prompt you were proudest of.** COMPOSE_PROMPT_V1 never told the composer about the restriction; only the eval loop, not code review, surfaced it.
+- **Report corrected rates with intervals, always.** Raw 86.1% was really 90.3% [87.6%, 93.0%]; raw 91.5% was really 96.5%. Decisions made on raw judge output inherit the judge's bias.
+- **A fixed bug becomes a must_pass row.** Six regression rows now guard the substitution-trap class forever, at a cost of six lines of JSONL.
+- **Total recurring cost is a rounding error** (~$25/month) compared to the PM hours, which are the real investment and the real moat.
 
 ---
 
