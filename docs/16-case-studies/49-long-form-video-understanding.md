@@ -83,6 +83,61 @@ flowchart TB
 8. A grounding check confirms each cited span exists and overlaps a retrieved segment; unconfirmed citations are dropped before render.
 9. The UI renders deep links (`video?t=1h02m14s`) to each moment; the query, candidates, and answer are logged for eval and cost accounting.
 
+### A worked example: a forklift-without-spotter query end to end
+
+Take the safety manager's query, "find clips where a forklift enters the loading dock without a spotter," run against `DOCK-CAM-03_2026-06-08`, one fixed-camera file covering 08:00:00 to 11:00:00 (3 hours, 324,000 frames at 30fps).
+
+**Ingestion (already done, offline).** Shot detection on a static camera fires on activity, not cinematic cuts, so adaptive keyframe extraction keeps about one frame per 10 seconds across the idle, empty-dock stretches and densifies to 2fps across the 22 motion bursts the always-on YOLO-class detector flags (a forklift, a truck, or a person entering frame). The 324,000 raw frames collapse to about 4,900 stored keyframes (a 66x reduction) grouped into roughly 470 time-coded segments. ASR is nearly silent here (engine noise, reversing beeps, the odd shouted instruction), so the transcript backbone is thin and the visual, OCR, and event modalities carry this query, exactly the content type Decision 9 says justifies the full visual stack. PaddleOCR reads the burned-in wall clock and the "DOCK 3 / SPOTTER REQUIRED" signage; the object detector tags every keyframe with labels and counts.
+
+**Retrieval (online).** The modality router classifies this as a visual and event query with a negation ("without a spotter" is a compositional constraint, not a keyword) and fans out: an object filter for segments where a forklift crosses the dock zone, a person-count-near-forklift filter, and a SigLIP text-to-visual search for "forklift at loading-dock doorway." Reciprocal-rank fusion returns three 20-second candidate windows: `09:14` (forklift crossing, first keyframe shows 0 other persons), `10:41` (forklift entering, first keyframe also shows 0 other persons), and `08:52` (a forklift near the dock).
+
+**VLM verification (Gemini 3.1 Pro reads only these three windows).** Candidate `09:14` is CONFIRMED: the forklift crosses the painted dock line at wall clock 09:14:07 and no second person appears in any sampled frame of the entry, a true violation, refined to the exact span 09:14:05 to 09:14:19. Candidate `10:41` is REJECTED as a near-miss: the first keyframe missed it, but the denser sampled frames show a spotter stepping into frame from the left at 10:41:39, walking ahead of the forklift, so a spotter WAS present. Candidate `08:52` is REJECTED: the forklift idles outside the line and never crosses, and one keyframe's "forklift" was a pallet jack. The answer returns one clip, cited to `DOCK-CAM-03_2026-06-08` at 09:14:05 to 09:14:19 with a deep link `video?t=1h14m05s`.
+
+The point: retrieval proposed three windows that all matched on the object and the first-frame person count, but frame-level VLM verification, reading a denser sample than the single indexed keyframe, is what separated the real violation from the near-miss where the spotter was just off the first frame.
+
+### The segment index and the retrieved answer
+
+Ingestion emits one schema-validated record per segment; the query path emits one grounded answer record that carries its rejected candidates, so an auditor can see why a clip was kept or dropped.
+
+```json
+{
+  "video_id": "DOCK-CAM-03_2026-06-08",
+  "segment_id": "DOCK-CAM-03_2026-06-08#00417",
+  "t_start": 4440.0,
+  "t_end": 4460.0,
+  "transcript": "",
+  "visual_caption": "yellow forklift approaches and crosses the loading-dock threshold, roll-up door open, no other person in frame",
+  "on_screen_text": ["2026-06-08 09:14:07", "DOCK 3", "SPOTTER REQUIRED"],
+  "objects": [{"label": "forklift", "count": 1}, {"label": "person", "count": 0}],
+  "audio_events": ["reversing_beep"],
+  "embedding_id": "siglip2_9f13c0a4",
+  "keyframe_uri": "s3://kf/DOCK-CAM-03/0914-07.jpg",
+  "index_version": "v7"
+}
+```
+
+```json
+{
+  "query": "forklift enters the loading dock without a spotter",
+  "video_id": "DOCK-CAM-03_2026-06-08",
+  "window": {"t_start": 4445.0, "t_end": 4459.0},
+  "vlm_verdict": "confirmed",
+  "confidence": 0.91,
+  "reason": "forklift crosses the painted dock line at t=4447s; person count 0 across every sampled frame of the entry",
+  "citation": {
+    "deep_link": "video?t=1h14m05s",
+    "keyframe_uri": "s3://kf/DOCK-CAM-03/0914-07.jpg",
+    "wall_clock": "2026-06-08 09:14:07"
+  },
+  "rejected_candidates": [
+    {"window": {"t_start": 9696.0, "t_end": 9716.0}, "verdict": "rejected",
+     "reason": "spotter enters frame from left at t=9699s, walking ahead of the forklift"},
+    {"window": {"t_start": 3130.0, "t_end": 3150.0}, "verdict": "rejected",
+     "reason": "forklift idles outside the dock line and never crosses; pallet jack misread as forklift in one keyframe"}
+  ]
+}
+```
+
 ## Key Design Decisions
 
 ### 1. ASR transcript is the cheap backbone, not an afterthought
@@ -91,7 +146,7 @@ Speech carries most of the searchable meaning in the majority of long-form conte
 
 ### 2. Shot detection and adaptive keyframe sampling, never fixed-rate frames
 
-You cannot embed 108,000 frames per hour, and you should not sample a flat 1fps either: most frames are near-duplicates of their neighbors. The team detects shot boundaries with PySceneDetect (fast, threshold-based) backed by TransNetV2 for gradual transitions like crossfades ([TransNetV2](https://arxiv.org/abs/2008.04838)), takes representative keyframes per shot, and *raises* the sample rate adaptively on high-motion or high-object-density segments (a static lecture slide needs one frame; a busy dock needs many). This collapses the visual workload by one to two orders of magnitude while keeping the frames that carry information. Keyframes are extracted once with ffmpeg and stored, so no downstream step ever re-decodes the source.
+You cannot embed 108,000 frames per hour, and you should not sample a flat 1fps either: most frames are near-duplicates of their neighbors. The team detects shot boundaries with PySceneDetect (fast, threshold-based) backed by TransNetV2 for gradual transitions like crossfades ([TransNetV2](https://arxiv.org/abs/2008.04838)), takes representative keyframes per shot, and *raises* the sample rate adaptively on high-motion or high-object-density segments (a static lecture slide needs one frame; a busy dock needs many). This collapses the visual workload by one to two orders of magnitude while keeping the frames that carry information. In the forklift query above, it is what turns a 3-hour file's 324,000 frames into about 4,900 stored keyframes (a 66x reduction) and roughly 470 segments, with the sampler densifying to 2fps only across the 22 motion bursts the object detector flagged and staying at one frame per 10 seconds over the empty-dock stretches. Keyframes are extracted once with ffmpeg and stored, so no downstream step ever re-decodes the source.
 
 ### 3. One time-aligned multimodal segment index
 
@@ -99,15 +154,26 @@ The atomic unit is a *segment* (a shot or a fixed transcript window) carrying ev
 
 ### 4. Retrieve-then-read Video RAG: the VLM reads only the retrieved windows
 
-The expensive model never sees the corpus. Retrieval narrows a 3-hour file to a handful of candidate windows totaling seconds of footage, and only those sampled frames plus their transcript reach Gemini 3.1 Pro or Claude Opus 4.8. This bounds query cost regardless of source length: whether the match lives in a 5-minute clip or a 4-hour recording, the VLM reads the same small budget of frames. The VLM's job is narrow and verifiable: confirm the retrieved event is really present, reject false positives that matched on text but not picture, and emit an answer cited to exact timestamps.
+The expensive model never sees the corpus. Retrieval narrows a 3-hour file to a handful of candidate windows totaling seconds of footage, and only those sampled frames plus their transcript reach Gemini 3.1 Pro or Claude Opus 4.8. This bounds query cost regardless of source length: whether the match lives in a 5-minute clip or a 4-hour recording, the VLM reads the same small budget of frames. The VLM's job is narrow and verifiable: confirm the retrieved event is really present, reject false positives that matched on text but not picture, and emit an answer cited to exact timestamps. In the worked example, retrieval narrowed a 3-hour file to three 20-second windows (60 seconds of footage in total), and Gemini 3.1 Pro read only those, confirming one and rejecting two, so the query cost is set by the 60 seconds read, not the 3 hours searched.
 
 ### 5. Temporal grounding is a first-class output, refined to an exact span
 
-Retrieval gets you the right ~30-second segment; it does not get you the frame-accurate boundary. The system expands each candidate to its shot window, then asks the VLM to pick the precise start and end, and it evaluates that span with temporal IoU metrics borrowed from moment-retrieval research (R@1 at IoU >= 0.5 and >= 0.7, as in Ego4D NLQ and Charades-STA style benchmarks; [Ego4D](https://arxiv.org/abs/2110.07058)). A returned answer without a confirmable span is treated as a failure, not a partial success: "yes, it is in there somewhere" is useless when the file is three hours long.
+Retrieval gets you the right ~30-second segment; it does not get you the frame-accurate boundary. The system expands each candidate to its shot window, then asks the VLM to pick the precise start and end, and it evaluates that span with temporal IoU metrics borrowed from moment-retrieval research (R@1 at IoU >= 0.5 and >= 0.7, as in Ego4D NLQ and Charades-STA style benchmarks; [Ego4D](https://arxiv.org/abs/2110.07058)). A returned answer without a confirmable span is treated as a failure, not a partial success: "yes, it is in there somewhere" is useless when the file is three hours long. The forklift answer's 09:14:05 to 09:14:19 span is exactly this refinement, and the near-miss rejection (a spotter just off the first frame) is why the VLM re-reads a denser sample to fix the boundary rather than trusting the single indexed keyframe.
 
 ### 6. Long-context video model versus retrieval: pick per question, then hybridize
 
 A native long-context video model (Gemini's long context) wins when the video is short enough to fit and the question is *holistic*: "summarize this lecture," "how does the argument evolve," "did the presenter contradict himself." Retrieve-then-read wins when you must search *across* a huge library (you cannot put 400,000 hours in context), when you need pinpoint moment retrieval, and when repeated cheap queries hit a pre-built index. The team runs both: retrieval finds the candidate video(s), and if the question is holistic and a candidate is short enough, it hands the *whole* candidate video to Gemini rather than stitched windows. The router decides, and the fallback path (below) covers low-recall queries.
+
+| Condition | Native long-context video model wins | Retrieve-then-read (Video RAG) wins |
+|---|---|---|
+| Corpus in scope | one video, or a few, that fit in context | search across the whole 400,000-hour library |
+| Question shape | holistic (summarize, does the argument evolve, overall tone) | pinpoint moment retrieval (find the exact clip) |
+| Source length vs context | fits, roughly under an hour at 1fps sampling | any length, including multi-hour files |
+| Temporal precision needed | coarse, whole-video reasoning | frame-accurate span (IoU >= 0.7), as in the forklift query |
+| Query volume on that corpus | one-off or a handful | many repeated cheap queries over a pre-built index |
+| Cost shape | about a million tokens per hour, paid every query | index once, read only the retrieved windows per query |
+
+Fail toward retrieval when any row points that way and the answer needs a citation. The forklift query above is retrieve-then-read on every row (huge corpus, pinpoint moment, multi-hour source, needs a frame-accurate cited span), while "summarize this 40-minute all-hands" is native long-context on every row.
 
 ### 7. Model tiering and selective captioning keep ingestion and query cost sane
 
@@ -120,6 +186,25 @@ New uploads flow through the same batch pipeline continuously; the SLO is that a
 ### 9. When transcript-only search is the right answer (and the visual pipeline is wasted cost)
 
 For talking-head content, podcasts, interviews, most lectures, earnings calls, all-hands recordings, the information is almost entirely in the speech. Transcript ASR plus good chunking plus hybrid search answers "when did the CEO talk about margins" at near-zero marginal cost, and adding SigLIP embeddings, per-keyframe captioning, and VLM verification buys almost no recall while multiplying the bill. Building the full visual stack here is the *wrong* choice. The team gates the expensive pipeline on content type: the visual layers run only where the picture carries information the words do not (surveillance, sports, screen recordings and demos, manufacturing, medical procedure video, silent b-roll). Knowing which archive is which is the difference between a cheap product and a bankrupt one.
+
+## The VLM Verification Gate
+
+Retrieval proposes candidate windows; this gate is where the expensive VLM disposes of them, and it is the step that separated the real violation from the near-miss in the worked example above. It runs once per candidate, and every path ends in a confirmed span with a citation or a reject, never in an unverified "probably."
+
+```mermaid
+flowchart TD
+    W[Retrieved candidate window sampled frames plus transcript plus OCR] --> P{Target event visible in a sampled frame?}
+    P -->|no| REJ[Reject candidate matched on text not picture]
+    P -->|yes| B{Frame-accurate start and end found?}
+    B -->|no| DENSE[Decode a denser frame sample from the blob store]
+    DENSE --> B
+    B -->|yes| N{Disqualifying entity in the denser sample?}
+    N -->|yes spotter in frame| REJ
+    N -->|no| C{Cited span overlaps a real retrieved segment?}
+    C -->|no| REJ
+    C -->|yes| OUT[Confirm answer plus exact span plus keyframe citation]
+    REJ --> NEXT[Try next candidate or return no match]
+```
 
 ## Query Path with Long-Context Fallback
 

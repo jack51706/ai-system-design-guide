@@ -28,30 +28,30 @@ flowchart TB
     PD[PagerDuty Alert] --> ORCH[Copilot Orchestrator]
     HIST[(Incident History Vector Store)] --> ORCH
 
-    subgraph Read["Read Tools - autonomous, read-only RBAC"]
-        ORCH --> LOGS[Logs: Loki and Elastic via LogQL]
-        ORCH --> METRICS[Metrics: Prometheus and Datadog via PromQL]
-        ORCH --> TRACES[Traces: Tempo and Jaeger via TraceQL]
-        ORCH --> DEPLOY[Deploy Events: Argo CD and Spinnaker]
-        ORCH --> TOPO[Topology: Istio mesh and Backstage catalog]
+    subgraph Read["Read Tools, autonomous read-only RBAC"]
+        ORCH --> LOGS[Logs Loki and Elastic via LogQL]
+        ORCH --> METRICS[Metrics Prometheus and Datadog via PromQL]
+        ORCH --> TRACES[Traces Tempo and Jaeger via TraceQL]
+        ORCH --> DEPLOY[Deploy Events Argo CD and Spinnaker]
+        ORCH --> TOPO[Topology Istio mesh and Backstage catalog]
         ORCH --> KGET[kubectl get and describe]
     end
 
-    LOGS --> SUMM[Telemetry Summarizers: Haiku 4.5 and DeepSeek V4 Flash]
+    LOGS --> SUMM[Telemetry Summarizers Haiku 4.5 and DeepSeek V4 Flash]
     METRICS --> SUMM
     TRACES --> SUMM
-    DEPLOY --> CORR[Correlation Engine: join on entity plus time plus topology]
+    DEPLOY --> CORR[Correlation Engine join on entity plus time plus topology]
     TOPO --> CORR
     KGET --> CORR
     SUMM --> CORR
 
-    CORR --> RCA[RCA Reasoner: Opus 4.8 extended thinking]
-    RCA --> GROUND[Grounding Check: each claim cites a log line, metric, or deploy]
-    GROUND --> SLACK[Incident Slack Channel: hypothesis, blast radius, proposed steps]
+    CORR --> RCA[RCA Reasoner Opus 4.8 extended thinking]
+    RCA --> GROUND[Grounding Check each claim cites a log line, metric, or deploy]
+    GROUND --> SLACK[Incident Slack Channel hypothesis, blast radius, proposed steps]
 
     SLACK --> HUMAN[On-Call Engineer]
-    HUMAN -->|approve| GATE[Action Gate: dry-run plus blast-radius estimate]
-    GATE --> WRITE[Write Tools: rollback, scale, restart, failover]
+    HUMAN -->|approve| GATE[Action Gate dry-run plus blast-radius estimate]
+    GATE --> WRITE[Write Tools rollback, scale, restart, failover]
     WRITE --> AUDIT[(Signed Audit Log)]
     HUMAN --> TIMELINE[Incident Timeline plus Postmortem Draft]
 ```
@@ -84,6 +84,44 @@ flowchart TB
 8. If the on-call approves an action, the gate computes a dry-run and a blast-radius estimate (pods affected, downstream services, expected error seconds), and only then executes the write tool, logging it to the signed audit trail.
 9. At resolution the copilot drafts a blameless postmortem from the channel transcript plus the telemetry it gathered, and the case is filed for RCA replay eval.
 
+### A worked example: a checkout p99 spike traced two hops upstream
+
+Watch one page run end to end. At 02:14 UTC, PagerDuty fires `checkout p99 latency over 800 ms` (the SLO is 250 ms) and opens `INC-2026-07-03-0214` in the incident Slack channel. The orchestrator pins the alerting service (`checkout`), the region (`us-east-1`), and a 15-minute window, then fans out the read tools in parallel. Each claim below is tagged with the one signal that supports it.
+
+- **Metrics (Prometheus).** `histogram_quantile(0.99, checkout_request_duration_seconds)` steps from 240 ms to 820 ms at 02:02, while `checkout` CPU and error rate stay flat. So `checkout` is slow but not itself broken, which points downstream.
+- **Traces (Tempo).** The slow `checkout` spans all block on `orders-api`, which blocks on `payments-api`, whose DB span jumps from 8 ms to 610 ms. The latency is two hops upstream, not in the service that paged.
+- **Deploys (Argo CD).** `payments-api` rev `a3f9c21` synced at 02:02, exactly when p99 stepped, and its diff swaps an indexed lookup for an unindexed `WHERE status IN (...)` scan.
+- **Logs (Loki).** `payments-api` logs show `slow query (612 ms) on payments.txn` repeating from 02:02, with no such line before the deploy.
+
+The correlation engine joins these on time (all at 02:02), topology (`checkout` depends on `orders-api` depends on `payments-api`), and entity (`payments-api`). Opus 4.8 drafts a ranked hypothesis led by the deploy cause, with connection-pool exhaustion as a lower-ranked alternative, and computes a blast radius from the topology: rolling back `payments-api` touches 24 pods and the 3 services on the call path. It proposes `rollout_undo payments-api` as a human-approved Argo Rollouts action and never fires it.
+
+Now the meta-risk that separates this from a demo. During the same incident, Tempo is itself degraded (it shares nodes with the saturated `payments-api`), so the trace query returns partial spans and times out on the rest. The copilot does not fill the gap with a guess: it ships the hypothesis with a `tempo_timeout` partial-telemetry flag ("traces incomplete, hypothesis rests on metrics, the deploy, and logs") and lowers confidence from 0.9 to 0.72, so the on-call reads it as a strong lead to verify, not a verdict. The engineer checks the deploy diff, agrees, and clicks approve; the gate renders the 24-pod, 3-service dry-run before the rollback runs, and `checkout` p99 recovers to 250 ms within 90 seconds.
+
+### The RCA record
+
+The copilot never posts prose alone; it emits a schema-validated RCA record that carries each claim's evidence, the blast radius, and the proposed action with its approval flag, so the channel and the audit log reason over structure rather than narrative.
+
+```json
+{
+  "incident_id": "INC-2026-07-03-0214",
+  "alerting_service": "checkout",
+  "hypothesis": "payments-api deploy a3f9c21 introduced an unindexed query that raised DB latency, cascading to checkout p99",
+  "confidence": 0.72,
+  "partial_telemetry": ["tempo_timeout"],
+  "evidence": [
+    {"source": "prometheus", "ref": "checkout p99 240ms to 820ms at 02:02Z", "why": "latency step matches the deploy time"},
+    {"source": "tempo", "ref": "trace 7fa2 payments-api db span 8ms to 610ms", "why": "slow hop is two services upstream of checkout"},
+    {"source": "argocd", "ref": "payments-api rev a3f9c21 synced 02:02Z", "why": "diff swaps an indexed lookup for an unindexed status scan"},
+    {"source": "loki", "ref": "payments-api slow query 612ms on payments.txn", "why": "confirms the query regression in logs"}
+  ],
+  "blast_radius": {"pods": 24, "services": ["payments-api", "orders-api", "checkout"], "stateful": false},
+  "proposed_action": {"type": "rollout_undo", "target": "payments-api@a3f9c21", "requires_approval": true, "dry_run": "24 pods, ~20s elevated errors"},
+  "alternatives": ["db connection-pool exhaustion, ranked lower, no pool-saturation metric"]
+}
+```
+
+The `requires_approval` field is not advisory. The write tool that performs `rollout_undo` refuses to run without a signed approval token minted by the Slack gate (Decision 5), so even a bug that flipped this flag to `false` could not make the action autonomous.
+
 ## Key Design Decisions
 
 ### 1. Read freely, act never: the boundary is the whole design
@@ -92,7 +130,7 @@ Every other decision falls out of one rule: the copilot has broad autonomous *re
 
 ### 2. Retrieval over observability, not documents
 
-The core technical problem is not prose retrieval, it is joining logs, metrics, traces, deploy events, and topology into one root-cause hypothesis, which is retrieval over live telemetry. The needle is which of 300+ services broke, and the answer usually is not the service that paged: an alert on `checkout` is often caused by a change two hops upstream. So correlation is topology-aware, joining candidate signals on shared entities, time proximity, and dependency-graph edges rather than treating each backend in isolation. Recent deploys are the highest-yield feature by far, because the large majority of incidents trace to a change, so "what shipped in the last 30 minutes to any service in the blast radius" is queried first. This mirrors the agentic RCA finding of [Roy et al.](https://arxiv.org/abs/2403.04123): a ReAct agent that can dynamically pull logs and metrics is far more factually accurate than one reasoning over a static context. See [Agentic RAG](../06-retrieval-systems/08-agentic-rag.md) for the retrieval discipline.
+The core technical problem is not prose retrieval, it is joining logs, metrics, traces, deploy events, and topology into one root-cause hypothesis, which is retrieval over live telemetry. The needle is which of 300+ services broke, and the answer usually is not the service that paged: an alert on `checkout` is often caused by a change two hops upstream. So correlation is topology-aware, joining candidate signals on shared entities, time proximity, and dependency-graph edges rather than treating each backend in isolation. Recent deploys are the highest-yield feature by far, because the large majority of incidents trace to a change, so "what shipped in the last 30 minutes to any service in the blast radius" is queried first. This mirrors the agentic RCA finding of [Roy et al.](https://arxiv.org/abs/2403.04123): a ReAct agent that can dynamically pull logs and metrics is far more factually accurate than one reasoning over a static context. The worked example above is this join in miniature: the Tempo trace localizes the slow hop, the Argo CD event names what changed, and the topology edge proves `checkout` and `payments-api` are connected, none of which the alert firing on `checkout` alone could reveal. See [Agentic RAG](../06-retrieval-systems/08-agentic-rag.md) for the retrieval discipline.
 
 ### 3. Ground every hypothesis or drop it
 
@@ -100,11 +138,21 @@ A confidently wrong RCA is the expensive failure, because the channel trusts it 
 
 ### 4. Blast-radius estimate and dry-run before any action
 
-Approval is not enough if the human cannot see what they are approving. Before any proposed write, the gate computes a blast-radius estimate from the topology (how many pods, which downstream services depend on the target, whether it is stateful) and a dry-run diff (`kubectl --dry-run=server`, or an Argo Rollouts analysis) so the channel sees "this rollback touches 40 pods and 12 downstream services, expect ~30s of elevated errors" before anyone clicks. Destructive or high-blast-radius actions (anything touching a stateful service, a database, or a shared gateway) carry an extra confirmation and, for the riskiest, a two-person approval. The action is deterministic and templated, a named runbook step, not free-form model output, so the LLM chooses *which* runbook to propose but never writes the command that runs.
+Approval is not enough if the human cannot see what they are approving. Before any proposed write, the gate computes a blast-radius estimate from the topology (how many pods, which downstream services depend on the target, whether it is stateful) and a dry-run diff (`kubectl --dry-run=server`, or an Argo Rollouts analysis) so the channel sees the concrete impact ("this rollback touches 24 pods and 3 services on the call path, expect ~20s of elevated errors", the dry-run from the worked example) before anyone clicks. Destructive or high-blast-radius actions (anything touching a stateful service, a database, or a shared gateway) carry an extra confirmation and, for the riskiest, a two-person approval. The action is deterministic and templated, a named runbook step, not free-form model output, so the LLM chooses *which* runbook to propose but never writes the command that runs.
 
 ### 5. Runbook automation via MCP: read tools autonomous, write tools gated
 
-Tools are exposed to the copilot over [MCP 2.0](../07-agentic-systems/03-tool-use-and-mcp.md), and the read/write split is enforced at the tool boundary, not in the prompt. Read-only diagnostic tools (`loki_query`, `promql_query`, `traceql_query`, `list_deploys`, `kubectl_get`) are marked non-destructive and callable autonomously. Write tools (`rollout_undo`, `scale`, `restart`, `shift_traffic`) are registered as human-approval-required and are physically unreachable without a signed approval token minted by the Slack gate. This matters because prompt-level "please ask before acting" instructions are not a security control; a boundary that the runtime enforces is. Read tools also run under a strict per-incident query budget so the copilot cannot storm an already-struggling backend (Decision F5). New runbooks are added as new gated tools, which is how the system grows coverage without ever growing autonomous authority.
+Tools are exposed to the copilot over [MCP 2.0](../07-agentic-systems/03-tool-use-and-mcp.md), and the read/write split is enforced at the tool boundary, not in the prompt. Read-only diagnostic tools (`loki_query`, `promql_query`, `traceql_query`, `list_deploys`, `kubectl_get`) are marked non-destructive and callable autonomously. Write tools (`rollout_undo`, `scale`, `restart`, `shift_traffic`) are registered as human-approval-required and are physically unreachable without a signed approval token minted by the Slack gate. This matters because prompt-level "please ask before acting" instructions are not a security control; a boundary that the runtime enforces is. Read tools also run under a strict per-incident query budget so the copilot cannot storm an already-struggling backend (Decision F5). New runbooks are added as new gated tools, which is how the system grows coverage without ever growing autonomous authority. The split is a table the runtime enforces, not a matter of prompt etiquette:
+
+| Tool class | Example tools | Access | Autonomy |
+|---|---|---|---|
+| Logs | `loki_query`, `elastic_query` | read-only creds | autonomous |
+| Metrics | `promql_query`, `datadog_query` | read-only creds | autonomous |
+| Traces | `traceql_query`, `jaeger_query` | read-only creds | autonomous |
+| Deploys and topology | `list_deploys`, `catalog_lookup` | read-only creds | autonomous |
+| Cluster inspect | `kubectl_get`, `kubectl_describe` | read-only RBAC (`get`, `list`, `watch`) | autonomous |
+| Rollback and scale | `rollout_undo`, `scale`, `restart` | write RBAC | human-approved, signed token |
+| Traffic and failover | `shift_traffic`, `failover` | write RBAC | human-approved, two-person for shared gateways |
 
 ### 6. Model tiering and context caching for speed and cost
 
@@ -112,7 +160,7 @@ Incident telemetry is enormous and mostly noise, so the pipeline tiers models. H
 
 ### 7. Fail safe: the observability and the LLM may also be down
 
-This is the decision that separates a toy from a production tool. During a major incident, Loki or Prometheus may be degraded (they often share infra with what broke), and the LLM API may be rate-limited or slow. The copilot treats partial telemetry and provider timeouts as the normal case. Each read tool has a hard timeout (~20s); if a backend is down, the copilot proceeds on the signals it *does* have and explicitly flags "metrics backend timed out, hypothesis based on logs and deploys only, confidence lowered." If the LLM provider is degraded, it fails open to a deterministic fallback: post the raw correlated data with no hypothesis, so the human still gets the assembled context. Above all, the copilot is strictly optional: it never gates, blocks, or delays a human responder, and if it is entirely down the on-call proceeds exactly as they did before it existed. This is defense-in-depth from [reliability patterns](../13-reliability-and-safety/03-reliability-patterns.md) applied to the tool meant to help in a crisis.
+This is the decision that separates a toy from a production tool. During a major incident, Loki or Prometheus may be degraded (they often share infra with what broke), and the LLM API may be rate-limited or slow. The copilot treats partial telemetry and provider timeouts as the normal case. Each read tool has a hard timeout (~20s); if a backend is down, the copilot proceeds on the signals it *does* have and explicitly flags "metrics backend timed out, hypothesis based on logs and deploys only, confidence lowered" (in the worked example, Tempo timed out and the hypothesis shipped with a `tempo_timeout` flag and confidence cut from 0.9 to 0.72). If the LLM provider is degraded, it fails open to a deterministic fallback: post the raw correlated data with no hypothesis, so the human still gets the assembled context. Above all, the copilot is strictly optional: it never gates, blocks, or delays a human responder, and if it is entirely down the on-call proceeds exactly as they did before it existed. This is defense-in-depth from [reliability patterns](../13-reliability-and-safety/03-reliability-patterns.md) applied to the tool meant to help in a crisis. This is also the sharp line against [observing your own LLM app](32-llm-observability-incident-response.md): there you own and trust the telemetry emitter (your app's own OpenTelemetry spans and token traces) and the subject is your own model calls, whereas here the telemetry is general production infra you may not own, its log content is attacker-influenceable (F7), and the observability backend can be a casualty of the very incident you are debugging.
 
 ### 8. ChatOps, timeline, and postmortem generation
 
@@ -133,7 +181,7 @@ flowchart LR
     D --> F[Correlate available signals]
     E --> F
     F --> G{LLM provider healthy?}
-    G -->|degraded| H[Fallback: post raw correlated data, no hypothesis]
+    G -->|degraded| H[Fallback post raw correlated data, no hypothesis]
     G -->|ok| I[Grounded hypothesis plus blast radius plus proposed steps]
     H --> J[Human proceeds with manual runbook]
     I --> K{Human approves an action?}
@@ -142,6 +190,29 @@ flowchart LR
     L --> M[Verify metric recovers, update timeline]
     J --> M
     M --> N[Draft blameless postmortem from channel plus telemetry]
+```
+
+## The Action Gate
+
+The gate is the safety-critical component, the single point where a probabilistic system can reach a state change on production, so it is worth seeing on its own. It is a deterministic sequence of checks between an approved proposal and an executed write; any failure routes back to the human, and read-only tools never enter it at all.
+
+```mermaid
+flowchart TD
+    P[Proposed step from copilot] --> W{Is it a write tool?}
+    W -->|no, read-only| RUN[Run autonomously under per-incident query budget]
+    W -->|yes| BR[Compute blast radius from topology]
+    BR --> DR[Server-side dry-run diff]
+    DR --> SHOW[Show pods, downstream services, expected error seconds in Slack]
+    SHOW --> STATE{Stateful, database, or shared gateway?}
+    STATE -->|yes| TWO[Require two-person approval]
+    STATE -->|no| ONE[Require one on-call approval]
+    TWO --> TOK{Signed approval token minted?}
+    ONE --> TOK
+    TOK -->|no| HOLD[No token, action stays inert]
+    TOK -->|yes| EXEC[Execute templated runbook step]
+    EXEC --> VERIFY{Target metric recovers?}
+    VERIFY -->|yes| LOG[Write to signed audit log and update timeline]
+    VERIFY -->|no| BACK[Auto rollback-of-rollback and re-escalate]
 ```
 
 ## Failure Modes and Mitigations

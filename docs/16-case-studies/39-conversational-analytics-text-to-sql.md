@@ -87,11 +87,71 @@ flowchart TB
 8. Result verification runs deterministically: empty, all-null, or absurd-magnitude results are flagged, "no data" is distinguished from "the value is zero," and out-of-range values against the metric's known bounds trigger abstention.
 9. The system renders a chart plus a plain-English summary, and always shows its work: the SQL, the metrics and tables used, and any assumptions it made; the full interaction is written to the audit log.
 
+### A worked example: NRR by segment, one answer and one abstain
+
+The design is easiest to see on two questions asked the same morning, one that ships a verified number and one that honestly abstains.
+
+**Question A (shipped).** A VP of Finance asks in Slack: "what was net revenue retention by segment last quarter versus the year before". SSO binds the request to her identity and a read-only Snowflake role. The ambiguity gate (Haiku 4.5) classifies it answerable: NRR is governed, `by segment` maps to the `customer_segment` dimension (Enterprise, Mid-Market, SMB), and `last quarter` resolves to fiscal Q1 FY2026 (Feb to Apr 2026) versus fiscal Q1 FY2025, because the metric registry declares the company's default reporting calendar as fiscal. That resolution is recorded as a stated assumption, not a silent guess. Schema linking pulls the `net_revenue_retention` metric and three validated query-bank exemplars; the full DDL is never shown.
+
+The draft model composes a MetricFlow query (metric `net_revenue_retention`, group by `customer_segment`, fiscal-quarter grain with a prior-year comparison), and the semantic layer compiles it to Snowflake SQL at cohort grain. To defend the number, the gate samples K = 5 candidates. Four compose cleanly through MetricFlow and agree: Enterprise 111.2, Mid-Market 104.5, SMB 96.8 (percent, this quarter). The fifth free-wrote a JOIN to `invoice_line` that fanned out to line grain without deduping to the customer, multiplying expansion ARR on multi-line accounts and returning Enterprise 118.7. sqlglot parsed it, the static gate passed it (a valid read-only SELECT under the byte cap), and its 118.7 sat inside the registry's 0 to 200 percent NRR bound, so no single-query check caught it. Self-consistency did: a 7.5 point gap on Enterprise blew past the 0.5 point agreement tolerance, so nothing shipped. The disagreement escalated to Opus 4.8, which diagnosed the fan-out, rewrote the outlier to compose purely through the governed metric, and re-sampled; all five candidates then agreed at 111.2. The Opus judge confirmed the SQL grouped by `customer_segment` at cohort grain over the two fiscal windows, the verifier saw six non-null rows within bounds, and the system shipped a grouped bar chart with the compiled SQL and the assumptions visible one click away.
+
+**Question B (abstained).** Minutes later a PM asks: "which pricing change drove the Enterprise NRR dip". This is causal attribution, not a metric over dimensions. There is no governed metric that expresses "which change drove" a movement, and inventing a JOIN to guess would be exactly the confident-wrong-number failure the product exists to prevent. The ambiguity gate classifies it out of model and the system abstains honestly: it offers what it can compute (Enterprise NRR by quarter over time, and the expansion and contraction components) and says attribution needs an analyst. No SQL runs and no number is shown.
+
+The point: the model drafted SQL in both cases, but the verified signals (K-sample agreement, magnitude bounds, judge verdict) and the scope classifier, not the fluent prose, decided that A shipped and B did not.
+
+### The verified answer object
+
+The copilot never ships a bare chart; it emits a schema-validated answer object the surface renders and the audit log stores. Every field the UI trusts is a verified signal, not model prose.
+
+```json
+{
+  "question": "what was net revenue retention by segment last quarter vs the year before",
+  "asker_role": "finance_read_only",
+  "resolved_metric": "net_revenue_retention",
+  "dimensions": ["customer_segment"],
+  "time_grain": "fiscal_quarter",
+  "compare_periods": ["FY2026-Q1", "FY2025-Q1"],
+  "dialect": "snowflake",
+  "dialect_sql": "SELECT customer_segment, fiscal_quarter, net_revenue_retention FROM semantic.nrr WHERE fiscal_quarter IN ('FY2026-Q1','FY2025-Q1') GROUP BY 1,2",
+  "verified_signals": {
+    "row_count": 6,
+    "empty_or_all_null": false,
+    "magnitude_check": "pass_0_to_200_pct",
+    "self_consistency_agree": true,
+    "k_samples": 5,
+    "k_agree": 5,
+    "judge_verdict": "matches_question_and_grain"
+  },
+  "confidence": 0.94,
+  "shown_assumptions": [
+    "last quarter = fiscal Q1 FY2026 (Feb to Apr 2026), per finance calendar",
+    "NRR = (starting ARR + expansion - contraction - churn) / starting ARR, excludes new-logo",
+    "segment = governed customer_segment dimension"
+  ],
+  "status": "shipped"
+}
+```
+
+For Question B the object short-circuits before any SQL, which is a first-class outcome, not an error:
+
+```json
+{
+  "question": "which pricing change drove the Enterprise NRR dip",
+  "resolved_metric": null,
+  "dialect_sql": null,
+  "verified_signals": {"scope_class": "out_of_model_causal"},
+  "confidence": null,
+  "shown_assumptions": [],
+  "status": "abstained",
+  "abstain_reason": "causal attribution has no governed metric; offered the NRR trend and expansion breakdown instead"
+}
+```
+
 ## Key Design Decisions
 
 ### 1. The semantic layer is the single source of truth for every metric
 
-The whole design rests on this. "Net revenue retention" is not `SUM(revenue)`; it is a cohort formula (a cohort's starting ARR, plus expansion, minus contraction and churn, divided by starting ARR, excluding new-logo revenue). A model that infers this from raw tables will be plausibly, confidently wrong. So metrics live in a semantic layer, defined once by the people who own them: [dbt Semantic Layer with MetricFlow](https://docs.getdbt.com/docs/build/about-metricflow), [Cube](https://cube.dev/), or [LookML](https://cloud.google.com/looker/docs/what-is-lookml). The model's job is to pick the right metric and the right dimensions and time grain; the layer compiles that to correct SQL. This is exactly why Snowflake [Cortex Analyst](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst/semantic-model-spec) requires a semantic model YAML rather than pointing at raw schema. The semantic layer is not a nice-to-have here, it is the thing that converts an open-ended hallucination surface into a bounded, governed one.
+The whole design rests on this. "Net revenue retention" is not `SUM(revenue)`; it is a cohort formula (a cohort's starting ARR, plus expansion, minus contraction and churn, divided by starting ARR, excluding new-logo revenue). A model that infers this from raw tables will be plausibly, confidently wrong. So metrics live in a semantic layer, defined once by the people who own them: [dbt Semantic Layer with MetricFlow](https://docs.getdbt.com/docs/build/about-metricflow), [Cube](https://cube.dev/), or [LookML](https://cloud.google.com/looker/docs/what-is-lookml). The model's job is to pick the right metric and the right dimensions and time grain; the layer compiles that to correct SQL. This is exactly why Snowflake [Cortex Analyst](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst/semantic-model-spec) requires a semantic model YAML rather than pointing at raw schema. The semantic layer is not a nice-to-have here, it is the thing that converts an open-ended hallucination surface into a bounded, governed one. In the worked example above, the model only selects the `net_revenue_retention` metric, the `customer_segment` dimension, and the fiscal-quarter grain; MetricFlow writes the cohort formula, so the model cannot get the definition wrong even when one sampled candidate gets the JOIN wrong.
 
 ### 2. Retrieve schema and validated examples, never dump the warehouse DDL
 
@@ -101,13 +161,28 @@ A real warehouse has thousands of tables and tens of thousands of columns. Pasti
 
 Generated SQL is a hypothesis. Before a single credit is spent, it clears a gate that is code, not vibes. [sqlglot](https://github.com/tobymao/sqlglot) parses the SQL for the exact target dialect (Snowflake, BigQuery, or Databricks), and the AST is inspected to confirm it is a single statement, a `SELECT` only, with no DDL or DML nodes. A `LIMIT` is injected if absent. A BigQuery [dry run](https://cloud.google.com/bigquery/docs/estimate-costs) or a Snowflake `EXPLAIN` estimates bytes and rows, and anything over the budget is rejected before it runs. Only after the deterministic checks pass does the probabilistic check run (Decision 5). Putting the cheap, certain checks first is the [guardrails](../13-reliability-and-safety/01-guardrails.md) discipline: never spend an LLM call or a warehouse scan to catch something a parser can catch for free.
 
+The gate is a pipeline, and each stage routes to one of three outcomes, execute, repair, or abstain:
+
+| Gate check | Condition that fires it | Routing |
+|---|---|---|
+| sqlglot parse and dialect | does not parse for the target dialect | Repair |
+| AST shape | not a single read-only SELECT (DDL, DML, or multi-statement) | Reject as injection, then abstain |
+| Cost estimate (dry run or EXPLAIN) | estimated scan over the per-query byte cap (default 50 GB, tuned per dataset) | Repair to narrow, else abstain |
+| Self-consistency across K | K results disagree beyond the metric tolerance | Repair or escalate to Opus 4.8 |
+| Magnitude vs registry bounds | result outside the metric's declared bounds | Abstain |
+| Empty or all-null result | zero rows, or every value null | Abstain and report no matching data |
+| LLM judge | SQL does not compute the asked metric or grain | Repair or abstain |
+| All checks | every gate above passes | Execute and ship |
+
+The bias is deliberate: any failure that cannot be cheaply repaired ends in abstention, never in shipping an unverified number. Question A above cleared every row only after the fan-out candidate was repaired, and Question B never reached the table because the scope classifier abstained first.
+
 ### 4. Execute as the asker, not the service account
 
 The copilot must never become a permission-laundering side channel. If it queried the warehouse as a privileged service account and then filtered results in the app, a bug or a prompt injection could leak data the asker cannot see. Instead, the asker's identity is exchanged (via Okta and warehouse OAuth) for a read-only role, and the query runs under that role, so Snowflake [row access policies](https://docs.snowflake.com/en/user-guide/security-row-intro) and [masking policies](https://docs.snowflake.com/en/user-guide/security-column-intro), BigQuery [row-level security](https://cloud.google.com/bigquery/docs/row-level-security-intro), or Databricks [Unity Catalog row filters and column masks](https://docs.databricks.com/en/data-governance/unity-catalog/row-and-column-filters.html) are enforced by the warehouse itself. The copilot inherits governance instead of reimplementing it. See [Access Control](../12-security-and-access/02-access-control.md).
 
 ### 5. Self-consistency plus an LLM judge: the wrong-number defense
 
-This is the heart of "never a confident wrong number." For any non-trivial question, the draft model samples K candidate queries at nonzero temperature ([self-consistency](https://arxiv.org/abs/2203.11171)); after the static gate, the surviving candidates execute read-only, and their results are compared. If K independent derivations agree on the number, confidence is high; if they disagree, that is the signal to abstain or escalate to Opus 4.8, not to pick one and hope. Separately, an Opus 4.8 judge reads the question, the compiled SQL, and the result, and answers a narrow question: does this SQL compute what was asked, using the right metric and grain? The judge is not trusted to write SQL, only to catch mismatches. Disagreement anywhere in this loop routes to abstention or a human, which is the entire point.
+This is the heart of "never a confident wrong number." For any non-trivial question, the draft model samples K candidate queries at nonzero temperature ([self-consistency](https://arxiv.org/abs/2203.11171)); after the static gate, the surviving candidates execute read-only, and their results are compared. If K independent derivations agree on the number, confidence is high; if they disagree, that is the signal to abstain or escalate to Opus 4.8, not to pick one and hope. K is 5 by default and is raised for exec-facing or high-cardinality questions. Agreement is defined per metric, not as an exact string match: for a rate like NRR the results must fall within a 0.5 percentage-point tolerance. In the worked example above, four of five candidates agreed at 111.2 and the fifth, a fan-out that double-counted expansion, disagreed at 118.7, which is exactly the signal that stopped a plausible wrong number from shipping. Separately, an Opus 4.8 judge reads the question, the compiled SQL, and the result, and answers a narrow question: does this SQL compute what was asked, using the right metric and grain? The judge is not trusted to write SQL, only to catch mismatches. Disagreement anywhere in this loop routes to abstention or a human, which is the entire point.
 
 ### 6. Clarify vs assume, and always show your work
 
@@ -143,6 +218,33 @@ flowchart TD
     AGREE -->|Yes| JUDGE2[LLM Judge: SQL Matches Question?]
     JUDGE2 -->|No| DECL2
     JUDGE2 -->|Yes| SHIP[Ship Chart plus SQL plus Assumptions]
+```
+
+## Self-Consistency and Repair Loop
+
+The disagree-then-agree dynamic that caught the fan-out in the worked example, viewed as an interaction over time.
+
+```mermaid
+sequenceDiagram
+    participant U as Asker via Slack
+    participant G as Correctness Gate
+    participant W as Warehouse as Asker Role
+    participant O as Opus 4.8 Repair and Judge
+
+    U->>G: Question resolved to governed metric
+    G->>G: Compile metric and sample K candidates
+    G->>W: Execute K read-only candidates
+    W-->>G: K result sets
+    alt Results disagree beyond tolerance
+        G->>O: Escalate outlier for repair
+        O-->>G: Fan-out diagnosed and query rewritten
+        G->>W: Re-execute repaired candidates
+        W-->>G: Results now agree
+    end
+    G->>O: Judge SQL against question and grain
+    O-->>G: Verdict matches
+    G-->>U: Chart plus SQL plus assumptions
+    Note over G: If still disagree or judge rejects, abstain honestly
 ```
 
 ## Failure Modes and Mitigations

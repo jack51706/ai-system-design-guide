@@ -88,11 +88,56 @@ flowchart TB
 8. The routing gate publishes segments that pass every check and clear the tier's QE threshold and writes them to the TM; the rest go to the MTPE or full-human queue with the draft pre-filled.
 9. Human edits are approved into the TM (growing the reusable asset) and logged as QE calibration and eval data, and approved targets are pushed back to the resource files and CMS.
 
+### A worked example: one cart string into German
+
+Follow one real UI string end to end, then contrast it with a low-risk string that ends up somewhere different.
+
+**The string.** Segment `ui.cart.summary_line`, English source `You have {count, plural, one {# item} other {# items}} in your {cart_name} cart`, target `de-DE`. It carries an ICU plural driven by `{count}` and a second placeholder `{cart_name}`, and it renders in a fixed-width header, so it is customer-facing top-locale UI.
+
+**TM lookup (85 percent fuzzy).** There is no exact match, but the TM holds a near-neighbor from a prior release, `You have {count, plural, one {# item} other {# items}} in your {cart_name} wishlist`, approved as `Sie haben {count, plural, one {# Artikel} other {# Artikel}} in Ihrer {cart_name}-Wunschliste`. The fuzzy score is 85 percent (the strings differ only by cart versus wishlist), too low to reuse verbatim but ideal as a few-shot example, so it seeds the prompt and anchors the formal register (Sie) and the placeholder layout.
+
+**Glossary.** The termbase pins `cart -> Warenkorb` for de-DE and lists `Einkaufswagen` and `Korb` as do-not-use synonyms. That rule is injected into the prompt as a hard instruction.
+
+**LLM draft, first attempt (rejected).** Claude Sonnet 4.7 returns `Sie haben {count, plural, one {# Artikel} other {# Artikel}} in Ihrem {cart_name}-Einkaufswagen`. Placeholders are intact and both plural forms are present, so QE would very likely have waved it through, but the deterministic termbase check fails because `Einkaufswagen` is the do-not-use synonym, not the approved `Warenkorb`. The segment bounces to a constrained retry with the violated term named. (Had the model instead dropped `{cart_name}`, the placeholder-integrity check would have caught it on the same gate; a code check, not the model, is the guarantee.)
+
+**LLM draft, second attempt (into the gauntlet).** The retry returns `Sie haben {count, plural, one {# Artikel} other {# Artikel}} in Ihrem {cart_name}-Warenkorb`. Now the deterministic checks run: placeholder integrity passes (`{count}` and `{cart_name}` both present, none added), ICU parses, CLDR completeness passes (German needs exactly the `one` and `other` categories, both present), and the termbase check passes. The length check flags it: the German rendering is about 34 percent wider than the English, over the 30 percent budget for this fixed-width header, so a soft length-overflow flag is attached (a note for the human, not a hard block).
+
+**QE and routing.** COMETKiwi scores the segment 0.82. Because it is customer-facing top-locale UI (medium-risk tier), the router sends it to MTPE regardless of the score: a post-editor opens it with the draft, the 85 percent TM match, the glossary, the QE score, and the length-overflow note pre-filled, then shortens or confirms it in seconds. The approved result is written back to the TM, so the next occurrence is a free exact match.
+
+**The contrast.** The same batch carries an internal admin string, `log.sync.done`, source `Sync completed for {tenant}`, target `Synchronisierung für {tenant} abgeschlossen`. Placeholders and forms pass, there is no glossary term and no length pressure, and COMETKiwi scores it 0.94. It is low-risk internal content over the 0.85 auto-publish threshold for that tier, so it auto-publishes with no human and writes straight to the TM. Same pipeline, same checks, opposite destination: the tier plus the QE score, not the raw fluency, decided who a human ever saw.
+
+### The segment record
+
+Every segment carries a structured record that the checks and the router read, never the prose. Here is `ui.cart.summary_line` at the moment it is routed.
+
+```json
+{
+  "segment_id": "ui.cart.summary_line",
+  "locale": "de-DE",
+  "source": "You have {count, plural, one {# item} other {# items}} in your {cart_name} cart",
+  "target": "Sie haben {count, plural, one {# Artikel} other {# Artikel}} in Ihrem {cart_name}-Warenkorb",
+  "tm_match": {"score": 0.85, "origin": "ui.wishlist.summary_line", "used": "few_shot_example"},
+  "glossary": [{"term": "cart", "approved": "Warenkorb", "first_pass": "Einkaufswagen", "corrected": true}],
+  "glossary_ok": true,
+  "placeholders_ok": true,
+  "icu_plural_ok": true,
+  "cldr_forms_present": ["one", "other"],
+  "length_ratio": 1.34,
+  "length_flag": true,
+  "qe_model": "cometkiwi",
+  "qe_score": 0.82,
+  "content_tier": "customer_facing_ui",
+  "edit_depth": "full",
+  "route": "mtpe",
+  "route_reason": "medium-risk tier is always post-edited; QE 0.82 below light-edit cutoff; length overflow flagged"
+}
+```
+
 ## Key Design Decisions
 
 ### 1. TM plus termbase as the ground truth, the LLM only fills gaps
 
-The TM and termbase are the semantic layer, not the model. Exact TM matches are reused verbatim (free, and perfectly consistent), fuzzy matches are fed to the LLM as in-context examples, and the glossary is injected into every relevant prompt. Feeding the closest fuzzy matches to the model measurably improves terminology and style adherence over cold translation ([Moslem et al., Adaptive MT with LLMs, arXiv:2301.13294](https://arxiv.org/abs/2301.13294)). Critically, we do not trust the prompt to enforce terms: a deterministic post-check compares every term instance against the termbase and its do-not-translate list, and a violation blocks publish. Prompt-level "please use this glossary" is a hint, the compliance check is the guarantee.
+The TM and termbase are the semantic layer, not the model. Exact TM matches are reused verbatim (free, and perfectly consistent), fuzzy matches are fed to the LLM as in-context examples, and the glossary is injected into every relevant prompt. Feeding the closest fuzzy matches to the model measurably improves terminology and style adherence over cold translation ([Moslem et al., Adaptive MT with LLMs, arXiv:2301.13294](https://arxiv.org/abs/2301.13294)). Critically, we do not trust the prompt to enforce terms: a deterministic post-check compares every term instance against the termbase and its do-not-translate list, and a violation blocks publish. Prompt-level "please use this glossary" is a hint, the compliance check is the guarantee. The worked example shows both halves at once: an 85 percent fuzzy match on a wishlist string seeds the prompt, and the first-pass `Einkaufswagen` draft is caught by the termbase check, not by the prompt.
 
 ### 2. LLM MT over pure NMT, for context, tone, and terminology
 
@@ -100,15 +145,25 @@ Classic NMT (DeepL, Google) is fast and cheap per word but translates segment by
 
 ### 3. Quality Estimation routes the humans, because you cannot review everything
 
-The core scaling move is reference-free QE. You cannot produce a human reference for millions of strings, so a QE model (COMETKiwi, self-hosted) scores each translation's risk from the source and the hypothesis alone and routes only the low-confidence segments to people ([Rei et al., CometKiwi, arXiv:2209.06243](https://arxiv.org/abs/2209.06243)). Reference-based metrics like [COMET](https://arxiv.org/abs/2009.09025) are used in eval where we do have references, but production routing is QE. The auto-publish threshold is not a model default, it is calibrated against MTPE capacity and, more importantly, against the measured critical-error escape rate on the machine path: raise it and more work stays machine-only but more errors slip through, lower it and the human queue grows. That threshold is per-tier and per-locale.
+The core scaling move is reference-free QE. You cannot produce a human reference for millions of strings, so a QE model (COMETKiwi, self-hosted) scores each translation's risk from the source and the hypothesis alone and routes only the low-confidence segments to people ([Rei et al., CometKiwi, arXiv:2209.06243](https://arxiv.org/abs/2209.06243)). Reference-based metrics like [COMET](https://arxiv.org/abs/2009.09025) are used in eval where we do have references, but production routing is QE. The auto-publish threshold is not a model default, it is calibrated against MTPE capacity and, more importantly, against the measured critical-error escape rate on the machine path: raise it and more work stays machine-only but more errors slip through, lower it and the human queue grows. That threshold is per-tier and per-locale. Concretely, the low-risk internal string in the worked example clears a 0.85 auto-publish threshold at QE 0.94 and ships untouched, while the customer-facing cart string at 0.82 never reaches that threshold because its tier routes it to a human first.
 
 ### 4. Mechanical correctness is deterministic code, never model trust
 
-This is where naive LLM translation breaks. A model that drops a `%1$s`, reorders positional args, emits five plural forms for a language that needs six, or mangles an `<a href>` produces a string that crashes the app or corrupts the layout, and QE will not reliably catch it. So placeholder and tag integrity, ICU MessageFormat parseability, CLDR plural-form completeness, and length budget are validated in code as hard gates that the segment must pass before it is eligible for anything ([ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/), [CLDR plural rules](https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html)). These are the same discipline as [guardrails](../13-reliability-and-safety/01-guardrails.md): structural constraints enforced outside the model. Constrained decoding and protect-then-restore reduce violations, but the check is what makes it safe.
+This is where naive LLM translation breaks. A model that drops a `%1$s`, reorders positional args, emits five plural forms for a language that needs six, or mangles an `<a href>` produces a string that crashes the app or corrupts the layout, and QE will not reliably catch it. So placeholder and tag integrity, ICU MessageFormat parseability, CLDR plural-form completeness, and length budget are validated in code as hard gates that the segment must pass before it is eligible for anything ([ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/), [CLDR plural rules](https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html)). These are the same discipline as [guardrails](../13-reliability-and-safety/01-guardrails.md): structural constraints enforced outside the model. Constrained decoding and protect-then-restore reduce violations, but the check is what makes it safe. German is the everyday version of this: it needs exactly the CLDR `one` and `other` categories, so a draft that fills only the `other` branch fails the completeness gate, and the worked example's first-pass `Einkaufswagen` fails the termbase gate with placeholders and plurals perfectly intact, which is precisely the error class QE tends to miss.
 
 ### 5. Content-risk tiering drives the whole pipeline
 
 The economics and the safety both come from tiering. Low-risk content (internal docs, the long tail of support KB, low-traffic locales) goes machine-only when it clears QE. Medium-risk content (product docs, help center, top-locale UI) always gets human post-editing, with QE ordering the queue and deciding light versus full edit. High-risk content (legal, marketing, medical) is full human translation plus review, no auto-publish regardless of QE. The split is deliberately asymmetric, like an insurance straight-through gate: a wrong internal-doc string is cheap, a wrong drug instruction or a botched brand tagline is not, so the machine path is capped to content where the tail cost is bounded.
+
+The tier and the QE score together choose the route (thresholds are per-locale; these are typical top-locale shapes):
+
+| Content-risk tier | Examples | QE at or above threshold | QE below threshold |
+|---|---|---|---|
+| Low | internal docs, long-tail KB, low-traffic locales | Machine-only, auto-publish, write to TM | MTPE, light edit |
+| Medium | product docs, help center, top-locale customer UI | MTPE, light edit | MTPE, full edit |
+| High | legal, medical, marketing and brand | Full human plus in-country review | Full human plus in-country review |
+
+The `ui.cart.summary_line` string above is medium tier, so its 0.82 lands it in full-edit MTPE, while the internal `log.sync.done` string is low tier and its 0.94 clears auto-publish. High-risk content ignores the QE column entirely, which is the point: QE is least trustworthy on exactly the low-resource and named-entity cases that dominate legal and medical content, so the tier, not the score, decides there.
 
 ### 6. Human-in-the-loop is the design center for high-value content
 
@@ -125,6 +180,23 @@ Unreleased product strings are roadmap-sensitive and cannot go to a public endpo
 ### 9. When full human translation is non-negotiable
 
 Some content never goes machine-only regardless of QE score. Legal contracts and terms are binding and often need certified or sworn translation. Medical instructions for use and dosing are patient-safety and regulated (a mistranslation is a recall, or worse), so they get qualified medical translators and back-translation review as a matter of policy. High-stakes marketing and brand taglines need transcreation, where a literal-but-wrong rendering is a famous failure mode. And low-resource languages are where LLM quality drops sharply and, worse, where QE itself is least reliable, so the confidence signal you would route on is untrustworthy exactly where you most need it. For all of these, the honest answer is that the pipeline assists humans, it does not replace them.
+
+## The Validation Gauntlet
+
+Mechanical correctness is not scored, it is gated. Every draft runs an ordered sequence of deterministic checks before it is eligible for QE or routing, and any failure bounces to a constrained retry (and then to a human if the retry still fails). This is the gauntlet the worked example's first-pass `Einkaufswagen` draft failed on the termbase gate.
+
+```mermaid
+flowchart TD
+    MT[LLM draft with restored placeholders] --> PH{Placeholders and tags match source count}
+    PH -->|fail| RETRY[Constrained retry, then human if it still fails]
+    PH -->|pass| ICU{ICU parses and all CLDR plural forms present}
+    ICU -->|fail| RETRY
+    ICU -->|pass| TERM{Termbase and do-not-translate compliant}
+    TERM -->|fail| RETRY
+    TERM -->|pass| LEN{Within per-string length budget}
+    LEN -->|over budget| FLAG[Attach overflow note, prefer human route]
+    LEN -->|within| QEG[Score with COMETKiwi, then route by tier and score]
+```
 
 ## Segment Routing Flow
 

@@ -86,6 +86,76 @@ flowchart TB
 8. The grounding verifier checks that every action item, decision, and risk cites a real span whose text actually supports the claim; unsupported items are dropped or flagged low-confidence, and owners and due dates are resolved against the roster.
 9. Surviving items are deduplicated against prior meetings in the same recurring series, then synced over MCP to the customer's CRM, Slack, and Notion, with a human review and edit UI available before or after sync per tenant preference.
 
+### A worked example: one 45-minute sales call, end to end
+
+To see the whole pipeline at once, walk one 45-minute sales call. The calendar roster lists four people: Maya Chen (Account Executive) and Dan Rivera (Solutions Engineer) on the vendor side, and Karen Okafor (VP Procurement) and John Park (Legal) at the prospect, Northwind Labs. A fifth voice dials in by phone partway through and is not on the roster. The bot posts the recording disclosure on join, and the batch pipeline transcribes and diarizes the audio into speaker-attributed turns:
+
+```text
+[00:00:04] Recording bot: This meeting is being recorded and transcribed.
+[00:02:18] Maya Chen (AE): The Enterprise tier adds SSO, the audit log, and the higher rate limits your team asked about.
+[00:11:45] Karen Okafor (VP Procurement): Okay, I think we are ready to move forward with Enterprise, but I cannot sign anything until our security team signs off.
+[00:12:30] Dan Rivera (SE): Understood. I will get you the SOC 2 Type II report by Wednesday so your team can start the review.
+[00:12:38] Karen Okafor (VP Procurement): Wednesday works, and if the review comes back clean we can...
+[00:12:40] Dan Rivera (SE): ...and I will include the pen-test summary in the same package.
+[00:19:02] Unknown speaker 2: Quick one, is the data hosted in the EU? We have residency requirements.
+[00:19:20] Dan Rivera (SE): Yes, we can pin your tenant to eu-west.
+[00:28:30] Maya Chen (AE): I will set up the security review call for next week and send your team an invite.
+[00:41:05] John Park (Legal): On our side we will want to redline the MSA, mainly the liability cap and the data-processing addendum.
+```
+
+Two diarization details matter here. The dial-in caller has no roster entry, so the pipeline labels the turn Unknown speaker 2 rather than guessing a name. And at 00:12:38 Karen and Dan talk over each other; overlap-aware diarization keeps both turns as overlapped speech instead of dropping one. Map extraction over this transcript then proposes one decision and four action items, each tagged with the span it came from. Three are clean: Karen's move-forward decision at 00:11:45, Dan's SOC 2 commitment at 00:12:30, and Maya's review-call commitment at 00:28:30. Two are not. The residency follow-up was raised by the speaker the roster could not name, so it survives as an unassigned suggestion rather than being pinned on the wrong person. And the reduce model, pattern-matching a legal contact to a contract, proposes that John Park will send the signed contract by Friday, a fluent, plausible commitment that no one on the call actually made. The grounding verifier looks for an entailing span, finds none, and drops it before it can reach Salesforce. That one dropped item is the whole reason the product is trusted.
+
+### The grounded action-item record
+
+The intelligence stage never emits prose into the sync layer; it emits schema-validated records the verifier and the sync connector can reason over. Every action item carries the span it rests on, so a wrong owner or an invented commitment is caught structurally, not by taste:
+
+```json
+{
+  "meeting_id": "mtg-2026-07-09-northwind-eval",
+  "series_id": "series-northwind-eval",
+  "decisions": [
+    {"text": "Northwind Labs will adopt the Enterprise tier, contingent on passing internal security review.",
+     "source_span": {"speaker": "Karen Okafor", "ts_start": "00:11:45", "ts_end": "00:12:02"}, "confidence": 0.9}
+  ],
+  "action_items": [
+    {"text": "Dan Rivera will send the SOC 2 Type II report to Karen Okafor by Wednesday.",
+     "owner": "dan.rivera@ourco.com", "due_date": "2026-07-15",
+     "source_span": {"speaker": "Dan Rivera", "ts_start": "00:12:30", "ts_end": "00:12:37"},
+     "confidence": 0.94, "crm_pushed": true, "crm_ref": "salesforce/Task/00T5f000012Ab9x"},
+    {"text": "Maya Chen will schedule the security review call for next week and send an invite.",
+     "owner": "maya.chen@ourco.com", "due_date": "2026-07-13",
+     "source_span": {"speaker": "Maya Chen", "ts_start": "00:28:30", "ts_end": "00:28:41"},
+     "confidence": 0.91, "crm_pushed": true, "crm_ref": "salesforce/Task/00T5f000012Ab9y"},
+    {"text": "Confirm EU (eu-west) data residency for the Northwind tenant.",
+     "owner": null, "due_date": null,
+     "source_span": {"speaker": "Unknown speaker 2", "ts_start": "00:19:02", "ts_end": "00:19:11"},
+     "confidence": 0.70, "crm_pushed": false, "status": "unassigned_suggestion"},
+    {"text": "John Park will send the signed contract by Friday.",
+     "owner": "john.park@northwind.example", "due_date": "2026-07-17",
+     "source_span": null, "confidence": null, "crm_pushed": false, "drop_reason": "no_supporting_span"}
+  ]
+}
+```
+
+Only the two fully grounded items cross into the system of record. Here is Dan's item as it is written to Salesforce over the MCP connector, mapped to a Task and associated to the open opportunity:
+
+```json
+{
+  "connector": "salesforce",
+  "object": "Task",
+  "operation": "upsert",
+  "dedup_key": "series-northwind-eval/a1f39c",
+  "fields": {
+    "Subject": "Send SOC 2 Type II report to Karen Okafor",
+    "OwnerId": "0055f000009AbCdEF",
+    "ActivityDate": "2026-07-15",
+    "Status": "Open",
+    "WhatId": "0065f000012XyZ01",
+    "Description": "Grounded action item from Northwind eval call 2026-07-09. Source Dan Rivera at 00:12:30, verifier confidence 0.94."
+  }
+}
+```
+
 ## Key Design Decisions
 
 ### 1. Async batch pipeline, not a real-time voice stack
@@ -98,7 +168,7 @@ ASR is the dominant cost line, so the choice is a real budget decision, not a de
 
 ### 3. Speaker diarization is the feature, and the hard part
 
-"Summarize this call" is commodity; "who committed to what" is the product, and that requires knowing who spoke each word. Diarization on real meetings is genuinely hard: two people talk over each other, a fourth person joins 20 minutes in, and a dial-in participant has no roster entry. We run pyannote.audio ([Bredin et al.](https://arxiv.org/abs/1911.01255), [pyannote-audio](https://github.com/pyannote/pyannote-audio)) in overlap-aware mode (the powerset formulation handles simultaneous speakers rather than forcing one label per frame, [Plaquet and Bredin](https://arxiv.org/abs/2310.13025)), then WhisperX ([Bain et al.](https://arxiv.org/abs/2303.00747)) to bind words to speaker turns and timestamps. Diarized clusters are mapped to names from the calendar roster, and for repeat participants an optional voiceprint enrollment tightens attribution. The rule that keeps trust intact: an unresolved cluster is labeled "Unknown speaker," never guessed into a real name, because a wrong name on an action item is a specific, memorable failure. DER, and especially DER on overlapped speech, is a first-class eval metric.
+"Summarize this call" is commodity; "who committed to what" is the product, and that requires knowing who spoke each word. Diarization on real meetings is genuinely hard: two people talk over each other, a fourth person joins 20 minutes in, and a dial-in participant has no roster entry. We run pyannote.audio ([Bredin et al.](https://arxiv.org/abs/1911.01255), [pyannote-audio](https://github.com/pyannote/pyannote-audio)) in overlap-aware mode (the powerset formulation handles simultaneous speakers rather than forcing one label per frame, [Plaquet and Bredin](https://arxiv.org/abs/2310.13025)), then WhisperX ([Bain et al.](https://arxiv.org/abs/2303.00747)) to bind words to speaker turns and timestamps. Diarized clusters are mapped to names from the calendar roster, and for repeat participants an optional voiceprint enrollment tightens attribution. The rule that keeps trust intact: an unresolved cluster is labeled "Unknown speaker," never guessed into a real name, because a wrong name on an action item is a specific, memorable failure. DER, and especially DER on overlapped speech, is a first-class eval metric. This is exactly what the worked example above exercises: the unrostered dial-in stays Unknown speaker 2, and the 00:12:38 crosstalk is kept as overlapped speech rather than collapsed onto one label. Overlapped-region DER commonly runs 2 to 3 times the single-speaker rate, which is why the multi-speaker eval set (target under 12 percent DER) is tracked apart from clean single-speaker audio, and why the powerset overlap mode earns its extra compute.
 
 ### 4. Meeting-bot infrastructure: buy to launch, build to scale
 
@@ -112,13 +182,25 @@ The output is not a paragraph, it is structured: decisions, action items (owner,
 
 This is the heart of the product's trustworthiness. Fluent summarizers hallucinate commitments that sound plausible and were never made, and abstractive summarization is known to drift from the source ([Maynez et al.](https://arxiv.org/abs/2005.00661)). The defense is extract-then-verify: extraction must emit, for every action item, decision, and risk, the exact transcript span (speaker plus timestamp) that supports it. A separate grounding verifier then checks that the cited span actually entails the claim, that the owner is a real attendee who accepted or was assigned the task, and that any due date was genuinely stated. Items that fail grounding are dropped or demoted to low-confidence suggestions, never silently shipped. In the UI, every item is click-through to the moment in the transcript, so a human can audit it in one click. This is the [guardrails](../13-reliability-and-safety/01-guardrails.md) and grounded-generation discipline from [RAG evaluation](../06-retrieval-systems/13-rag-evaluation-patterns.md) applied to meeting output: ground the claim, verify it, and prefer an honest gap over a confident fabrication.
 
+The verifier is a small decision function, not a vibe. It runs the same gate on every candidate item, using the calls from the worked example above:
+
+| Extracted item | Cited span entails the claim? | Owner resolvable to an attendee? | Verifier confidence | Outcome |
+|---|---|---|---|---|
+| Dan sends SOC 2 Type II by Wed | yes, Dan at 00:12:30 | yes, Dan Rivera on roster | 0.94 | Ship to Salesforce |
+| Maya schedules the review call | yes, Maya at 00:28:30 | yes, Maya Chen on roster | 0.91 | Ship to Salesforce |
+| Dan also includes the pen-test summary | said during crosstalk, low ASR confidence | yes, Dan Rivera on roster | 0.58 | Hold for human review |
+| Confirm EU (eu-west) data residency | yes, Unknown speaker 2 at 00:19:02 | no, unrostered dial-in | 0.70 | Keep as unassigned suggestion |
+| John sends the signed contract by Fri | no span found in transcript | yes, John Park on roster | n/a | Drop, never synced |
+
+The John Park row is the one that matters: the reduce model proposed it because a legal contact plus a contract is a statistically common pairing, but no one on the call said it, so no span entails it and it is dropped before sync (this is precisely failure mode F2). The residency row shows the softer branch, a real span but an unrostered owner, so it survives as an unassigned suggestion instead of being pinned on the wrong person. Ship requires all three gates to pass; failing any one demotes the item rather than silently dropping the signal.
+
 ### 7. Consent, retention, redaction, residency, and no-train
 
 The raw material is other people's recorded conversations, so compliance is a pipeline stage, not a checkbox. On join, the bot posts an audible and visible "this meeting is being recorded" disclosure, because many jurisdictions require all-party or two-party consent ([Reporters Committee recording guide](https://www.rcfp.org/reporters-recording-guide/)); tenants in strict regions can require explicit opt-in or block recording entirely. Transcripts carry PII and PHI, so a redaction pass (Microsoft [Presidio](https://github.com/microsoft/presidio) plus domain recognizers) masks sensitive spans before storage or sync. Retention windows and data residency are per-customer: a healthcare customer's audio may be delete-after-30-days and pinned to one region, while another keeps a year. Customer audio is never used to train models, which is enforced by self-hosting ASR and by zero-retention agreements with any managed provider. All of this lives under formal [AI governance and compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md), because "we recorded and stored a conversation you did not consent to" is a regulatory and reputational event, not a bug.
 
 ### 8. CRM and tool sync over MCP, with dedup across recurring meetings
 
-Action items are worthless if they die in a summary email, so the platform pushes structured items into the tools where work happens, over MCP 2.0 connectors ([spec 2026-03-26](https://modelcontextprotocol.io/specification/2026-03-26/)) to Salesforce, HubSpot, Slack, and Notion. Two things make this non-trivial. First, mapping: an "action item with owner and due date" has to become a Salesforce Task or a HubSpot Engagement with the right associations, and a decision becomes a note on the right opportunity, all under audience-scoped tokens so a connector cannot write outside its grant. Second, deduplication across a recurring series: a weekly standup that says "Priya will finalize the deck" three weeks running must not create three open tasks. We key dedup on the meeting series ID plus a semantic match on the item, and carry status forward (open, in progress, done) rather than re-creating, so recurring meetings update one task instead of spawning many. See [Tool Use and MCP](../07-agentic-systems/03-tool-use-and-mcp.md).
+Action items are worthless if they die in a summary email, so the platform pushes structured items into the tools where work happens, over MCP 2.0 connectors ([spec 2026-03-26](https://modelcontextprotocol.io/specification/2026-03-26/)) to Salesforce, HubSpot, Slack, and Notion. Two things make this non-trivial. First, mapping: an "action item with owner and due date" has to become a Salesforce Task or a HubSpot Engagement with the right associations, and a decision becomes a note on the right opportunity, all under audience-scoped tokens so a connector cannot write outside its grant. Second, deduplication across a recurring series: a weekly standup that says "Priya will finalize the deck" three weeks running must not create three open tasks. We key dedup on the meeting series ID plus a semantic match on the item, and carry status forward (open, in progress, done) rather than re-creating, so recurring meetings update one task instead of spawning many. In the worked example, Dan's grounded item becomes the Salesforce Task shown above: Subject and Description carry the source span, OwnerId is resolved from the attendee email, ActivityDate from the parsed due date, and WhatId associates the Task to the open opportunity, all written under an audience-scoped token so the connector cannot touch records outside its grant. Because the dedup key is the series ID plus a content hash (`series-northwind-eval/a1f39c`), next week's Northwind sync updates this one Task rather than opening a second. See [Tool Use and MCP](../07-agentic-systems/03-tool-use-and-mcp.md).
 
 ### 9. When a transcript-only tool beats the full intelligence pipeline
 
@@ -137,6 +219,30 @@ flowchart TD
     OWN -->|yes| DD[Dedup vs Prior Meetings in Series]
     DD -->|duplicate open item| MERGE[Merge and Update Status]
     DD -->|new| SHIP[Ship to Review then Sync to CRM]
+```
+
+## End-to-End Trace
+
+The same Northwind call as a temporal trace, from the bot leaving the meeting to two grounded tasks landing in Salesforce and the ungrounded contract item dropped at the verifier.
+
+```mermaid
+sequenceDiagram
+    participant B as Meeting Bot
+    participant Q as Durable Job Queue
+    participant A as ASR plus Diarization
+    participant X as Extract then Reduce
+    participant G as Grounding Verifier
+    participant S as Salesforce over MCP
+
+    B->>Q: Recording enqueued when the call ends
+    Q->>A: Transcribe and diarize the full audio
+    Note over A: Dial-in with no roster entry becomes Unknown speaker 2, crosstalk kept as overlap
+    A->>X: Timestamped speaker-attributed transcript
+    X->>G: One decision and four candidate items, each with a cited span
+    Note over G: John will send the contract Friday has no entailing span
+    G->>G: Drop the ungrounded item, hold the low-confidence one for review
+    G->>S: Upsert the two grounded tasks, deduped on series id
+    Note over S: Owner resolved from roster, wrong name never written
 ```
 
 ## Failure Modes and Mitigations

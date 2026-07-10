@@ -1,6 +1,6 @@
 # Case Study: Medical Coding and Revenue-Cycle Automation
 
-A health system (or RCM vendor) processes about 2 million patient encounters per month, where certified coders read the clinical documentation and assign the billing codes (ICD-10-CM diagnoses, CPT/HCPCS procedures, MS-DRG for inpatient) that drive claims to payers. The team builds an LLM pipeline that reads the chart and suggests codes with cited evidence for a certified coder to review. The single hardest constraint is that coding errors are catastrophic in both directions: undercoding leaves earned revenue on the table, while overcoding (billing for more than the chart documents) is upcoding, healthcare fraud under the False Claims Act with treble damages, so the system must be conservative, evidence-bound, and auditable, and it must never optimize for dollars. Unlike the [Clinical Decision Support Copilot](35-clinical-decision-support.md), which helps clinicians make care decisions, this system makes a billing decision after care is complete.
+A health system (or RCM vendor) processes about 2 million patient encounters per month, where certified coders read the clinical documentation and assign the billing codes (ICD-10-CM diagnoses, CPT/HCPCS procedures, MS-DRG for inpatient) that drive claims to payers. The team builds an LLM pipeline that reads the chart and suggests codes with cited evidence for a certified coder to review. The single hardest constraint is that coding errors are catastrophic in both directions: undercoding leaves earned revenue on the table, while overcoding (billing for more than the chart documents) is upcoding, healthcare fraud under the False Claims Act with treble damages, so the system must be conservative, evidence-bound, and auditable, and it must never optimize for dollars. Unlike the [Clinical Decision Support Copilot](35-clinical-decision-support.md), which helps clinicians make care decisions, this system makes a billing decision after care is complete, and unlike the [Voice AI scribe](13-voice-ai-healthcare.md), which generates the clinical note, this system is bound to the finalized note and may never add a clinical fact the documentation does not already state.
 
 ## The Business Problem
 
@@ -79,15 +79,100 @@ flowchart TB
 8. The denial-risk model scores the assembled claim against historical remit patterns and flags high-risk claims for a pre-bill fix or a documentation query.
 9. The confidence-and-risk gate auto-finalizes only the simplest high-confidence encounters; everything else lands on a coder worksheet pre-filled with codes, citations, rule results, and the DRG, and every outcome is written to the reproducible audit trail with all versions pinned before the 837 claim goes out.
 
+### A worked example: one office visit, end to end
+
+The discipline is easiest to see on a single established-patient office visit, walked from note to claim. The physician's note (excerpts, and each candidate code binds to one of them):
+
+- "58-year-old established patient here for follow-up of type 2 diabetes and a new lesion on the left forearm. Reports tingling in both feet for two months."
+- "A1c today 8.1 percent. Continue metformin. Reviewed home glucose log."
+- "Exam: 1.4 cm benign-appearing lesion, left forearm. Bilateral feet with intact pulses, monofilament not tested."
+- "Procedure: after consent, excised the 1.4 cm lesion with 0.2 cm margins (excised diameter 1.8 cm), simple closure with sutures, specimen to pathology."
+- "Orders: venipuncture for A1c plus a comprehensive metabolic panel."
+
+Extraction proposes candidates, each bound to a passage, and drops anything it cannot cite:
+
+| Candidate | Type | Cited passage | Outcome |
+|---|---|---|---|
+| E11.9 type 2 diabetes without complications | ICD-10-CM | "follow-up of type 2 diabetes" | Kept as documented |
+| D23.62 benign neoplasm, skin of left upper limb | ICD-10-CM | "benign-appearing lesion, left forearm" | Kept, laterality coded because it is stated |
+| 99214 established office visit, moderate MDM, modifier -25 | CPT E/M | diabetes drug management plus a separately identifiable new problem | Kept, not upgraded to 99215 |
+| 11402 excision benign lesion, excised diameter 1.1 to 2.0 cm | CPT | "excised the 1.4 cm lesion with 0.2 cm margins" | Kept |
+| 11102 tangential biopsy | CPT | "specimen to pathology" | Blocked by NCCI (see below) |
+| E11.42 diabetes with polyneuropathy | ICD-10-CM | (none, linkage not stated) | Not coded, query issued |
+| 36415 venipuncture, 5 units | CPT | "venipuncture for A1c plus a metabolic panel" | Units corrected by MUE |
+
+Then the deterministic engine runs, and three things happen that a naive LLM would get wrong:
+
+- **NCCI unbundling caught.** Extraction saw "specimen to pathology" and proposed 11102 (biopsy) alongside 11402 (excision). The NCCI PTP table lists 11102 as a column-2 code to 11402, and because it is the same lesion at the same session there is no documented distinct service to justify a -59 modifier, so the biopsy is bundled and dropped. Billing both would be unbundling. The simple closure is likewise bundled into the excision, so no separate repair code is added either.
+- **MUE caught an impossible unit count.** Extraction read five ordered analytes and proposed 36415 (venipuncture) at 5 units. One encounter is one blood draw, the MUE ceiling for 36415 is 1, so 5 units is medically unlikely and the engine corrects it to 1 rather than billing five draws.
+- **Specificity queried, not inferred.** The note documents diabetes and, separately, foot tingling, but never states the tingling is diabetic in origin. The higher-specificity code E11.42 (diabetes with polyneuropathy) is a chronic-complication code that also maps to a higher-weighted risk-adjustment HCC, so inferring that linkage is upcoding. The system holds E11.42 and issues a non-leading query instead.
+
+The encounter does not auto-finalize. It carries a same-day procedure with a modifier -25 E/M and an open physician query, so it lands on a coder worksheet pre-filled with the codes, the citations, the two edit actions, and the query, and the coder signs after the physician answers. Graded against the certified-coder gold standard, the win is coding E11.9 and issuing the query, not the extra RVUs that inferring E11.42 would have booked; the system is scored on matching the coder, never on the dollars it could have captured.
+
+### The coded-claim record
+
+The worksheet and the audit trail are driven by one schema-validated record, not free prose. Every kept code carries its evidence span, and the resolved edits and the open query are first-class fields the gate can read deterministically.
+
+```json
+{
+  "encounter_id": "ENC-2026-07-03-114872",
+  "date_of_service": "2026-07-03",
+  "encounter_type": "outpatient_office_established",
+  "code_set_editions": {"icd10cm": "FY2026", "cpt": "2026", "hcpcs": "2026", "ncci": "2026Q3"},
+  "codes": [
+    {"code": "99214", "type": "cpt_em", "modifier": ["25"], "confidence": 0.82,
+     "evidence_span": "note/mdm: T2DM drug management plus new forearm lesion evaluated same visit"},
+    {"code": "E11.9", "type": "icd10cm", "confidence": 0.95,
+     "evidence_span": "note/assessment@ch1204-1229: 'follow-up of type 2 diabetes'"},
+    {"code": "D23.62", "type": "icd10cm", "confidence": 0.90,
+     "evidence_span": "note/exam@ch1631-1673: 'benign-appearing lesion, left forearm'"},
+    {"code": "11402", "type": "cpt", "units": 1, "confidence": 0.88,
+     "evidence_span": "note/procedure@ch1902-1971: 'excised the 1.4 cm lesion with 0.2 cm margins'"},
+    {"code": "36415", "type": "cpt", "units": 1, "confidence": 0.86,
+     "evidence_span": "note/orders@ch2110-2158: 'venipuncture for A1c plus a metabolic panel'"}
+  ],
+  "dropped_candidates": [
+    {"code": "11102", "type": "cpt", "reason": "ncci_ptp_bundled_into_11402_same_lesion_no_modifier_59_basis"},
+    {"code": "E11.42", "type": "icd10cm", "reason": "diabetes_neuropathy_linkage_not_documented_query_issued"}
+  ],
+  "edits": {"ncci_pass": true, "mue_pass": true, "medical_necessity_pass": true, "modifier_pass": true},
+  "edit_actions": [
+    {"edit": "ncci_ptp", "pair": ["11402", "11102"], "result": "block", "resolution": "removed 11102"},
+    {"edit": "mue", "code": "36415", "submitted_units": 5, "ceiling": 1, "result": "corrected", "resolution": "units set to 1"}
+  ],
+  "queries": [
+    {"query_id": "Q-114872-1", "topic": "diabetes_complication_linkage", "leading": false, "status": "open",
+     "prompt": "The record documents type 2 diabetes and bilateral foot tingling. In your clinical judgment, is the tingling a manifestation of the diabetes, a separate condition, or unable to determine? Please document."}
+  ],
+  "status": "coder_review",
+  "auto_finalize_eligible": false,
+  "gate_reason": "open_physician_query; same_day_procedure_with_em_modifier_25"
+}
+```
+
 ## Key Design Decisions
 
 ### 1. Documentation-grounded coding, never inferred: the anti-hallucination core
 
-The rule that defines the system is the oldest rule in coding compliance: "not documented, not done." Every suggested code must cite the exact chart passage that supports it, and a code without a supporting passage is not a low-confidence code, it is a compliance violation, so it is dropped before a human ever sees it. The model is explicitly forbidden from inferring clinical facts it would find "reasonable": if the note says "pneumonia" without an organism, the system codes unspecified pneumonia or queries, it does not upgrade to the higher-weighted bacterial pneumonia because the labs "suggest" it. This is grounded-generation discipline (see [Guardrails](../13-reliability-and-safety/01-guardrails.md)) applied with zero tolerance, because an inferred code is an upcoded claim.
+The rule that defines the system is the oldest rule in coding compliance: "not documented, not done." Every suggested code must cite the exact chart passage that supports it, and a code without a supporting passage is not a low-confidence code, it is a compliance violation, so it is dropped before a human ever sees it. The model is explicitly forbidden from inferring clinical facts it would find "reasonable": if the note says "pneumonia" without an organism, the system codes unspecified pneumonia or queries, it does not upgrade to the higher-weighted bacterial pneumonia because the labs "suggest" it. This is grounded-generation discipline (see [Guardrails](../13-reliability-and-safety/01-guardrails.md)) applied with zero tolerance, because an inferred code is an upcoded claim. Concretely, the citation is a structured span (document id, section, character offset), not a vague assertion that the note supports it, so a coder or an auditor jumps straight to the source text. In the worked example the system codes E11.9 (type 2 diabetes without complications) from the phrase "follow-up of type 2 diabetes" and refuses to promote it to E11.42 (type 2 diabetes with polyneuropathy) on the strength of a separately documented foot tingling, because that unstated linkage is exactly the inference that would turn a routine visit into a higher-weighted risk-adjustment ([HCC](https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics/risk-adjustment)) claim the chart does not support.
 
 ### 2. Deterministic rules engine versus LLM reasoning: the core separation
 
-NCCI edits, MUEs, medical-necessity rules, bundling and unbundling logic, modifier rules, and the DRG grouper are all deterministic, published rule sets, and they do not belong in a prompt. The LLM extracts clinical facts and maps them to candidate codes; a rules engine validates those candidates against the CMS [NCCI](https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits) tables and the [MS-DRG grouper](https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/ms-drg-classifications-and-software). An LLM that "reasons" its way through a bundling edit is unauditable and will confidently unbundle a pair it should not. The engine is versioned, testable, and re-runnable, so a RAC auditor can be handed the exact edit tables and inputs and will reproduce the identical result.
+NCCI edits, MUEs, medical-necessity rules, bundling and unbundling logic, modifier rules, and the DRG grouper are all deterministic, published rule sets, and they do not belong in a prompt. The LLM extracts clinical facts and maps them to candidate codes; a rules engine validates those candidates against the CMS [NCCI](https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits) tables and the [MS-DRG grouper](https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/ms-drg-classifications-and-software). An LLM that "reasons" its way through a bundling edit is unauditable and will confidently unbundle a pair it should not. The engine is versioned, testable, and re-runnable, so a RAC auditor can be handed the exact edit tables and inputs and will reproduce the identical result. The NCCI PTP table encodes every pair with a modifier indicator (0 means the pair can never be unbundled, 1 means a modifier can separate it when the chart documents a distinct service, 9 means the edit no longer applies), and every MUE carries a Medically Unlikely Edit adjudication indicator (MAI 1, 2, or 3) that fixes whether its unit ceiling can ever be overridden, so the verdicts are table-driven, not judgment calls.
+
+Every candidate runs the same deterministic gauntlet, and each check has exactly three outcomes, pass the code, block it, or turn it into a physician query:
+
+| Rules check | Passes (code proceeds) | Blocks (code removed) | Queries (ask the physician) |
+|---|---|---|---|
+| Evidence citation, "not documented, not done" | Cites an exact chart passage | No supporting passage anywhere | Passage is present but ambiguous |
+| Code-set validity for the date of service | In the in-force ICD-10-CM/CPT/HCPCS edition | Retired or invalid for that date | (not applicable) |
+| ICD-10-CM specificity | Documented to the required axis (laterality, type) | Invalid or truncated code stem | A more specific code is implied but not stated |
+| NCCI PTP bundling | Codes separately reportable | Column-2 code bundled, no modifier basis | A distinct service is plausible but not documented |
+| MUE units | Units at or below the per-day ceiling | Units exceed an absolute MAI 2 ceiling | Units above an MAI 3 benchmark but plausible with a note |
+| Medical necessity, LCD/NCD | Diagnosis is on the covered list | No covered diagnosis and none documentable | A covering diagnosis is plausible but unstated |
+| Modifier logic, -25 and -59 | Documentation supports the modifier | Modifier required but wholly unsupported | Modifier may apply but the distinct service is not documented |
+
+In the worked example the biopsy fails the NCCI row (block), the venipuncture fails the MUE row (block the impossible count, resubmit at the ceiling of 1), and the diabetes-neuropathy linkage fails the specificity row (query), while every kept code clears the evidence row with a cited passage.
 
 ### 3. Never reward revenue: the eval metric is accuracy, not dollars
 
@@ -95,7 +180,7 @@ The single most dangerous mistake in this domain is choosing the wrong objective
 
 ### 4. The query, not the guess: ambiguity triggers a physician query
 
-When documentation is incomplete or contradictory, a certified coder does not pick a code, they issue a physician query, and the system copies that workflow exactly. Missing laterality, an unspecified organism, "urosepsis" without a clear sepsis statement, a device implanted but not named: each generates a compliant, non-leading query drafted per [AHIMA/ACDIS practice standards](https://www.ahima.org/) (offer options including "unable to determine," never lead toward the higher-paying answer). The query is the mechanism that lets the system be both complete and conservative: it recovers legitimately codeable specificity through the physician, rather than manufacturing it from the model's priors.
+When documentation is incomplete or contradictory, a certified coder does not pick a code, they issue a physician query, and the system copies that workflow exactly. Missing laterality, an unspecified organism, "urosepsis" without a clear sepsis statement, a device implanted but not named: each generates a compliant, non-leading query drafted per [AHIMA/ACDIS practice standards](https://www.ahima.org/) (offer options including "unable to determine," never lead toward the higher-paying answer). The query is the mechanism that lets the system be both complete and conservative: it recovers legitimately codeable specificity through the physician, rather than manufacturing it from the model's priors. A leading query ("please confirm the patient has diabetic polyneuropathy") is itself a compliance violation, so the generator is template-constrained to multiple-choice or open-ended formats that always carry an "unable to determine" option and never name the diagnosis the higher weight wants. The worked-example query, asking whether the documented foot tingling is diabetic in origin, a separate condition, or undeterminable, is the pattern: it surfaces specificity the physician can legitimately confirm without the system ever pointing at the paying answer.
 
 ### 5. Human-in-the-loop: the coder is the reviewer, autonomy is the exception
 
@@ -222,7 +307,7 @@ The offset is the coder-productivity lift: a pre-filled, cited worksheet lets a 
 - CMS, [National Correct Coding Initiative (NCCI) Edits](https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits)
 - CDC/NCHS, [ICD-10-CM](https://www.cdc.gov/nchs/icd/icd-10-cm/index.html) and CMS, [ICD-10 code sets](https://www.cms.gov/medicare/coding-billing/icd-10-codes)
 - AMA, [CPT (Current Procedural Terminology)](https://www.ama-assn.org/practice-management/cpt) and CMS, [HCPCS Level II](https://www.cms.gov/medicare/coding-billing/healthcare-common-procedure-system)
-- CMS, [MS-DRG Classifications and Software](https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/ms-drg-classifications-and-software)
+- CMS, [MS-DRG Classifications and Software](https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/ms-drg-classifications-and-software) and [Risk Adjustment (CMS-HCC)](https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics/risk-adjustment)
 - DOJ, [The False Claims Act](https://www.justice.gov/civil/false-claims-act)
 - HHS OIG, [Compliance and enforcement](https://oig.hhs.gov/)
 - CMS, [Recovery Audit Program](https://www.cms.gov/data-research/monitoring-programs/medicare-fee-service-compliance-programs/recovery-audit-program) and [CERT](https://www.cms.gov/data-research/monitoring-programs/improper-payment-measurement-programs/comprehensive-error-rate-testing-cert)
@@ -233,4 +318,4 @@ The offset is the coder-productivity lift: a pre-filled, cited worksheet lets a 
 - Mullenbach et al., [Explainable Prediction of Medical Codes from Clinical Text, NAACL 2018 (arXiv:1802.05695)](https://arxiv.org/abs/1802.05695)
 - Huang et al., [PLM-ICD: Automatic ICD Coding with Pretrained Language Models (arXiv:2207.05289)](https://arxiv.org/abs/2207.05289)
 
-Related chapters: [Clinical Decision Support Copilot](35-clinical-decision-support.md), [Insurance Claims Adjudication](43-insurance-claims-adjudication.md), [Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md), [AI Governance and Compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md), [OCR and Layout](../10-document-processing/01-ocr-and-layout.md)
+Related chapters: [Clinical Decision Support Copilot](35-clinical-decision-support.md), [Voice AI Assistant for Healthcare](13-voice-ai-healthcare.md), [Insurance Claims Adjudication](43-insurance-claims-adjudication.md), [Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md), [AI Governance and Compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md), [OCR and Layout](../10-document-processing/01-ocr-and-layout.md)

@@ -86,6 +86,76 @@ flowchart TB
 8. 依據查證器會檢查每一個行動項目、決策與風險，是否都引用了一段其文字確實支持該主張的真實片段；無支持的項目會被丟棄或標為低信心，而負責人與截止日期會對照名冊來解析。
 9. 存活下來的項目會對照同一個定期系列中先前的會議去重，然後透過 MCP 同步到客戶的 CRM、Slack 與 Notion，並依租戶偏好在同步前或同步後提供一個真人審閱與編輯 UI。
 
+### 一個實作範例：一通 45 分鐘的銷售通話，端到端
+
+為了一次看到整條管線，我們拿一通 45 分鐘的銷售通話走一遍。行事曆名冊列了四個人：供應商方是 Maya Chen（客戶經理）與 Dan Rivera（解決方案工程師），潛在客戶 Northwind Labs 方則是 Karen Okafor（採購副總）與 John Park（法務）。第五個聲音在通話進行到一半時以電話撥入，且不在名冊上。bot 在加入時發布錄音揭露，而批次管線把音訊轉錄並做語者分段，切成標註了說話者的輪次：
+
+```text
+[00:00:04] Recording bot: 本次會議正在錄音並轉錄。
+[00:02:18] Maya Chen (AE): Enterprise 方案加入了 SSO、稽核日誌，以及你們團隊要求的更高速率限制。
+[00:11:45] Karen Okafor (VP Procurement): 好，我想我們準備好推進 Enterprise 了，但在我們的資安團隊點頭之前，我什麼都不能簽。
+[00:12:30] Dan Rivera (SE): 了解。我會在週三前把 SOC 2 Type II 報告給你們，好讓你們團隊可以開始審查。
+[00:12:38] Karen Okafor (VP Procurement): 週三可以，而且如果審查結果乾淨，我們就可以...
+[00:12:40] Dan Rivera (SE): ...而且我會把滲透測試摘要放進同一個包裡。
+[00:19:02] Unknown speaker 2: 簡單問一下，資料是託管在歐盟嗎？我們有落地要求。
+[00:19:20] Dan Rivera (SE): 可以，我們能把你們的租戶釘選在 eu-west。
+[00:28:30] Maya Chen (AE): 我會把資安審查通話安排在下週，並寄一份邀請給你們團隊。
+[00:41:05] John Park (Legal): 我們這邊會想修訂 MSA 的紅線，主要是責任上限與資料處理附錄。
+```
+
+這裡有兩個語者分段的細節很重要。撥入的來電者在名冊上沒有登錄，所以管線把那個輪次標為未知說話者 2，而不是猜一個姓名。而在 00:12:38，Karen 與 Dan 互相搶話；可感知重疊的語者分段把兩個輪次都保留為重疊語音，而不是丟掉其中一個。接著對這份逐字稿做 map 擷取，會提出一項決策與四個行動項目，每一項都標上它來自的片段。其中三項是乾淨的：Karen 在 00:11:45 的推進決策、Dan 在 00:12:30 的 SOC 2 承諾，以及 Maya 在 00:28:30 的審查通話承諾。另外兩項則不是。落地的後續事項是由名冊無法命名的那位說話者提出的，所以它以一個未指派建議的形式存活，而不是被硬扣到錯誤的人身上。而 reduce 模型把一位法務聯絡人與一份合約做了模式比對，於是提出 John Park 會在週五前把已簽署的合約寄出，這是一個流暢、看似合理、卻沒有任何在場者真正做出的承諾。依據查證器去找一段能蘊含它的片段，找不到，於是在它能觸及 Salesforce 之前就把它丟棄。那個被丟棄的項目，正是這款產品能被信任的全部理由。
+
+### 有依據的行動項目紀錄
+
+智慧處理階段絕不會把散文送進同步層；它送出的是經 schema 驗證的紀錄，讓查證器與同步連接器能對其進行推理。每一個行動項目都帶著它所依附的片段，如此一來，一個錯誤的負責人或一個捏造的承諾，都是被結構性地抓出來，而不是靠主觀品味：
+
+```json
+{
+  "meeting_id": "mtg-2026-07-09-northwind-eval",
+  "series_id": "series-northwind-eval",
+  "decisions": [
+    {"text": "Northwind Labs will adopt the Enterprise tier, contingent on passing internal security review.",
+     "source_span": {"speaker": "Karen Okafor", "ts_start": "00:11:45", "ts_end": "00:12:02"}, "confidence": 0.9}
+  ],
+  "action_items": [
+    {"text": "Dan Rivera will send the SOC 2 Type II report to Karen Okafor by Wednesday.",
+     "owner": "dan.rivera@ourco.com", "due_date": "2026-07-15",
+     "source_span": {"speaker": "Dan Rivera", "ts_start": "00:12:30", "ts_end": "00:12:37"},
+     "confidence": 0.94, "crm_pushed": true, "crm_ref": "salesforce/Task/00T5f000012Ab9x"},
+    {"text": "Maya Chen will schedule the security review call for next week and send an invite.",
+     "owner": "maya.chen@ourco.com", "due_date": "2026-07-13",
+     "source_span": {"speaker": "Maya Chen", "ts_start": "00:28:30", "ts_end": "00:28:41"},
+     "confidence": 0.91, "crm_pushed": true, "crm_ref": "salesforce/Task/00T5f000012Ab9y"},
+    {"text": "Confirm EU (eu-west) data residency for the Northwind tenant.",
+     "owner": null, "due_date": null,
+     "source_span": {"speaker": "Unknown speaker 2", "ts_start": "00:19:02", "ts_end": "00:19:11"},
+     "confidence": 0.70, "crm_pushed": false, "status": "unassigned_suggestion"},
+    {"text": "John Park will send the signed contract by Friday.",
+     "owner": "john.park@northwind.example", "due_date": "2026-07-17",
+     "source_span": null, "confidence": null, "crm_pushed": false, "drop_reason": "no_supporting_span"}
+  ]
+}
+```
+
+只有那兩個完全有依據的項目會跨入記錄系統。以下是 Dan 的項目透過 MCP 連接器寫入 Salesforce 的樣子，對應成一個 Task 並關聯到那個未結的商機：
+
+```json
+{
+  "connector": "salesforce",
+  "object": "Task",
+  "operation": "upsert",
+  "dedup_key": "series-northwind-eval/a1f39c",
+  "fields": {
+    "Subject": "Send SOC 2 Type II report to Karen Okafor",
+    "OwnerId": "0055f000009AbCdEF",
+    "ActivityDate": "2026-07-15",
+    "Status": "Open",
+    "WhatId": "0065f000012XyZ01",
+    "Description": "Grounded action item from Northwind eval call 2026-07-09. Source Dan Rivera at 00:12:30, verifier confidence 0.94."
+  }
+}
+```
+
 ## 關鍵設計決策
 
 ### 1. 非同步批次管線，而非即時語音堆疊
@@ -98,7 +168,7 @@ ASR 是最主要的成本項，所以這個選擇是一個真正的預算決策�
 
 ### 3. 語者分段才是關鍵功能，也是難處
 
-「把這通會議摘要一下」是大宗商品；「誰承諾了什麼」才是產品，而那需要知道每個字是誰說的。真實會議上的語者分段是真的難：兩個人互相搶話、第四個人在 20 分鐘時才加入，而一位撥入的參與者在名冊上沒有登錄。我們跑 pyannote.audio（[Bredin et al.](https://arxiv.org/abs/1911.01255)、[pyannote-audio](https://github.com/pyannote/pyannote-audio)）並採用可感知重疊的模式（powerset 的表述法會處理同時說話的人，而非強迫每一影格只有一個標籤，[Plaquet and Bredin](https://arxiv.org/abs/2310.13025)），然後以 WhisperX（[Bain et al.](https://arxiv.org/abs/2303.00747)）把字詞綁定到說話者輪次與時間戳。語者分段的叢集會用行事曆名冊對應到姓名，而對於重複出現的參與者，一個選用的聲紋註冊能收緊歸屬。維繫信任不破的規則：未解析的叢集會被標為「未知說話者」，絕不猜成一個真實姓名，因為行動項目上出現錯誤姓名是一種具體而令人難忘的失敗。DER，尤其是重疊語音上的 DER，是第一等的評測指標。
+「把這通會議摘要一下」是大宗商品；「誰承諾了什麼」才是產品，而那需要知道每個字是誰說的。真實會議上的語者分段是真的難：兩個人互相搶話、第四個人在 20 分鐘時才加入，而一位撥入的參與者在名冊上沒有登錄。我們跑 pyannote.audio（[Bredin et al.](https://arxiv.org/abs/1911.01255)、[pyannote-audio](https://github.com/pyannote/pyannote-audio)）並採用可感知重疊的模式（powerset 的表述法會處理同時說話的人，而非強迫每一影格只有一個標籤，[Plaquet and Bredin](https://arxiv.org/abs/2310.13025)），然後以 WhisperX（[Bain et al.](https://arxiv.org/abs/2303.00747)）把字詞綁定到說話者輪次與時間戳。語者分段的叢集會用行事曆名冊對應到姓名，而對於重複出現的參與者，一個選用的聲紋註冊能收緊歸屬。維繫信任不破的規則：未解析的叢集會被標為「未知說話者」，絕不猜成一個真實姓名，因為行動項目上出現錯誤姓名是一種具體而令人難忘的失敗。DER，尤其是重疊語音上的 DER，是第一等的評測指標。這正是上面那個實作範例所演練的：名冊外的撥入者維持為未知說話者 2，而 00:12:38 的搶話被保留為重疊語音，而不是被塌縮成單一標籤。重疊區段的 DER 通常是單一說話者速率的 2 到 3 倍，這正是為什麼多說話者評測集（目標低於 12 percent DER）要與乾淨的單一說話者音訊分開追蹤，也是為什麼 powerset 重疊模式值回它額外的算力。
 
 ### 4. 會議 bot 基礎設施：買來啟動，自建以擴展
 
@@ -112,13 +182,25 @@ ASR 是最主要的成本項，所以這個選擇是一個真正的預算決策�
 
 這是這款產品可信度的核心。流暢的摘要器會產生幻覺，捏造出聽起來合理、卻從未做出的承諾，而抽象式摘要眾所周知會偏離來源（[Maynez et al.](https://arxiv.org/abs/2005.00661)）。防線是先擷取再查證：擷取時必須為每一個行動項目、決策與風險，發出支持它的那一段確切逐字稿片段（說話者加上時間戳）。接著一個獨立的依據查證器會檢查被引用的片段是否真的蘊含該主張、負責人是否是一位接受或被指派了該任務的真實與會者，以及任何截止日期是否真的被說出口。未通過依據查證的項目會被丟棄或降級為低信心建議，絕不悄悄出貨。在 UI 裡，每一個項目都能點擊直達逐字稿中的那個時刻，所以真人可以一鍵稽核。這就是把 [guardrails](../13-reliability-and-safety/01-guardrails.md) 與源自 [RAG evaluation](../06-retrieval-systems/13-rag-evaluation-patterns.md) 的有依據生成紀律，套用到會議輸出上：為主張建立依據、查證它，並寧可誠實地留下缺口，也不要自信地捏造。
 
+查證器是一個小小的決策函式，而不是憑感覺行事。它對每一個候選項目跑同一道關卡，用的是上面那個實作範例裡的通話：
+
+| 擷取出的項目 | 引用片段是否蘊含該主張？ | 負責人可否解析到與會者？ | 查證器信心 | 結果 |
+|---|---|---|---|---|
+| Dan 於週三前送出 SOC 2 Type II | 是，Dan 於 00:12:30 | 是，Dan Rivera 在名冊上 | 0.94 | 出貨至 Salesforce |
+| Maya 安排審查通話 | 是，Maya 於 00:28:30 | 是，Maya Chen 在名冊上 | 0.91 | 出貨至 Salesforce |
+| Dan 也會附上滲透測試摘要 | 於搶話期間說出，ASR 信心低 | 是，Dan Rivera 在名冊上 | 0.58 | 留待真人審閱 |
+| 確認歐盟（eu-west）資料落地 | 是，未知說話者 2 於 00:19:02 | 否，名冊外的撥入者 | 0.70 | 保留為未指派建議 |
+| John 於週五前送出已簽署合約 | 逐字稿中找不到片段 | 是，John Park 在名冊上 | n/a | 丟棄，絕不同步 |
+
+John Park 那一列才是關鍵：reduce 模型之所以提出它，是因為一位法務聯絡人加上一份合約在統計上是常見的配對，但通話中沒有任何人這麼說，所以沒有片段能蘊含它，於是它在同步前就被丟棄（這正是失效模式 F2）。落地那一列展示了較柔性的分支，一段真實的片段但一位名冊外的負責人，所以它以一個未指派建議的形式存活，而不是被硬扣到錯誤的人身上。出貨要求三道關卡全部通過；任何一道失敗，都會讓該項目降級，而不是悄悄丟掉那個訊號。
+
 ### 7. 同意、保留、遮蔽、落地與不訓練
 
 原料是別人被錄下來的對話，所以法遵是一個管線環節，而不是一個打勾方塊。加入時，bot 會發布一則可聽見且可見的「本次會議正在錄音」揭露，因為許多司法管轄區要求全體同意或雙方同意（[Reporters Committee recording guide](https://www.rcfp.org/reporters-recording-guide/)）；在嚴格地區的租戶可以要求明確選擇加入，或完全封鎖錄音。逐字稿帶有 PII 與 PHI，所以一道遮蔽流程（Microsoft [Presidio](https://github.com/microsoft/presidio) 加上領域辨識器）會在儲存或同步之前遮蔽敏感片段。保留期限與資料落地是逐客戶而定：一位醫療客戶的音訊可能是 30 天後刪除並釘選在單一地區，而另一位則保留一年。客戶音訊絕不用於訓練模型，這靠自架 ASR 以及與任何代管供應商簽訂零保留協議來強制執行。這一切都置於正式的 [AI governance and compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md) 之下，因為「我們錄下並儲存了一段你未同意的對話」是一起法規與名譽事件，而不是一個 bug。
 
 ### 8. 透過 MCP 的 CRM 與工具同步，並跨定期會議去重
 
-如果行動項目死在一封摘要電子郵件裡，那它們就毫無價值，所以這個平台會把結構化項目推送進工作實際發生的那些工具，透過 MCP 2.0 連接器（[spec 2026-03-26](https://modelcontextprotocol.io/specification/2026-03-26/)）接到 Salesforce、HubSpot、Slack 與 Notion。有兩件事讓這並不簡單。第一，對應：一個「帶有負責人與截止日期的行動項目」必須變成一個帶有正確關聯的 Salesforce Task 或 HubSpot Engagement，而一項決策要變成正確商機上的一則備註，全都在受眾綁定的 token 之下，這樣一個連接器就無法寫到它的授權範圍之外。第二，跨定期系列的去重：一場連續三週都說「Priya 會把簡報定稿」的每週站立會議，絕不能建立三個未結任務。我們以會議系列 ID 加上對項目的語意比對作為去重的鍵，並把狀態往前帶（未結、進行中、完成）而不是重新建立，這樣定期會議就更新同一個任務，而不是生出一堆。參見 [Tool Use and MCP](../07-agentic-systems/03-tool-use-and-mcp.md)。
+如果行動項目死在一封摘要電子郵件裡，那它們就毫無價值，所以這個平台會把結構化項目推送進工作實際發生的那些工具，透過 MCP 2.0 連接器（[spec 2026-03-26](https://modelcontextprotocol.io/specification/2026-03-26/)）接到 Salesforce、HubSpot、Slack 與 Notion。有兩件事讓這並不簡單。第一，對應：一個「帶有負責人與截止日期的行動項目」必須變成一個帶有正確關聯的 Salesforce Task 或 HubSpot Engagement，而一項決策要變成正確商機上的一則備註，全都在受眾綁定的 token 之下，這樣一個連接器就無法寫到它的授權範圍之外。第二，跨定期系列的去重：一場連續三週都說「Priya 會把簡報定稿」的每週站立會議，絕不能建立三個未結任務。我們以會議系列 ID 加上對項目的語意比對作為去重的鍵，並把狀態往前帶（未結、進行中、完成）而不是重新建立，這樣定期會議就更新同一個任務，而不是生出一堆。在這個實作範例中，Dan 那個有依據的項目變成了上面展示的那個 Salesforce Task：Subject 與 Description 帶著來源片段、OwnerId 由與會者的電子郵件解析而來、ActivityDate 來自解析出的截止日期，而 WhatId 把這個 Task 關聯到那個未結的商機，全都在一個受眾綁定的 token 之下寫入，這樣連接器就無法碰觸它授權範圍以外的紀錄。因為去重鍵是系列 ID 加上一個內容雜湊（`series-northwind-eval/a1f39c`），下週的 Northwind 同步會更新這同一個 Task，而不是開出第二個。參見 [Tool Use and MCP](../07-agentic-systems/03-tool-use-and-mcp.md)。
 
 ### 9. 何時純逐字稿工具會勝過完整的智慧處理管線
 
@@ -137,6 +219,30 @@ flowchart TD
     OWN -->|是| DD[與系列先前會議去重]
     DD -->|重複的未結項目| MERGE[合併並更新狀態]
     DD -->|全新| SHIP[送審後同步至 CRM]
+```
+
+## 端到端追蹤
+
+同一通 Northwind 通話，以時間序追蹤呈現，從 bot 離開會議，到兩個有依據的任務落進 Salesforce，以及那個無依據的合約項目在查證器處被丟棄。
+
+```mermaid
+sequenceDiagram
+    participant B as 會議 bot
+    participant Q as 持久任務佇列
+    participant A as ASR 加上語者分段
+    participant X as 擷取然後 reduce
+    participant G as 依據查證器
+    participant S as 透過 MCP 的 Salesforce
+
+    B->>Q: 通話結束時錄音入佇列
+    Q->>A: 轉錄並語者分段完整音訊
+    Note over A: 名冊上沒有登錄的撥入者變成未知說話者 2，搶話保留為重疊
+    A->>X: 帶時間戳且標註說話者的逐字稿
+    X->>G: 一項決策與四個候選項目，每項都附引用片段
+    Note over G: John 會於週五送出合約，找不到能蘊含此主張的片段
+    G->>G: 丟棄無依據項目，留低信心項目待審
+    G->>S: upsert 兩個有依據任務，以系列 id 去重
+    Note over S: 負責人由名冊解析，絕不寫入錯誤姓名
 ```
 
 ## 失效模式與緩解措施

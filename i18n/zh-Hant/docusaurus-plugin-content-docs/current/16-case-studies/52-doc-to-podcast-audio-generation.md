@@ -24,22 +24,22 @@
 
 ```mermaid
 flowchart TB
-    UP[使用者上傳：PDF、URL、報告] --> PARSE[解析與 OCR 加上 URL 擷取]
+    UP[使用者上傳 PDF、URL、報告] --> PARSE[解析與 OCR 加上 URL 擷取]
     PARSE --> CHUNK[分塊加上嵌入]
     CHUNK --> VS[(各筆記本向量儲存)]
 
-    subgraph Stage1["階段一：從來源到接地腳本"]
-        VS --> OUTLINE[大綱規劃器：涵蓋度加上時長預算]
+    subgraph Stage1["階段一 從來源到接地腳本"]
+        VS --> OUTLINE[大綱規劃器 涵蓋度加上時長預算]
         OUTLINE --> RET[逐段檢索接地事實]
         RET --> WRITE[對話撰寫器 LLM Gemini 3.1 Flash]
-        WRITE --> FC[忠實度關卡：對照來源的原子級事實查核]
+        WRITE --> FC[忠實度關卡 對照來源的原子級事實查核]
         FC -->|未接地的主張| WRITE
         FC -->|通過| SCRIPT[已核准的雙主持人腳本]
     end
 
-    subgraph Stage2["階段二：從腳本到音訊"]
+    subgraph Stage2["階段二 從腳本到音訊"]
         SCRIPT --> NORM[文字正規化加上發音詞典加上 SSML]
-        NORM --> TTS[多語者 TTS：Gemini / ElevenLabs / OpenAI]
+        NORM --> TTS[多語者 TTS Gemini / ElevenLabs / OpenAI]
         TTS --> POST[拼接、響度正規化、修剪]
         POST --> WM[浮水印 AudioSeal/SynthID 加上 C2PA Manifest]
     end
@@ -56,7 +56,7 @@ flowchart TB
 | 匯入 | PDF/版面解析器、URL 擷取器、OCR 後備 | 把雜亂的上傳內容轉成乾淨文字（[OCR and layout](../10-document-processing/01-ocr-and-layout.md)） |
 | 檢索 | 分塊加上嵌入加上各筆記本向量儲存 | 只以使用者的來源為腳本接地（[RAG fundamentals](../06-retrieval-systems/01-rag-fundamentals.md)） |
 | 大綱規劃器 | Gemini 3.1 Flash / Claude Haiku 4.5 | 描繪來源、編列時長、確保涵蓋均勻 |
-| 對話撰寫器 | Gemini 3.1 Flash（頂級用 Sonnet 4.7） | 寫出接地、附引用片段的雙主持人談笑 |
+| 對話撰寫器 | Gemini 3.1 Flash（頂級用 Claude Sonnet 4.7 或 Opus 4.8） | 寫出接地、附引用片段的雙主持人談笑 |
 | 忠實度關卡 | 小型 NLI/原子級事實查核模型 | 在音訊之前對照來源驗證每一項主張 |
 | 文字正規化 | 發音詞典加上 SSML 加上風格提示 | 修正名稱、縮寫、數字、韻律 |
 | 多語者 TTS | Gemini 多語者（預設）、ElevenLabs（頂級）、OpenAI（後備） | 以輪替接話算繪兩種不同的聲音 |
@@ -76,6 +76,51 @@ flowchart TB
 8. 一個聽不見的浮水印會被嵌入，並簽署一份 C2PA manifest，宣告使用的模型與「AI 生成」聲明；檔案帶著揭露中介資料落到 CDN 上。
 9. 每一個事實查核裁決、被引用的片段與出處雜湊，都會被寫進一份僅供附加的稽核記錄，供日後的爭議解決之用。
 
+### 實作範例：一篇 12 頁論文變成一集雙主持人節目
+
+端到端追蹤一個筆記本。一位付費方案的使用者上傳單獨一篇 12 頁的研究論文「LATE-RERANK: Late-Interaction Reranking for Open-Domain Retrieval」。它唯一的頭條結果：在 [BEIR](https://arxiv.org/abs/2104.08663) 基準上，nDCG@10 隨著新的 reranker 從 0.71（BM25 基線）上升到 0.79，約有 11 percent 的相對增益。
+
+1. 匯入以版面感知方式把 PDF 解析成約 6,200 個字，分塊成 41 個片段，並把它們嵌入一個各筆記本向量儲存。沒有其他來源，也沒有模型記憶，落在範圍之內。
+2. 大綱規劃器（Gemini 3.1 Flash）把一集 10 分鐘的節目編列成六個段落：問題、先前的 reranker、方法、關鍵結果、限制，以及它為何重要。段落 4（關鍵結果）分到 95 秒的預算，約 240 個字。
+3. 由於這篇論文很密集，這個筆記本被導向頂級撰寫器（Claude Opus 4.8）。對於段落 4，撰寫器檢索結果章節的片段，並草擬 Maya（負責問出聽眾的問題）與 Leo（負責解釋）之間的一段對話。呈現流程為了追求能量，把 Leo 的台詞改寫成「它把檢索品質提升了 40 percent」，一個在論文裡根本不存在的數字。
+4. 忠實度關卡把段落 4 拆解成原子級主張，並對照檢索到的片段執行一次蘊含檢查（NLI、FActScore 風格）。有三個要緊：「方法名為 LATE-RERANK」（有依據，摘要）、「在 BEIR 上評測」（有依據，section 5.1），以及「把檢索品質提升了 40 percent」（無依據，因為唯一的候選片段 table 2 寫的是 0.71 到 0.79）。這個杜撰的統計數字在任何音訊存在之前就被抓到。
+5. 關卡把失敗的主張連同真實片段一起退回給撰寫器。撰寫器以那個數字為依據重新生成台詞：「它把 nDCG@10 從 0.71 推到 0.79，相對基線約有 11 percent 的相對增益。」重新查核後，每一項主張現在都蘊含成立，faithfulness_pass 翻成 true，該片段被釋出到階段二。
+6. 正規化釘住這篇論文的兩個發音陷阱。「BEIR」必須唸成「beer」，而不是「bee eye are」，而「nDCG」必須逐字母唸出、而不是當成一個字來讀，所以各筆記本詞典在算繪之前加上 SSML：
+
+```xml
+<phoneme alphabet="ipa" ph="bɪr">BEIR</phoneme>
+<say-as interpret-as="characters">nDCG</say-as>
+```
+
+7. Gemini 原生雙語者呼叫以釘住的聲音 ID（例如 Kore 與 Puck）在一次流程中算繪 Maya 與 Leo，於是輪替接話與跨語者的時間掌控都免費奉送。一個語者一致性檢查（對每個參考聲音的聲音嵌入相似度，每輪維持在 0.9 以上）確認兩個聲音從不漂移或趨同。
+8. 後處理拼接各輪次、正規化到廣播響度（EBU R128），並修剪空白靜音。AudioSeal 嵌入一個聽不見的浮水印，簽署一份 C2PA 2.1 manifest、以 digitalSourceType trainedAlgorithmicMedia 聲明撰寫器與 TTS 模型 ID，而檔案在一段兩秒、可聽見的「本集由 AI 生成」前導片段（pre-roll）之後才送出。實際耗時：38 秒，全包成本約 $0.25。
+
+重點在於：那個「40 percent」從未抵達波形。關卡在文字階段就抓到它，此時的修正只是重新生成一行台詞，而不是重新算繪一整集節目。
+
+### 腳本片段記錄
+
+撰寫器發出的每個輪次都是一筆經 schema 驗證的記錄，而非自由文字，因此關卡能以確定性的方式拆解並查核它。以下是段落 4 的片段，就在關卡抓到杜撰內容的那一刻、重新生成之前：
+
+```json
+{
+  "segment_id": "beat4-seg03",
+  "speaker": "leo",
+  "text": "And the payoff is real: LATE-RERANK improved retrieval quality by 40 percent over the BM25 baseline on BEIR.",
+  "source_claims": [
+    {"claim": "The reranker is named LATE-RERANK", "doc_span": "p1:abstract", "supported": true},
+    {"claim": "It is compared against a BM25 baseline", "doc_span": "p7:sec5.1", "supported": true},
+    {"claim": "It improved retrieval quality by 40 percent", "doc_span": null, "supported": false},
+    {"claim": "Evaluated on the BEIR benchmark", "doc_span": "p7:sec5.1", "supported": true}
+  ],
+  "faithfulness_pass": false,
+  "gate_action": "regenerate",
+  "gate_note": "no span states 40 percent; p8:table2 reports nDCG@10 0.71 to 0.79, about 11 percent relative",
+  "faithfulness_score": 0.75
+}
+```
+
+在撰寫器以 p8:table2 為那個唯一失敗的主張重新接地之後，記錄以修正後的文字重新發出，每一項主張都是 supported: true、faithfulness_pass: true，分數為 1.0。唯有此時，該片段才會抵達階段二 TTS。
+
 ## 關鍵設計決策
 
 ### 1. 兩個階段，絕不用單一端到端音訊模型
@@ -90,9 +135,21 @@ flowchart TB
 
 這是整個產品賴以立足的決策。在腳本寫完之後、任何音訊存在之前，一道獨立的事實查核流程會把它拆解成原子級主張，並逐一對照檢索到的來源加以驗證，這是把 FActScore 手法（[Min et al.](https://arxiv.org/abs/2305.14251)）套用在對話上、而非套用在傳記上。一個無依據（模型加油添醋）或矛盾（模型講反了）的主張，會被退回給撰寫器修正或刪除。我們用一個 RAGAS 風格的忠實度指標（[RAGAS](https://arxiv.org/abs/2309.15217)）為每一集評分，低於門檻就封鎖發布。這刻意是第二次模型呼叫，而不是一句提示指令，因為撰寫器提示裡的「請保持忠實」並不是一個你能衡量或設關卡的控制項。完整方法在 [LLM evaluation](../14-evaluation-and-observability/01-llm-evaluation.md)。在這裡被抓到的一個杜撰事實只是一次重新生成；同樣的事實在使用者聽完之後才被抓到，就是一個壞掉的產品。
 
+並非每個失敗的主張都受到相同對待。關卡會把每個原子級主張導向三種結果之一：
+
+| 原子級主張狀態 | 實作範例中的例子 | 關卡動作 |
+|---|---|---|
+| 被檢索到的來源片段蘊含 | 「在 BEIR 上評測」（section 5.1） | 保留 |
+| 無依據，但存在真實的來源數值 | 「40 percent」，但 table 2 報告的是 0.71 到 0.79 | 重新生成，接地於真實片段 |
+| 被某片段矛盾（撰寫器講反了） | 「延遲砍半」，但論文報告的是 20 percent | 以修正後的數值重新生成 |
+| 無依據且無來源根據（杜撰或模型記憶） | 「已在 Google 部署」（論文裡根本沒有） | 捨棄該主張 |
+| 非事實的談笑、提問或有所保留的類比 | 「所以它基本上就是個更聰明的圖書館員」 | 保留，標記為非事實 |
+
+重新生成與捨棄是不同的工具：「40 percent」那句之所以被重新接地，是因為存在一個真實結果可以拿來替換，而一個毫無根據的主張則會被捨棄，因為沒有任何真實的東西可以放進它的位置。
+
 ### 4. 把接地內容與呈現分開
 
-自然的談笑與事實準確度，只有在你讓同一個模型一次做完兩件工作時才會彼此打架。我們把它們拆開。一道內容流程產出接地、有引用的事實骨架（依據來源，哪些是真的）。一道呈現流程把那副骨架改寫成對話：插話、「喔，有意思，所以這是不是代表……」、一位主持人問出那個笨但有用的問題、一個讓艱澀論點落地的類比。呈現流程被明確限制為**改寫與回應，絕不新增事實**，而它的輸出會再次通過忠實度關卡，好讓一個夾帶了假主張的類比被抓出來。這就是你如何在不讓模型捏造那個 40 percent 的情況下，取得「等等，40 percent，那超多的」那種能量。類比是最尖銳的風險：一個好的類比能釐清，一個錯的類比則斷言了來源從未說過的東西。
+自然的談笑與事實準確度，只有在你讓同一個模型一次做完兩件工作時才會彼此打架。我們把它們拆開。一道內容流程產出接地、有引用的事實骨架（依據來源，哪些是真的）。一道呈現流程把那副骨架改寫成對話：插話、「喔，有意思，所以這是不是代表……」、一位主持人問出那個笨但有用的問題、一個讓艱澀論點落地的類比。呈現流程被明確限制為**改寫與回應，絕不新增事實**，而它的輸出會再次通過忠實度關卡，好讓一個夾帶了假主張的類比被抓出來。這就是你如何在不讓模型捏造那個 40 percent 的情況下，取得「等等，40 percent，那超多的」那種能量，正是實作範例所走過的那個失效。類比是最尖銳的風險：一個好的類比能釐清，一個錯的類比則斷言了來源從未說過的東西。
 
 ### 5. 涵蓋度與長度控制
 
@@ -104,11 +161,11 @@ flowchart TB
 
 ### 7. 發音是一個信任面，而非潤飾細節
 
-一個自信的聲音把整集節目在講的那個唯一術語唸錯（把 SQL 唸成「*SEE-quel* database」、把「*nuclear* option」唸得亂七八糟、把某位研究者的名字唸壞），會立刻發出「這是機器做的、而且它不懂」的訊號，並侵蝕管線其餘部分辛苦掙來的忠實度。我們從來源建立一份各筆記本發音詞典：專有名詞、產品名稱、縮寫與領域術語都會得到 IPA 或 `<phoneme>` 條目。數字、日期、貨幣與單位會用 `<say-as>` 標記，好讓「$1.5M」被唸成「one point five million dollars」，而不是「dollar one point five em」。縮寫會逐詞分類（把「EU」逐字母唸出、把「NASA」當成一個字來唸）。我們用一個輕量的 ASR 往返檢查（合成、轉錄、與預期比對）在抽樣集上追蹤一個**發音錯誤率**，若某個關鍵術語被唸壞就直接判定該集失敗。
+一個自信的聲音把整集節目在講的那個唯一術語唸錯（把 SQL 唸成「*SEE-quel* database」、把「*nuclear* option」唸得亂七八糟、把某位研究者的名字唸壞），會立刻發出「這是機器做的、而且它不懂」的訊號，並侵蝕管線其餘部分辛苦掙來的忠實度。我們從來源建立一份各筆記本發音詞典：專有名詞、產品名稱、縮寫與領域術語都會得到 IPA 或 `<phoneme>` 條目。數字、日期、貨幣與單位會用 `<say-as>` 標記，好讓「$1.5M」被唸成「one point five million dollars」，而不是「dollar one point five em」。縮寫會逐詞分類（把「EU」逐字母唸出、把「NASA」當成一個字來唸）。我們用一個輕量的 ASR 往返檢查（合成、轉錄、與預期比對）在抽樣集上追蹤一個**發音錯誤率**，若某個關鍵術語被唸壞就直接判定該集失敗。在實作範例中，有兩個術語驅動了詞典條目：BEIR（釘到「beer」的 IPA，以免被逐字母唸出）與 nDCG（強制逐字元，以免被當成一個字讀），而 ASR 往返檢查在發布前以超過 0.98 的字串相似度讓兩者都過關。
 
 ### 8. 語音克隆、同意與出處
 
-如果產品提供自訂或克隆的聲音，同意要先於功能。一個克隆的聲音需要來自聲音擁有者、經驗證的選擇加入（擷取並比對一段口說同意語句），而我們絕不允許克隆公眾人物或第三方上傳的樣本。每個生成的檔案都帶有兩層出處，和 [image and video pipeline](24-multimodal-generation-pipeline.md) 一樣的縱深防禦：一個內嵌於音訊、能挺過重新壓縮與剪輯的聽不見的浮水印（[AudioSeal](https://github.com/facebookresearch/audioseal)、[SynthID](https://deepmind.google/technologies/synthid/)），以及一份簽署過的 C2PA manifest（[C2PA 2.1](https://c2pa.org/specifications/specifications/2.1/index.html)），宣告使用的模型與一則「AI 生成」聲明。這滿足了 EU AI Act Article 50 的揭露要求（[Art. 50](https://artificialintelligenceact.eu/article/50/)），並在克隆聲音一旦遭濫用時，給了我們一個能偵測自家音訊的偵測器。治理姿態詳見 [AI governance and compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md)。
+如果產品提供自訂或克隆的聲音，同意要先於功能。一個克隆的聲音需要來自聲音擁有者、經驗證的選擇加入（擷取並比對一段口說同意語句），而我們絕不允許克隆公眾人物或第三方上傳的樣本。每個生成的檔案都帶有兩層出處，和 [image and video pipeline](24-multimodal-generation-pipeline.md) 一樣的縱深防禦：一個內嵌於音訊、能挺過重新壓縮與剪輯的聽不見的浮水印（[AudioSeal](https://github.com/facebookresearch/audioseal)、[SynthID](https://deepmind.google/technologies/synthid/)），以及一份簽署過的 C2PA manifest（[C2PA 2.1](https://c2pa.org/specifications/specifications/2.1/index.html)），宣告使用的模型與一則「AI 生成」聲明。具體而言，該 manifest 帶有一個 c2pa.actions 聲明，其 digitalSourceType 設為 trainedAlgorithmicMedia，並記錄撰寫器與 TTS 模型 ID，而 AudioSeal 浮水印被打造成能挺過 MP3 重新壓縮與剪輯，因此即使是一段 10 秒、被重新分享的片段仍會被偵測為我們的（實作範例兩者都出貨，外加可聽見的 AI 生成前導片段）。這滿足了 EU AI Act Article 50 的揭露要求（[Art. 50](https://artificialintelligenceact.eu/article/50/)），並在克隆聲音一旦遭濫用時，給了我們一個能偵測自家音訊的偵測器。治理姿態詳見 [AI governance and compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md)。
 
 ### 9. 何時音訊 Podcast 是錯的格式
 
@@ -122,8 +179,8 @@ flowchart TD
     B --> C[呈現流程加入談笑、提問、類比]
     C --> D[拆解成原子級主張]
     D --> E{每個主張是否都被某個來源片段蘊含?}
-    E -->|無依據：模型加油添醋| F[把主張退回撰寫器：刪除或予以接地]
-    E -->|矛盾：模型講反了| F
+    E -->|無依據 模型加油添醋| F[把主張退回撰寫器 刪除或予以接地]
+    E -->|矛盾 模型講反了| F
     F --> B
     E -->|所有主張都有依據| G[忠實度分數高於門檻?]
     G -->|否| F
@@ -131,6 +188,21 @@ flowchart TD
     H --> I{還有更多段落?}
     I -->|是| A
     I -->|否| J[組裝完整腳本送往階段二 TTS]
+```
+
+上面的迴圈是外層、段落層級的視角。在每一次查核內部，每個原子級主張都會走上決策 3 的表格所編碼的三向路徑（保留、重新生成或捨棄）：
+
+```mermaid
+flowchart TD
+    C[來自腳本片段的原子級主張] --> S{被某個檢索到的片段蘊含?}
+    S -->|是| KEEP[保留主張]
+    S -->|否| R{存在可用來修正它的真實來源數值?}
+    R -->|是| REGEN[接地於該片段重新生成]
+    R -->|否| N{主張了一個可查核的事實?}
+    N -->|否| KEEPTAG[保留並標記為非事實]
+    N -->|是| DROP[捨棄主張]
+    REGEN --> RECHECK[重新拆解並重新查核該片段]
+    RECHECK --> S
 ```
 
 ## 失效模式與緩解措施
@@ -167,6 +239,10 @@ flowchart TD
 
 一位使用者上傳一份 500 頁的報告，腳本膨脹起來，而算繪成本與等待時間爆炸。緩解：對腳本長度與目標時長設硬上限；在撰寫之前做 map-reduce 摘要，讓輸入大小不會等比放大算繪；對非緊急工作採離峰批次算繪；逐使用者的速率限制與一個帶告警的支出預算。
 
+### F9：忠實度關卡本身放行了一個微妙的假主張
+
+關卡是一個蘊含模型，而它可能放行一個幾乎有依據的主張：一個四捨五入方向錯誤的數字，或一個被丟掉的保留語氣，使得來源的「suggests」變成了腳本的「shows」。緩解：我們持續注入**杜撰 canary**，也就是植入了已知假統計數字（像實作範例的「40 percent」）的腳本片段，並在關卡對它們的捕捉率掉到目標以下時告警，這與 [SOC triage copilot](40-soc-security-operations-copilot.md) 用來衡量漏掉的真陽性所用的同一套 canary 準則；蘊含門檻在一個人工標註的主張集上校準，而核准的節目會被抽樣稽核，好讓一個系統性的漏失在變成趨勢之前就浮現。
+
 ## 維運考量
 
 ### 監控
@@ -174,6 +250,7 @@ flowchart TD
 | SLO | 目標 |
 |-----|--------|
 | 忠實度分數（主張被來源支持的比例） | 每集超過 98 percent |
+| 杜撰 canary 捕捉率（注入的假主張） | 超過 99 percent |
 | 關鍵術語的發音錯誤率 | 低於 1 percent |
 | 涵蓋度（被提及的來源章節） | 超過 90 percent |
 | 生成延遲（從上傳到完成音訊）p95 | 低於 90 秒 |
@@ -222,6 +299,7 @@ flowchart TD
 - ElevenLabs, [Text-to-speech API](https://elevenlabs.io/docs/api-reference/text-to-speech)
 - Min et al., [FActScore: Fine-grained Atomic Evaluation of Factual Precision](https://arxiv.org/abs/2305.14251)
 - Es et al., [RAGAS: Automated Evaluation of Retrieval Augmented Generation](https://arxiv.org/abs/2309.15217)
+- Thakur et al., [BEIR: A Heterogeneous Benchmark for Zero-shot Evaluation of IR Models](https://arxiv.org/abs/2104.08663)
 - Ji et al., [Survey of Hallucination in Natural Language Generation](https://arxiv.org/abs/2202.03629)
 - San Roman et al., [AudioSeal: Proactive Detection of Voice Cloning with Localized Watermarking](https://arxiv.org/abs/2401.17264) ([code](https://github.com/facebookresearch/audioseal))
 - Google DeepMind, [SynthID watermarking](https://deepmind.google/technologies/synthid/)

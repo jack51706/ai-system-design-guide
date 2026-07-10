@@ -90,15 +90,91 @@ flowchart TB
 8. The STP gate applies hard thresholds (coverage clean, confidence high, fraud low, amount under ceiling, eligible line) and routes: auto-approve and pay, route-to-human with a pre-filled worksheet, or route-to-SIU.
 9. Every outcome, with pinned model and rules versions and document hashes, is written to the append-only audit trail; proposed denials generate a draft adverse-action notice for the human adjudicator to review and sign.
 
+### A worked example: two windshield claims, two outcomes
+
+The separation of concerns is easiest to see on two auto claims that look nearly identical at intake and end in opposite places.
+
+**Claim A (auto-approved).** FNOL `AUTO-2026-06-19-33471` reports a windshield cracked by highway debris on a comprehensive auto policy. The claimant uploads three damage photos and a PDF replacement estimate from a national glass shop. Gemini 3.1 Pro and Opus 4.8 extract the estimate total ($612.00, confidence 0.98), the VIN and plate (both matching the bound policy, confidence 0.99), and the damage (a lower-driver-side windshield crack, consistent across all three photos). Policy binding returns comprehensive coverage with a full-glass endorsement in force on the loss date. The DMN engine then evaluates coverage as explicit rule outcomes, never an LLM opinion:
+
+- R1 glass endorsement in force on the loss date: **true**, so the comprehensive deductible is waived for glass.
+- R2 peril is a covered comprehensive loss (road debris, not a collision): **true**.
+- R3 estimate total under the comprehensive limit (ACV far above $612): **true**.
+- R4 any exclusion applies (wear, prior damage, non-OEM cap, racing): **none**.
+- Result: covered = true, deductible_applied = $0, payout = $612.00.
+
+Fraud signals are clean: the nearest perceptual-hash neighbor in the historical image corpus sits 31 bits of Hamming distance away (well above the 10-bit reuse threshold), EXIF timestamps fall inside the reported loss window with GPS near the insured garaging address, and the narrative-consistency pass finds no contradiction, for a fraud score of 0.03. Every gate condition passes (payout $612 under the $2,500 ceiling, confidence over 0.95 on the payout-driving fields, fraud low, coverage clean, eligible line), so the claim straight-through-processes: auto-approved, $612 paid, a reproducible record written to the audit trail. No adjuster touched it.
+
+**Claim B (routed to SIU).** FNOL `AUTO-2026-06-21-33902` looks almost the same: a cracked windshield, three photos, a $588.00 glass estimate, the same full-glass endorsement, and coverage that computes identically (covered = true, deductible $0, payout $588.00). But one submitted photo perceptual-hashes to 4 bits of Hamming distance from an image already on file for an unrelated prior claim (`AUTO-2026-03-04-29155`), a near-certain reuse, and EXIF on that file shows a capture date five weeks before the reported loss with GPS 40 miles from the stated location. The Opus 4.8 narrative pass flags that the FNOL describes a morning highway strike while the photo metadata places the image on a different date and county, and the fraud score jumps to 0.71. The coverage math is unchanged and still says covered, but the gate does not act on coverage alone: a hard fraud signal routes the claim to the Special Investigations Unit, not to auto-approve and not to auto-deny. A human investigator, not the model, decides what the reused image means.
+
+The parallel to the coverage-versus-fraud split is exact: the deterministic engine returned the same covered result for both claims, but a verified document-level signal (a pHash reuse hit plus a metadata contradiction), not the reasoner's prose and not the coverage math, decided that Claim B never reaches the autonomous-payout path.
+
+### The adjudication record
+
+The system never emits a free-text decision; it emits a schema-validated adjudication record that the STP gate and the audit trail consume. The `coverage` block is copied verbatim from the DMN engine (never authored by the LLM), the `fraud_signals` are verified detectors rather than model narrative, and `stp_decision` is a deterministic function of both. Here is Claim B's record:
+
+```json
+{
+  "claim_id": "AUTO-2026-06-21-33902",
+  "policy_id": "PA-8842197",
+  "line_of_business": "auto_physical_damage",
+  "loss_date": "2026-06-20",
+  "extracted_facts": [
+    {"field": "damage", "value": "windshield crack, lower driver side",
+     "confidence": 0.97, "source": {"doc": "photo_2", "region": "bbox[0.31,0.55,0.62,0.78]"}},
+    {"field": "estimate_total", "value": 588.00, "currency": "USD",
+     "confidence": 0.98, "source": {"doc": "estimate.pdf", "page": 2}},
+    {"field": "vin", "value": "1HGCM82633A004352", "confidence": 0.99,
+     "source": {"doc": "fnol", "field": "vin"}}
+  ],
+  "coverage": {
+    "covered": true,
+    "deductible": 0.00,
+    "deductible_basis": "full_glass_endorsement_waives_comprehensive_deductible",
+    "limit": "ACV",
+    "exclusions_checked": ["wear_and_tear", "prior_damage", "non_oem_cap", "racing"],
+    "exclusions_applied": [],
+    "rules_version": "dmn-auto-phys-2026.05"
+  },
+  "fraud_signals": [
+    {"type": "phash_reuse", "match_claim": "AUTO-2026-03-04-29155",
+     "hamming_distance": 4, "threshold": 10, "severity": "high"},
+    {"type": "exif_narrative_mismatch",
+     "detail": "photo capture 2026-05-16, GPS 40mi from loss location; FNOL loss date 2026-06-20"}
+  ],
+  "fraud_score": 0.71,
+  "stp_decision": "route_to_siu",
+  "payout_estimate": 588.00,
+  "payout_authorized": 0.00,
+  "rationale": "Coverage clean under the full-glass endorsement (deductible waived, under limit, no exclusion). Auto-approve blocked because submitted photo_2 pHash-matches prior claim AUTO-2026-03-04-29155 at 4-bit Hamming distance and EXIF contradicts the reported loss. Routed to SIU for human investigation; the system issues no denial and no payout.",
+  "pinned_versions": {"vision": "gemini-3.1-pro, opus-4.8", "reasoner": "opus-4.8", "rules": "dmn-auto-phys-2026.05"},
+  "audit_hash": "sha256:9f2c..."
+}
+```
+
+Claim A's record is identical in shape but carries an empty `fraud_signals` array, a `fraud_score` of 0.03, an `stp_decision` of `auto_approve`, and a `payout_authorized` equal to its `payout_estimate` of $612.00. Because the `coverage` block is the engine's output and every fact carries provenance, either record replays to the identical result for an auditor.
+
 ## Key Design Decisions
 
 ### 1. Deterministic coverage, LLM extraction: the core separation
 
-The one design choice that defines this system: the LLM extracts and reasons, a deterministic engine decides coverage. Whether a peril is covered, whether an exclusion applies, how the deductible and limit net out, all of it lives in versioned [OMG DMN](https://www.omg.org/dmn/) decision tables executed by an engine like [Camunda 8](https://camunda.com/dmn/) or Drools, not in a prompt. An LLM that "reasons" its way to coverage is unauditable and non-reproducible, and it will confidently misread an exclusion. The DMN engine is testable, versioned, and re-runnable: a regulator or a plaintiff's attorney can be handed the exact decision table and the inputs and will get the identical result. The LLM's job stops at handing the engine clean, cited facts.
+The one design choice that defines this system: the LLM extracts and reasons, a deterministic engine decides coverage. Whether a peril is covered, whether an exclusion applies, how the deductible and limit net out, all of it lives in versioned [OMG DMN](https://www.omg.org/dmn/) decision tables executed by an engine like [Camunda 8](https://camunda.com/dmn/) or Drools, not in a prompt. An LLM that "reasons" its way to coverage is unauditable and non-reproducible, and it will confidently misread an exclusion. The DMN engine is testable, versioned, and re-runnable: a regulator or a plaintiff's attorney can be handed the exact decision table and the inputs and will get the identical result. The LLM's job stops at handing the engine clean, cited facts. This is exactly what Claim A shows in the worked example: the engine emits R1 through R4 as discrete true or false rule outcomes (endorsement in force, covered peril, under limit, no exclusion), and the payout is arithmetic on those outcomes ($612 estimate minus a $0 waived deductible), not a figure the model chose. The same engine returns the same covered result for Claim B; what changes the outcome there is a fraud signal the coverage engine never sees, handled downstream.
 
 ### 2. STP gating is the ROI lever, and you deliberately cap it
 
 Auto-decisioning only pays off on claims that are cheap, clean, high-confidence, and low-fraud-signal. The gate requires all of: deterministic coverage with no ambiguity, extraction confidence above threshold on the payout-driving fields, a low fraud score, a payout under an STP ceiling (for example, physical-damage claims under a few thousand dollars), and an STP-eligible line of business. Everything else routes to a human. Raising the ceiling or loosening confidence lifts the STP rate and the headline savings, but it directly raises leakage, so the STP rate is tuned against a measured leakage budget, not maximized. A realistic target is roughly 35 to 45 percent of claims auto-decided, concentrated in low-severity auto and property.
+
+The gate is a checkable specification, not a feel. STP eligibility reduces to four inputs (payout amount, extraction confidence on the payout-driving fields, fraud signal, and coverage clarity) mapping to exactly one of four outcomes:
+
+| Payout amount | Extraction confidence | Fraud signal | Coverage clarity | Outcome |
+|---|---|---|---|---|
+| Under ceiling | High (over 0.95) | None | Covered, unambiguous | Auto-approve and pay |
+| Under ceiling | High | pHash reuse, EXIF or ELA, or narrative mismatch | Any | Route to SIU |
+| Under ceiling | Low (0.95 or below) | None | Covered | Route to human |
+| Any | Any | Any | Not covered, or ambiguous | Route to human (never auto-deny) |
+| Over ceiling | Any | Any | Any | Route to human |
+| Under ceiling | High | None | Covered but ineligible line (bodily injury, total loss, litigated) | Route to human |
+
+There is deliberately no auto-deny row. A not-covered result is the strongest case for human review, not for an automated denial, because a wrong auto-denial is the bad-faith failure mode of Decision 3. Auto-approve is the only autonomous action the gate can take, and only the top row reaches it. Claim A in the worked example is that top row; Claim B is the second.
 
 ### 3. Auto-approve freely, auto-deny almost never
 
@@ -110,7 +186,7 @@ The rationale is only useful if it is grounded. Each extracted fact carries prov
 
 ### 5. Fraud signals are an SIU trigger, not an adjudication
 
-Document-level fraud detection here differs from [Real-Time Fraud Detection](14-fraud-detection.md): there is no 100ms budget and no transaction stream, just evidence to cross-check. The signals are perceptual-hash matches against prior claims (the same dented-bumper photo submitted twice), EXIF and error-level analysis flagging edited or stock images, and an LLM narrative-consistency pass that catches a police report dated before the loss or a medical bill inconsistent with the described impact. Crucially, a high fraud score never auto-denies; it routes to the Special Investigations Unit (SIU). Fraud suspicion is an investigation trigger, and acting on a raw score as if it were a coverage decision is both bad faith and bad statistics.
+Document-level fraud detection here differs from [Real-Time Fraud Detection](14-fraud-detection.md): there is no 100ms budget and no transaction stream, just evidence to cross-check. The signals are perceptual-hash matches against prior claims (the same dented-bumper photo submitted twice), EXIF and error-level analysis flagging edited or stock images, and an LLM narrative-consistency pass that catches a police report dated before the loss or a medical bill inconsistent with the described impact. Crucially, a high fraud score never auto-denies; it routes to the Special Investigations Unit (SIU). Fraud suspicion is an investigation trigger, and acting on a raw score as if it were a coverage decision is both bad faith and bad statistics. Concretely, perceptual hashing compares each submitted image against the historical corpus by Hamming distance on a 64-bit pHash: a match at or under roughly 10 bits is treated as reuse (Claim B hit a prior claim at 4 bits), while genuinely distinct damage photos sit far higher (Claim A's nearest neighbor was 31 bits). EXIF and error-level analysis (ELA, per Krawetz) flag recompression and metadata that contradicts the loss, such as a capture date before the loss date or GPS far from the stated location, and the Opus 4.8 narrative pass cross-checks dates and geography across the FNOL, the photos, and the estimate. A hit on any one of these routes to SIU no matter how clean the coverage math is, which is precisely the Claim B outcome.
 
 ### 6. Regulatory explainability is a build requirement, not a wrapper
 
@@ -127,6 +203,27 @@ Extraction accuracy is necessary but not the business metric. The release gate i
 ### 9. When straight-through processing is the wrong choice
 
 Some claims must never be auto-decided regardless of confidence. Any claim with bodily injury, any total loss, any large-dollar property loss, any represented (attorney-involved) or litigated claim, and any claim with a coverage question or a prior fraud flag routes to a human every time. The reason is that the tail cost is unbounded and the reputational and legal exposure dwarfs the labor saved, and injury and litigation claims turn on judgment and negotiation the model does not have. STP is a tool for the high-volume, low-severity body of the distribution, not the tail, and pretending otherwise is how insurers get sued.
+
+## The Deterministic Coverage Decision
+
+Coverage is the reproducible core, so it is worth seeing as the decision tree the DMN engine actually executes on the facts plus the bound policy. Every node is a rule outcome the LLM cannot alter, and the two leaves that are not covered (excluded, or over limit) route to a human, never to an automated denial.
+
+```mermaid
+flowchart TD
+    F[Extracted facts plus bound policy] --> R1{Glass endorsement in force on loss date}
+    R1 -->|Yes| DED0[Deductible waived, set to 0]
+    R1 -->|No| DEDC[Apply comprehensive deductible]
+    DED0 --> R2{Peril is a covered comprehensive loss}
+    DEDC --> R2
+    R2 -->|No| NC[Not covered, route to human, never auto-deny]
+    R2 -->|Yes| R3{Estimate total under the coverage limit}
+    R3 -->|No| CAP[Cap at limit, flag for human]
+    R3 -->|Yes| R4{Any exclusion applies}
+    R4 -->|Yes| NC
+    R4 -->|No| COV[Covered, payout equals estimate minus deductible]
+    COV --> OUT[Deterministic result to fraud check and STP gate]
+    CAP --> OUT
+```
 
 ## STP Gate Decision Flow
 
@@ -240,6 +337,7 @@ The offset is the ROI story: auto-deciding roughly 16,000 low-severity claims th
 - Microsoft, [Azure AI Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/overview)
 - Anthropic, [Vision with Claude](https://docs.anthropic.com/en/docs/build-with-claude/vision)
 - Google, [Gemini API vision and document understanding](https://ai.google.dev/gemini-api/docs/vision)
+- Neal Krawetz, [Looks Like It, perceptual image hashing](http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html)
 - Coalition Against Insurance Fraud, [Fraud statistics](https://insurancefraud.org/fraud-stats/)
 
 Related chapters: [Document Intelligence Pipeline](10-document-intelligence.md), [Real-Time Fraud Detection](14-fraud-detection.md), [OCR and Layout](../10-document-processing/01-ocr-and-layout.md), [AI Governance and Compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md), [Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md)

@@ -89,15 +89,88 @@ flowchart TB
 7. 一個獨立的對抗式驗證器會重新查核每一項被引用的主張：一個確定性服務會重新擷取該 URL、確認引述片段就在頁面上，並跑一道 NLI 蘊含檢查，驗證來源確實支持該主張，同時一個全新的 Opus 4.8 評論者會獵捕錯誤歸屬、過度宣稱與陳舊。
 8. 引用未通過的主張會被刪除，或在剩餘預算內退回做一次定向的重新搜尋；未經驗證的內容一律不出貨，而最終報告會把每一項主張連同一個可點擊的已驗證引用與一個信心標籤一起呈現，完整的軌跡（搜尋、來源、花費）也都會被記錄下來。
 
+### 一個實作範例：固態電池新創，一個任務從頭到尾
+
+就拿這個產品當初為之打造的問題來說：「固態電池新創的競爭態勢分析，涵蓋募資、電池化學與風險。」planner（Opus 4.8）把它拆解成四個子問題（SQ1 領先公司的名單、SQ2 各家的募資與最新一輪、SQ3 各家的電解質化學、SQ4 技術與商業風險），而預算控制器把這個任務的上限設在 200,000 個 token、40 次工具呼叫與 20 分鐘的實際耗時。
+
+**第 1 輪（名單）。** 廣泛的搜尋（「solid-state battery startups 2026」、「leading solid electrolyte companies」）回傳了一組候選。分流（Haiku 4.5）保留了五個較高信任的來源，並丟棄兩個內容單薄的，而廉價讀取器（DeepSeek V4 Flash）把存活下來的來源壓縮成筆記卡，點名了 QuantumScape、Solid Power、ProLogium、Factorial Energy 與 Blue Solutions。
+
+**第 2 輪（募資與化學）。** SQ2 與 SQ3 仍然單薄，於是 planner 針對各個實體扇出查詢。其中一個回傳的頁面「Top 15 Battery Stocks to 10x in 2026」座落在一個內容農場網域上，在 AI 劣質內容分類器上得分很高（列表文骨架、沒有署名、聯盟行銷連結、沒有原始出處），在網域信任上得分很低，因此在任何讀取之前就被丟棄，省下不到一分錢，卻避開了引用它所付出的公信力代價。保留下來的來源產出了化學上的分野（QuantumScape 與 ProLogium 為氧化物/陶瓷、Solid Power 為硫化物、Factorial 與 Blue Solutions 為聚合物）以及各公司的募資卡。
+
+**第 3 輪（風險與一處衝突）。** 風險搜尋浮現了化學特有的失效模式（硫化物對濕氣的敏感性與 H2S 釋出、氧化物脆性與界面電阻、聚合物在室溫下的低導電度）以及橫向的風險（鋰枝晶、製造良率、對 OEM 在 2027 到 2030 年前後量產時程的依賴）。這一輪之後，邊際產出跌破了停止門檻（最近六次擷取加起來新增不到一項接地的主張），此時約已花掉 60 percent 的預算，於是涵蓋度停滯的判準被觸發，迴圈就停了下來，而不去追一條長尾。
+
+**綜整與那個失敗的引用。** 綜整器（Opus 4.8）草擬報告。其中一句寫著「Factorial Energy has raised roughly $1.5 billion to date」，引用來源是一個 VC 市場概覽部落格。驗證器重新擷取：該 URL 可解析（存在），且片段「$1.5 billion」也確實在頁面上，但 NLI 蘊含檢查失敗，因為頁面上真正的句子是「the solid-state battery market is projected to reach $1.5 billion」，這是一個市場規模的數字，而不是 Factorial 的募資。這是教科書等級的主題鄰近性，一個真實的數字被硬湊到錯誤的主體上。這項主張被丟棄，而在還有預算的情況下，這個 agent 針對原始來源跑了一次定向的重新搜尋，找到了 Factorial 自己的新聞稿與它的 Crunchbase 檔案：透過其 Series D 募得約 $200M，並有來自 Mercedes-Benz 與 Stellantis 的策略性投資。修正後、有原始來源佐證的主張出貨了，而那個 $1.5B 版本從未出貨。
+
+**最終段落，帶著一處被浮現出來的衝突。** Factorial 的子段落最終接地到一個原始來源，而 ProLogium 的子段落則把一處分歧浮現出來，而不是把它抹平：一個來源把 Dunkirk 超級工廠列為 EUR 5.2 billion（2023 年的公告），較晚的來源則列為 EUR 4.9 billion（2025 年的修訂），因此報告連同日期一併陳述兩個數字，而不是取平均，湊成一個兩個來源都沒出現過的 EUR 5.05 billion 共識。
+
+把這個迴圈濃縮成一條軌跡：
+
+```mermaid
+sequenceDiagram
+    participant U as 使用者問題
+    participant P as Planner Opus 4.8
+    participant S as 搜尋加上分流 Haiku 4.5
+    participant R as 廉價讀取器 V4 Flash
+    participant E as 證據庫
+    participant V as 引用驗證器
+
+    U->>P: 固態電池競爭態勢
+    P->>P: 拆解成名單、募資、化學、風險
+    loop 第 1 到 3 輪 直到涵蓋度停滯
+        P->>S: 為未解的子問題扇出查詢
+        S->>S: 丟棄 AI 劣質列表文、低信任
+        S->>R: 保留的頁面
+        R->>E: 帶主張、引述與 URL 的筆記卡
+        E->>P: 自上一輪以來的涵蓋度增量
+    end
+    P->>V: 報告草稿的主張
+    V->>V: Factorial 1.5B 未通過 NLI 蘊含
+    V->>S: 在預算內重新尋源一項主張
+    S->>V: 原始來源 200M Series D
+    V->>U: 含已浮現衝突的附引用報告
+```
+
+### 一筆已驗證主張的紀錄
+
+每一個被引用的句子都帶著一筆驗證紀錄，管線會據此以確定性的方式處置。以下把被駁回的草稿主張與它重新尋源後的替代版本並列出來：
+
+```json
+[
+  {
+    "claim_id": "SSB-2026-07-claim-038",
+    "claim": "Factorial Energy has raised roughly $1.5 billion to date.",
+    "section": "Factorial Energy",
+    "cited_url": "https://vc-trends.example/solid-state-2026-overview",
+    "quote_span": "the solid-state battery market is projected to reach $1.5 billion",
+    "support_check": {"exists": true, "span_present": true, "entails": false, "primary_source": false},
+    "reject_reason": "topical adjacency, source states market size not Factorial funding",
+    "confidence": "low",
+    "status": "rejected_resourced"
+  },
+  {
+    "claim_id": "SSB-2026-07-claim-041",
+    "claim": "Factorial Energy raised about $200M through its Series D, with strategic investment from Mercedes-Benz and Stellantis.",
+    "section": "Factorial Energy",
+    "cited_url": "https://factorialenergy.com/news/series-d-close",
+    "quote_span": "Factorial closed a $200 million Series D ... investors Mercedes-Benz and Stellantis",
+    "support_check": {"exists": true, "span_present": true, "entails": true, "primary_source": true},
+    "corroboration": ["https://www.crunchbase.com/organization/factorial-energy"],
+    "confidence": "high",
+    "status": "verified",
+    "supersedes": "SSB-2026-07-claim-038"
+  }
+]
+```
+
 ## 關鍵設計決策
 
 ### 1. 先規劃再執行，並設下硬性預算上限
 
-迴圈才是產品，而不是提示。planner 拆解問題、跑起反覆的「搜尋、讀取、反思」循環，而且必須判斷何時資料已經足夠，這是一個真正困難的決定（[planning and decomposition](../07-agentic-systems/06-planning-and-decomposition.md)）。少了限制，這個 agent 要嘛永無止境地瀏覽，要嘛就悄悄花掉 $50 去追一個末端的子問題。所以預算控制器會在執行環境裡強制執行每任務的 token、工具呼叫與實際耗時（5 到 30 分鐘）上限，而不是客氣地拜託模型自制，而且停止條件是明確的：當子問題的涵蓋度停滯（每次搜尋新增的邊際主張跌破某個門檻）或預算幾乎耗盡時，就停下來。這是把 [loop engineering](../07-agentic-systems/12-loop-engineering.md) 套用到一個開放式任務上：整個風險就在於一個不會終止的迴圈。
+迴圈才是產品，而不是提示。planner 拆解問題、跑起反覆的「搜尋、讀取、反思」循環，而且必須判斷何時資料已經足夠，這是一個真正困難的決定（[planning and decomposition](../07-agentic-systems/06-planning-and-decomposition.md)）。少了限制，這個 agent 要嘛永無止境地瀏覽，要嘛就悄悄花掉 $50 去追一個末端的子問題。所以預算控制器會在執行環境裡強制執行每任務的 token、工具呼叫與實際耗時（5 到 30 分鐘）上限，而不是客氣地拜託模型自制，而且停止條件是明確的：當子問題的涵蓋度停滯（每次搜尋新增的邊際主張跌破某個門檻，在實作範例中是最近六次擷取加起來新增不到一項接地的主張）或預算幾乎耗盡（那個任務的上限是 200,000 個 token、40 次工具呼叫與 20 分鐘，並在第 3 輪後約花掉 60 percent 時停止）時，就停下來。這是把 [loop engineering](../07-agentic-systems/12-loop-engineering.md) 套用到一個開放式任務上：整個風險就在於一個不會終止的迴圈。
 
 ### 2. 來源信任與對抗性的開放網路
 
-並非所有 URL 都是平等的，而把它們當成平等看待，正是劣質內容最後被引用的原因。我們依網域信任為候選來源排名（原始來源、官方申報文件、老牌媒體，以及 .gov 或 .edu 排在內容農場之上）、對時效敏感的主張套用時效性過濾器，並在花費任何一次前沿讀取之前，先跑一個廉價分類器來標記 SEO 垃圾內容與 AI 生成的劣質內容。原始來源勝過對它們的二手摘要，而一項承重的主張，必須先由不只一個獨立可信來源佐證，才能用來支撐一個章節。這道分流是系統裡投資報酬率最高的過濾器，正因為它跑在廉價層級上：丟棄一個垃圾頁面只花不到一分錢，而讀取並引用它，代價卻是產品的公信力。
+並非所有 URL 都是平等的，而把它們當成平等看待，正是劣質內容最後被引用的原因。我們依網域信任為候選來源排名（原始來源、官方申報文件、老牌媒體，以及 .gov 或 .edu 排在內容農場之上）、對時效敏感的主張套用時效性過濾器，並在花費任何一次前沿讀取之前，先跑一個廉價分類器來標記 SEO 垃圾內容與 AI 生成的劣質內容（在實作範例中，一篇「Top 15 Battery Stocks to 10x in 2026」的內容農場列表文就在這裡被丟棄、未經讀取）。原始來源勝過對它們的二手摘要，而一項承重的主張，必須先由不只一個獨立可信來源佐證，才能用來支撐一個章節。這道分流是系統裡投資報酬率最高的過濾器，正因為它跑在廉價層級上：丟棄一個垃圾頁面只花不到一分錢，而讀取並引用它，代價卻是產品的公信力。
 
 ### 3. 別被某個頁面提示注入
 
@@ -107,9 +180,21 @@ flowchart TB
 
 這是核心的品質機制，而且它刻意被設計成一道獨立的流程。先講接地：綜整只能引用那些出現在實際讀過的筆記卡上的主張，所以模型無法引用一個它從未看過的頁面。接著一個獨立的驗證器會以對抗的方式，針對三道確定性關卡加上一道模型關卡來查核每一項被引用的主張。存在性：重新擷取該 URL，而一個無法解析的連結就是硬性丟棄（這能當場逮到幻覺出來的 URL）。歸屬：引述片段必須真的在頁面上，這能逮到一個被硬湊到某項它從未提出的主張上的真實來源。蘊含：一道 NLI 檢查會確認來源是支持該主張，而不只是提到了那個主題。接著一個沒有參與撰寫報告的、全新的 Opus 4.8 評論者，會去尋找誤讀或陳舊的佐證。這套做法的血脈來自 [Chain-of-Verification](https://arxiv.org/abs/2309.11495)、[RARR](https://arxiv.org/abs/2210.08726) 的歸屬與修訂，以及 [ALCE](https://arxiv.org/abs/2305.14627) 的引用度量。未通過的主張會被刪除，而絕不淡化處理；寫出某項主張的同一個模型，是它自己很差勁的裁判，這正是驗證要在一個全新脈絡裡進行的原因。
 
+這道關卡是可查核的，而不是憑感覺。每一項被引用的主張都會依序跑過相同的條件，而第一個未通過的列就決定了結果：
+
+| 存在（URL 可解析） | 片段在頁面上 | 蘊含（NLI） | 原始來源或經佐證 | 結果 |
+|---|---|---|---|---|
+| 否 | 任意 | 任意 | 任意 | 當作幻覺 URL 丟棄，若還有預算就重新尋源 |
+| 是 | 否 | 任意 | 任意 | 當作錯誤歸屬丟棄，重新尋源 |
+| 是 | 是 | 否 | 任意 | 當作過度宣稱或主題鄰近性丟棄，重新尋源 |
+| 是 | 是 | 是 | 否（承重主張） | 暫緩，要求第二個獨立的可信來源 |
+| 是 | 是 | 是 | 是 | 保留並附已驗證的引用 |
+
+實作範例裡 Factorial 的「$1.5 billion」草稿就是第三列（URL 可解析、片段存在、蘊含失敗），這正是它被丟棄、並重新尋源到一份原始申報文件，而不是被保留語氣寫成「據報導」的原因。
+
 ### 5. 長報告綜整：結構、衝突、校準過的不確定性
 
-一份 3,000 字的報告，不是把片段串接起來就好。綜整器會遵循一個強制的結構（執行摘要、各實體區段、橫向風險、一份來源清單），好讓輸出易於瀏覽。相互衝突的來源會被浮現出來，而不是取平均：如果一個來源說是 $40M 的 Series B，另一個說 $55M，報告會把兩者都寫出來並標上日期，而不是捏造一個兩個來源都沒出現過的、虛假的 $47.5M 共識。信心會依證據來校準：獲得充分佐證的主張會直白陳述，單一來源、證據薄弱的主張則會被保留語氣並加上標示，而真正的未知則會被明說為未知。悄悄地把衝突取平均，是最陰險的事實性失效之一，因為那個捏造出來的數字看起來完全合情合理。
+一份 3,000 字的報告，不是把片段串接起來就好。綜整器會遵循一個強制的結構（執行摘要、各實體區段、橫向風險、一份來源清單），好讓輸出易於瀏覽。相互衝突的來源會被浮現出來，而不是取平均：如同實作範例，當一個來源把 ProLogium 的 Dunkirk 超級工廠列為 EUR 5.2 billion（2023），另一個列為 EUR 4.9 billion（2025），報告會把兩者連同日期都寫出來，而不是捏造一個兩個來源都沒出現過的、虛假的 EUR 5.05 billion 共識。信心會依證據來校準：獲得充分佐證的主張會直白陳述，單一來源、證據薄弱的主張則會被保留語氣並加上標示，而真正的未知則會被明說為未知。悄悄地把衝突取平均，是最陰險的事實性失效之一，因為那個捏造出來的數字看起來完全合情合理。
 
 ### 6. 在數十個長頁面上進行脈絡管理
 

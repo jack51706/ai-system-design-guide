@@ -88,11 +88,56 @@ flowchart TB
 8. 路由關卡會發布通過每一項檢查且達到該層級 QE 門檻的區段，並把它們寫入 TM；其餘的則帶著預先填好的草稿進入 MTPE 或完整真人佇列。
 9. 真人的編輯被核准後進入 TM（讓可重用的資產成長），並記錄為 QE 校準與評測資料，而已核准的目標譯文會被推回資源檔案與 CMS。
 
+### 一個實例演練：一個購物車字串譯成德語
+
+完整追蹤一個真實的 UI 字串從頭到尾，再拿它與一個最終去向不同的低風險字串做對照。
+
+**這個字串。** 區段 `ui.cart.summary_line`，英文來源 `You have {count, plural, one {# item} other {# items}} in your {cart_name} cart`，目標 `de-DE`。它帶有一個由 `{count}` 驅動的 ICU 複數，以及第二個佔位符 `{cart_name}`，並且會在一個固定寬度的標頭中呈現，所以它是面向顧客的主要語系 UI。
+
+**TM 查詢（85 percent 模糊）。** 沒有精確匹配，但 TM 裡有一個來自先前版本的近鄰，`You have {count, plural, one {# item} other {# items}} in your {cart_name} wishlist`，其核准譯文為 `Sie haben {count, plural, one {# Artikel} other {# Artikel}} in Ihrer {cart_name}-Wunschliste`。模糊分數是 85 percent（兩個字串只差在 cart 與 wishlist），太低而無法逐字重用，但很適合當作 few-shot 範例，所以它為提示注入種子，並錨定正式語體（Sie）與佔位符版面。
+
+**詞彙表。** 術語庫為 de-DE 釘住 `cart -> Warenkorb`，並把 `Einkaufswagen` 與 `Korb` 列為禁用同義詞。那條規則會作為硬性指示注入提示中。
+
+**LLM 草稿，第一次嘗試（遭拒）。** Claude Sonnet 4.7 回傳 `Sie haben {count, plural, one {# Artikel} other {# Artikel}} in Ihrem {cart_name}-Einkaufswagen`。佔位符完好無損，兩種複數形式也都在，所以 QE 極可能會放行它，但確定性的術語庫檢查失敗了，因為 `Einkaufswagen` 是禁用同義詞，而非已核准的 `Warenkorb`。這個區段連同被點名的違規術語一起彈回受限重試。（若模型改為丟掉了 `{cart_name}`，佔位符完整性檢查會在同一道關卡抓到它；提供保證的是程式碼檢查，而不是模型。）
+
+**LLM 草稿，第二次嘗試（進入關卡）。** 重試回傳 `Sie haben {count, plural, one {# Artikel} other {# Artikel}} in Ihrem {cart_name}-Warenkorb`。現在確定性檢查開始跑：佔位符完整性通過（`{count}` 與 `{cart_name}` 都在，沒有多加），ICU 可解析，CLDR 完整性通過（德語剛好需要 `one` 與 `other` 兩個類別，兩者都在），術語庫檢查也通過。長度檢查標記了它：德語的呈現大約比英文寬 34 percent，超過這個固定寬度標頭的 30 percent 預算，所以附上一個軟性的長度溢出旗標（給真人的一則註記，而非硬性阻擋）。
+
+**QE 與路由。** COMETKiwi 為這個區段評出 0.82。由於它是面向顧客的主要語系 UI（中風險層級），路由器無論分數如何都把它送去 MTPE：一位事後編輯者在草稿、85 percent 的 TM 匹配、詞彙表、QE 分數與長度溢出註記都預先填好的情況下打開它，然後在幾秒內把它縮短或確認。核准的結果會被寫回 TM，所以下一次出現就是一個免費的精確匹配。
+
+**對照。** 同一批次帶有一個內部管理字串 `log.sync.done`，來源 `Sync completed for {tenant}`，目標 `Synchronisierung für {tenant} abgeschlossen`。佔位符與形式都通過，沒有詞彙表術語也沒有長度壓力，而 COMETKiwi 給它評出 0.94。它是低風險的內部內容，高於該層級 0.85 的自動發布門檻，所以它不經任何真人就自動發布並直接寫入 TM。相同的管線、相同的檢查、相反的去向：是層級加上 QE 分數，而非原始流暢度，決定了真人究竟看到誰。
+
+### 區段紀錄
+
+每個區段都帶有一份結構化紀錄，供各項檢查與路由器讀取，而不是那段散文。以下是 `ui.cart.summary_line` 在被路由那一刻的樣子。
+
+```json
+{
+  "segment_id": "ui.cart.summary_line",
+  "locale": "de-DE",
+  "source": "You have {count, plural, one {# item} other {# items}} in your {cart_name} cart",
+  "target": "Sie haben {count, plural, one {# Artikel} other {# Artikel}} in Ihrem {cart_name}-Warenkorb",
+  "tm_match": {"score": 0.85, "origin": "ui.wishlist.summary_line", "used": "few_shot_example"},
+  "glossary": [{"term": "cart", "approved": "Warenkorb", "first_pass": "Einkaufswagen", "corrected": true}],
+  "glossary_ok": true,
+  "placeholders_ok": true,
+  "icu_plural_ok": true,
+  "cldr_forms_present": ["one", "other"],
+  "length_ratio": 1.34,
+  "length_flag": true,
+  "qe_model": "cometkiwi",
+  "qe_score": 0.82,
+  "content_tier": "customer_facing_ui",
+  "edit_depth": "full",
+  "route": "mtpe",
+  "route_reason": "medium-risk tier is always post-edited; QE 0.82 below light-edit cutoff; length overflow flagged"
+}
+```
+
 ## 關鍵設計決策
 
 ### 1. TM 加上術語庫作為事實基準，LLM 只填補缺口
 
-TM 與術語庫才是語意層，而不是模型。精確的 TM 匹配會被逐字重用（免費，而且完全一致），模糊匹配會作為情境內範例餵給 LLM，而詞彙表會被注入每一個相關的提示。把最接近的模糊匹配餵給模型，相較於冷翻譯，能可衡量地改善術語與風格的遵循度（[Moslem et al., Adaptive MT with LLMs, arXiv:2301.13294](https://arxiv.org/abs/2301.13294)）。關鍵在於，我們不信任提示去強制術語：一個確定性的事後檢查會把每一個術語實例對照術語庫及其禁譯清單，任何違規都會阻擋發布。提示層級的「請使用這份詞彙表」是一個提示，而合規檢查才是保證。
+TM 與術語庫才是語意層，而不是模型。精確的 TM 匹配會被逐字重用（免費，而且完全一致），模糊匹配會作為情境內範例餵給 LLM，而詞彙表會被注入每一個相關的提示。把最接近的模糊匹配餵給模型，相較於冷翻譯，能可衡量地改善術語與風格的遵循度（[Moslem et al., Adaptive MT with LLMs, arXiv:2301.13294](https://arxiv.org/abs/2301.13294)）。關鍵在於，我們不信任提示去強制術語：一個確定性的事後檢查會把每一個術語實例對照術語庫及其禁譯清單，任何違規都會阻擋發布。提示層級的「請使用這份詞彙表」是一個提示，而合規檢查才是保證。這個實例演練一次就展示了這兩個面向：一個 wishlist 字串上 85 percent 的模糊匹配為提示注入種子，而第一版的 `Einkaufswagen` 草稿是被術語庫檢查抓到的，不是被提示抓到的。
 
 ### 2. 選擇 LLM MT 而非純 NMT，為了情境、語氣與術語
 
@@ -100,15 +145,25 @@ TM 與術語庫才是語意層，而不是模型。精確的 TM 匹配會被逐�
 
 ### 3. 由品質估計來調度真人，因為你無法審查每一件事
 
-核心的規模化手段是無參考的 QE。你無法為數百萬個字串產生真人參考譯文，所以一個 QE 模型（COMETKiwi，自架）僅憑來源與假設譯文為每一筆翻譯的風險評分，只把低信心的區段路由給人（[Rei et al., CometKiwi, arXiv:2209.06243](https://arxiv.org/abs/2209.06243)）。像 [COMET](https://arxiv.org/abs/2009.09025) 這樣基於參考的指標會用在我們確實有參考譯文的評測裡，但生產環境的路由用的是 QE。自動發布門檻不是模型的預設值，它是對照 MTPE 產能，更重要的是對照機器路徑上實測的重大錯誤逸出率來校準：把它調高，更多工作維持純機器，但更多錯誤會溜過去；把它調低，真人佇列就會變大。那個門檻是逐層級且逐語系的。
+核心的規模化手段是無參考的 QE。你無法為數百萬個字串產生真人參考譯文，所以一個 QE 模型（COMETKiwi，自架）僅憑來源與假設譯文為每一筆翻譯的風險評分，只把低信心的區段路由給人（[Rei et al., CometKiwi, arXiv:2209.06243](https://arxiv.org/abs/2209.06243)）。像 [COMET](https://arxiv.org/abs/2009.09025) 這樣基於參考的指標會用在我們確實有參考譯文的評測裡，但生產環境的路由用的是 QE。自動發布門檻不是模型的預設值，它是對照 MTPE 產能，更重要的是對照機器路徑上實測的重大錯誤逸出率來校準：把它調高，更多工作維持純機器，但更多錯誤會溜過去；把它調低，真人佇列就會變大。那個門檻是逐層級且逐語系的。具體而言，實例演練中低風險的內部字串以 QE 0.94 跨過了 0.85 的自動發布門檻，原封不動地上線，而面向顧客的購物車字串在 0.82 永遠達不到那個門檻，因為它的層級會先把它路由給真人。
 
 ### 4. 機械式正確性是確定性程式碼，絕不託付給模型
 
-這正是天真的 LLM 翻譯出錯的地方。一個丟掉 `%1$s`、重排位置引數、為需要六種複數形式的語言只發出五種，或把 `<a href>` 弄爛的模型，會產出一個讓 App 崩潰或破壞版面的字串，而 QE 無法可靠地抓到它。所以佔位符與標籤完整性、ICU MessageFormat 可解析性、CLDR 複數形式完整性，以及長度預算，都在程式碼中被驗證為硬性關卡，區段必須通過它們才有資格進行任何後續處理（[ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/)、[CLDR plural rules](https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html)）。這與[護欄](../13-reliability-and-safety/01-guardrails.md)是同一套紀律：在模型之外強制執行的結構性約束。受限解碼與保護再還原能減少違規，但真正讓它安全的是那道檢查。
+這正是天真的 LLM 翻譯出錯的地方。一個丟掉 `%1$s`、重排位置引數、為需要六種複數形式的語言只發出五種，或把 `<a href>` 弄爛的模型，會產出一個讓 App 崩潰或破壞版面的字串，而 QE 無法可靠地抓到它。所以佔位符與標籤完整性、ICU MessageFormat 可解析性、CLDR 複數形式完整性，以及長度預算，都在程式碼中被驗證為硬性關卡，區段必須通過它們才有資格進行任何後續處理（[ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/)、[CLDR plural rules](https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html)）。這與[護欄](../13-reliability-and-safety/01-guardrails.md)是同一套紀律：在模型之外強制執行的結構性約束。受限解碼與保護再還原能減少違規，但真正讓它安全的是那道檢查。德語是這件事的日常版本：它剛好需要 CLDR 的 `one` 與 `other` 兩個類別，所以一個只填了 `other` 分支的草稿會通不過完整性關卡，而實例演練中第一版的 `Einkaufswagen` 在佔位符與複數都完好無損的情況下卻通不過術語庫關卡，這恰恰是 QE 傾向漏掉的錯誤類別。
 
 ### 5. 內容風險分層驅動整條管線
 
 經濟效益與安全性兩者都源自分層。低風險內容（內部文件、支援 KB 的長尾、低流量語系）在通過 QE 後走純機器。中風險內容（產品文件、說明中心、主要語系 UI）一律經過真人事後編輯，由 QE 排序佇列並決定輕度或完整編輯。高風險內容（法律、行銷、醫療）是完整真人翻譯加上審查，無論 QE 如何都不自動發布。這個切分刻意做成不對稱，就像保險業的直通式關卡：一個錯誤的內部文件字串成本很低，一個錯誤的用藥指示或一句搞砸的品牌標語則不然，所以機器路徑被限制在尾端成本有界的內容上。
+
+層級與 QE 分數共同選擇路徑（門檻是逐語系的；以下是典型的主要語系樣態）：
+
+| 內容風險層級 | 範例 | QE 達到或高於門檻 | QE 低於門檻 |
+|---|---|---|---|
+| 低 | 內部文件、長尾 KB、低流量語系 | 純機器、自動發布、寫入 TM | MTPE、輕度編輯 |
+| 中 | 產品文件、說明中心、主要語系的顧客 UI | MTPE、輕度編輯 | MTPE、完整編輯 |
+| 高 | 法律、醫療、行銷與品牌 | 完整真人加上在地審查 | 完整真人加上在地審查 |
+
+上面的 `ui.cart.summary_line` 字串是中層級，所以它的 0.82 讓它落入完整編輯的 MTPE，而內部的 `log.sync.done` 字串是低層級，它的 0.94 跨過了自動發布。高風險內容完全忽略 QE 這一欄，而這正是重點：QE 最不可信之處，恰恰是主宰法律與醫療內容的那些低資源與具名實體情況，所以在那裡是由層級、而非分數來決定。
 
 ### 6. 人機協作是高價值內容的設計核心
 
@@ -125,6 +180,23 @@ TM 與術語庫才是語意層，而不是模型。精確的 TM 匹配會被逐�
 ### 9. 何時完整真人翻譯沒有商量餘地
 
 有些內容無論 QE 分數如何都絕不走純機器。法律合約與條款具有約束力，往往需要認證或宣誓翻譯。醫療的使用說明與劑量涉及病患安全且受監管（一個誤譯就是一次召回，甚至更糟），所以它們基於政策一律交給合格的醫療譯者並做回譯審查。高風險的行銷與品牌標語需要創譯，在這裡一個字面正確卻錯誤的譯法是一種著名的失效模式。而低資源語言正是 LLM 品質急遽下降之處，更糟的是，也正是 QE 本身最不可靠之處，所以你想用來路由的信心訊號，恰恰在你最需要它的地方不可信。對於以上所有情況，誠實的答案是：這條管線是輔助真人，而不是取代他們。
+
+## 驗證關卡
+
+機械式正確性不是被評分，而是被把關。每一份草稿在有資格進入 QE 或路由之前，都要跑過一連串有序的確定性檢查，任何失敗都會彈回受限重試（若重試仍失敗，就轉給真人）。這正是實例演練中第一版 `Einkaufswagen` 草稿在術語庫這一關上失敗的那組關卡。
+
+```mermaid
+flowchart TD
+    MT[已還原佔位符的 LLM 草稿] --> PH{佔位符與標籤符合來源數量}
+    PH -->|失敗| RETRY[受限重試 若仍失敗則轉真人]
+    PH -->|通過| ICU{ICU 可解析且所有 CLDR 複數形式齊備}
+    ICU -->|失敗| RETRY
+    ICU -->|通過| TERM{符合術語庫與禁譯規則}
+    TERM -->|失敗| RETRY
+    TERM -->|通過| LEN{在每字串長度預算內}
+    LEN -->|超出預算| FLAG[附上溢出註記 傾向轉真人路徑]
+    LEN -->|預算內| QEG[以 COMETKiwi 評分 再依層級與分數路由]
+```
 
 ## 區段路由流程
 
