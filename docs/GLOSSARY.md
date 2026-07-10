@@ -22,6 +22,26 @@ Quick reference for key terms used throughout this guide.
 
 **ABAC (Attribute-Based Access Control)** - Access control based on attributes of user, resource, and environment rather than fixed roles.
 
+**Action-item grounding** - The requirement that every extracted action item, decision, or risk cite the exact transcript span (speaker plus timestamp) that supports it, so unsupported items are dropped rather than shipped to a system of record. See [Case Study: Async Meeting Intelligence Platform](16-case-studies/41-meeting-intelligence-platform.md).
+
+**Adaptive keyframe sampling** - Varying the frame-extraction rate by scene and motion activity (dense on busy footage, sparse on static shots) instead of a fixed frame rate, to cut visual indexing cost. See [Case Study: Long-Form Video Understanding](16-case-studies/49-long-form-video-understanding.md).
+
+**Adverse Impact (Four-Fifths Rule)** - The EEOC test flagging discrimination when a protected group's selection rate falls below 80 percent of the highest group's rate. See [Case Study: AI Recruiting and Resume Screening](16-case-studies/44-ai-recruiting-resume-screening.md).
+
+**Adverse-action notice** - The regulatory disclosure an insurer or employer must send on a denial, stating the specific cited reasons, which forces every denial rationale to be grounded and explainable. See [Case Study: Insurance Claims Adjudication](16-case-studies/43-insurance-claims-adjudication.md).
+
+**Age assurance** - Probabilistic placement of a user into an adult or suspected-minor tier from declared age plus behavioral and age-estimation signals, used to gate content for minors. See [Case Study: AI Companion Platform](16-case-studies/47-ai-companion-character-platform.md).
+
+**AI-slop** - Low-quality, machine-generated web content (mass-produced SEO filler) that a research agent must detect and down-rank before it cites it. See [Case Study: Deep Research Agent](16-case-studies/42-deep-research-agent.md).
+
+**Attack Success Rate (ASR)** - The fraction of adversarial probes that elicit an actual policy violation from a target LLM, tracked per harm category and expected to trend down as defenses improve. See [Case Study: Automated LLM Red-Teaming](16-case-studies/50-automated-llm-red-teaming.md).
+
+**Audio Overview** - A NotebookLM-style two-host audio "podcast" generated from a user's source documents, discussing the content conversationally rather than reading it aloud. See [Case Study: Doc-to-Podcast Audio Generation](16-case-studies/52-doc-to-podcast-audio-generation.md).
+
+**Automated Employment Decision Tool (AEDT)** - NYC Local Law 144's term for an algorithmic hiring tool, which must pass an independent bias audit whose results are posted publicly. See [Case Study: AI Recruiting and Resume Screening](16-case-studies/44-ai-recruiting-resume-screening.md).
+
+**Automated red-teaming** - Using models to generate, mutate, and search over adversarial prompts at scale so safety coverage evolves with the threat instead of relying on a static test set. See [Case Study: Automated LLM Red-Teaming](16-case-studies/50-automated-llm-red-teaming.md).
+
 ---
 
 ## B
@@ -35,6 +55,10 @@ Quick reference for key terms used throughout this guide.
 **BM25** - Traditional keyword-based ranking algorithm. Often combined with vector search for hybrid retrieval.
 
 **Budget Tokens** - The configurable compute budget for Extended Thinking (Claude) or reasoning (o3). Higher budget → more internal reasoning steps → higher accuracy and cost.
+
+**Blast-radius estimate** - A pre-execution computation, derived from service topology, of how many pods and downstream services a proposed remediation would affect, shown to the approver alongside a dry-run diff before any production action runs. See [Case Study: SRE Incident-Response Copilot](16-case-studies/48-sre-incident-response-copilot.md).
+
+**Blind-first review** - A human-in-the-loop labeling mode where the annotator commits a label before the LLM's suggested label is revealed, defeating automation bias on subjective or safety-sensitive classes. See [Case Study: Data Annotation Platform](16-case-studies/56-data-annotation-platform.md).
 
 ---
 
@@ -72,6 +96,24 @@ Quick reference for key terms used throughout this guide.
 
 **Cursor** - AI-native IDE (fork of VS Code) with deep model integration for code completion, agentic editing, and multi-file context awareness.
 
+**Canary true-positive** - A synthetic but realistic malicious alert injected into a live triage pipeline to continuously measure the system's recall on real threats. See [Case Study: SOC Alert-Triage Copilot](16-case-studies/40-soc-security-operations-copilot.md).
+
+**Citation-support rate** - The fraction of a report's cited claims whose cited source actually entails the claim, the core factuality metric for a cited-report agent. See [Case Study: Deep Research Agent](16-case-studies/42-deep-research-agent.md).
+
+**Composed image retrieval** - Retrieval where the query is an image plus a text modifier ("this jacket but in green"), fused into one query embedding or resolved with structured attribute filters. See [Case Study: E-commerce Visual Search](16-case-studies/51-ecommerce-visual-search.md).
+
+**Confidence gating** - Restricting an autonomous action such as auto-closing an alert to cases where a calibrated model confidence clears a high bar and independent verified signals agree, defaulting to human escalation otherwise. See [Case Study: SOC Alert-Triage Copilot](16-case-studies/40-soc-security-operations-copilot.md).
+
+**Contract playbook** - A company's per-clause set of standard, fallback, and walk-away (red line) negotiation positions, used as the machine-readable ground truth a redlining copilot compares clauses against instead of the model's general legal knowledge. See [Case Study: Contract Drafting and Redlining](16-case-studies/45-contract-drafting-redlining.md).
+
+**Coverage-plateau stop** - A loop-termination rule that halts an agent's search cycle when the marginal new claims per additional search fall below a threshold. See [Case Study: Deep Research Agent](16-case-studies/42-deep-research-agent.md).
+
+**Crescendo attack** - A multi-turn jailbreak that escalates over a sequence of benign-looking turns until the model agrees to something it would refuse in a single prompt. See [Case Study: Automated LLM Red-Teaming](16-case-studies/50-automated-llm-red-teaming.md).
+
+**Claims Allowlist** - An enumerated set of assertions an outbound generator is permitted to make (approved value props, real customer references, published stats), blocking invented case studies, fabricated metrics, and fake urgency. See [Case Study: AI SDR Outbound Sales](16-case-studies/54-ai-sdr-outbound-sales.md).
+
+**Crisis routing** - Detecting a self-harm or suicidal-ideation disclosure and breaking character to surface real crisis resources (988, Crisis Text Line) with a logged handoff, instead of answering in-persona. See [Case Study: AI Companion Platform](16-case-studies/47-ai-companion-character-platform.md).
+
 ---
 
 ## D
@@ -89,6 +131,8 @@ Quick reference for key terms used throughout this guide.
 **Dual-LLM Pattern** - A prompt-injection containment design (Simon Willison) that splits work between a privileged LLM which can call tools but never sees raw untrusted text, and a quarantined LLM which processes untrusted content with no tool access, passing only structured, validated data between them. See [LLM Security](12-security-and-access/01-llm-security.md).
 
 **Durable Execution** - An execution model (Temporal, Restate, DBOS) that makes long-running agents survive crashes and restarts via an append-only event history and deterministic replay, giving exactly-once side effects, durable timers, and pauses that outlive deploys. See [Durable Execution](07-agentic-systems/11-durable-execution.md).
+
+**Diarization Error Rate (DER)** - The standard speaker-diarization quality metric: the fraction of audio time where the attributed speaker is wrong (missed speech, false speech, or speaker confusion), with overlapped speech the dominant error source. See [Case Study: Async Meeting Intelligence Platform](16-case-studies/41-meeting-intelligence-platform.md).
 
 ---
 
@@ -124,6 +168,10 @@ Quick reference for key terms used throughout this guide.
 
 **Function Calling** - LLM capability to output structured tool invocations rather than plain text.
 
+**Faithfulness gate** - A separate fact-check pass that decomposes a generated script into atomic claims and verifies each against the source documents, blocking or regenerating any unsupported claim before audio is rendered. See [Case Study: Doc-to-Podcast Audio Generation](16-case-studies/52-doc-to-podcast-audio-generation.md).
+
+**Formula correctness gate** - The deterministic validation (parse to AST, reference and range check, type and unit sanity, sandbox recalculation and reconciliation) a generated spreadsheet formula must pass before it is written back, the spreadsheet analog of a SQL correctness gate. See [Case Study: Spreadsheet Modeling Agent](16-case-studies/55-spreadsheet-financial-modeling-agent.md).
+
 ---
 
 ## G
@@ -151,6 +199,8 @@ Quick reference for key terms used throughout this guide.
 **Harness Engineering** - Designing the deterministic driver code around an agent (context assembly, tool execution, budgets, stop conditions, durable state, observability) rather than tuning the model itself. The harness is the kernel; the model is the policy. See [Loop Engineering](07-agentic-systems/12-loop-engineering.md).
 
 **HNSW (Hierarchical Navigable Small World)** - Graph-based algorithm for approximate nearest neighbor search in vector databases.
+
+**Honeypot item (labeling)** - A seeded review item whose displayed pre-label is deliberately wrong, used to catch annotators (or a model) who rubber-stamp suggestions instead of judging independently. See [Case Study: Data Annotation Platform](16-case-studies/56-data-annotation-platform.md).
 
 **Human-in-the-Loop (HITL)** - Patterns for human oversight, approval, or correction of AI outputs.
 
@@ -198,6 +248,8 @@ Quick reference for key terms used throughout this guide.
 
 **Loopmaxxing** - The anti-pattern of assuming that more iterations automatically solve a task. It fails on goals with no verifiable exit condition, so the loop never converges and spend runs away. The multi-step descendant of token-maxxing. See [Loop Engineering](07-agentic-systems/12-loop-engineering.md).
 
+**Leakage** - In claims adjudication, the dollars lost to overpayment plus paid fraud on auto-decided claims; the budget that bounds how high the straight-through-processing rate can safely go. See [Case Study: Insurance Claims Adjudication](16-case-studies/43-insurance-claims-adjudication.md).
+
 ---
 
 ## M
@@ -215,6 +267,16 @@ Quick reference for key terms used throughout this guide.
 **Model Routing** - Choosing which model serves each request by task, cost, latency, capability, or semantics, often with a cascade (cheap model first, escalate on low confidence) and cross-provider fallback. See [AI Gateways and Model Routing](11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md).
 
 **Multi-Tenancy** - Serving multiple customers from shared infrastructure with data isolation.
+
+**Machine Translation Post-Editing (MTPE)** - A workflow where humans edit machine-translated drafts rather than translating from scratch, reserved for medium-risk content. See [Case Study: Translation and Localization Pipeline](16-case-studies/46-translation-localization-pipeline.md).
+
+**Mailbox Warmup** - Gradually ramping send volume on a new email domain or mailbox to build sender reputation before it carries production outbound. See [Case Study: AI SDR Outbound Sales](16-case-studies/54-ai-sdr-outbound-sales.md).
+
+---
+
+## N
+
+**NCCI edits** - CMS National Correct Coding Initiative rule tables (procedure-to-procedure pairs and Medically Unlikely Edits) that deterministically block unbundling and impossible unit counts in medical coding. See [Case Study: Medical Coding and RCM](16-case-studies/53-medical-coding-rcm.md).
 
 ---
 
@@ -242,6 +304,10 @@ Quick reference for key terms used throughout this guide.
 
 **Prefix Caching** - Reusing KV cache for common prompt prefixes across requests.
 
+**Persona card** - A versioned, prefix-cached system prompt that fixes an AI character's identity, voice, backstory, and hard boundaries so it stays consistent across months. See [Case Study: AI Companion Platform](16-case-studies/47-ai-companion-character-platform.md).
+
+**Physician query** - A compliant, non-leading clarification sent to the provider when clinical documentation is ambiguous, used to recover legitimate coding specificity instead of inferring it. See [Case Study: Medical Coding and RCM](16-case-studies/53-medical-coding-rcm.md).
+
 ---
 
 ## Q
@@ -249,6 +315,10 @@ Quick reference for key terms used throughout this guide.
 **QLoRA** - LoRA combined with 4-bit quantization for memory-efficient fine-tuning.
 
 **Quantization** - Reducing model precision (e.g., FP16 to INT4) to decrease memory and improve speed.
+
+**Quality Estimation (QE)** - Reference-free scoring of a machine translation's quality from source and hypothesis alone, used to route only risky segments to human review. See [Case Study: Translation and Localization Pipeline](16-case-studies/46-translation-localization-pipeline.md).
+
+**Query bank** - A curated set of validated question-to-SQL pairs used as few-shot exemplars so text-to-SQL generation is grounded in queries known to be correct. See [Case Study: Conversational Analytics (Text-to-SQL)](16-case-studies/39-conversational-analytics-text-to-sql.md).
 
 ---
 
@@ -265,6 +335,12 @@ Quick reference for key terms used throughout this guide.
 **RLHF (Reinforcement Learning from Human Feedback)** - Training method using human preferences to align model behavior.
 
 **RLVR (RL with Verifiable Rewards)** - The dominant post-training recipe for reasoning models: reward the policy with a programmatic verifier (math, code, or logic with a checkable answer) instead of a learned reward model, which largely sidesteps reward-model hacking. See [Training Reasoning Models](03-training-and-adaptation/08-rlvr-and-reasoning-models.md).
+
+**Read/act boundary** - The design rule that an infrastructure copilot may run read-only diagnostic tools autonomously but every state-changing action (rollback, scale, restart, failover) must be a human-approved proposal, enforced at the tool boundary rather than in the prompt. See [Case Study: SRE Incident-Response Copilot](16-case-studies/48-sre-incident-response-copilot.md).
+
+**Recalc reconciliation** - Executing a generated or edited formula in a real spreadsheet engine on a sandboxed copy and comparing the result within a floating-point epsilon against an independent derivation before the number is trusted or shown. See [Case Study: Spreadsheet Modeling Agent](16-case-studies/55-spreadsheet-financial-modeling-agent.md).
+
+**Red line (clause position)** - A counterparty contract term the company will never accept (uncapped indemnity, broad IP assignment, auto-renewal trap); missing one is the asymmetric, costly false negative a redlining copilot tunes recall to catch, distinct from a "redline" tracked-changes edit. See [Case Study: Contract Drafting and Redlining](16-case-studies/45-contract-drafting-redlining.md).
 
 ---
 
@@ -290,6 +366,16 @@ Quick reference for key terms used throughout this guide.
 
 **System Prompt** - Instructions that set context and behavior for an LLM conversation.
 
+**Schema linking** - The retrieval step in text-to-SQL that selects only the tables and columns relevant to a question rather than pasting the full warehouse DDL into the prompt, and which dominates text-to-SQL accuracy. See [Case Study: Conversational Analytics (Text-to-SQL)](16-case-studies/39-conversational-analytics-text-to-sql.md).
+
+**Semantic layer** - A governed registry (dbt Semantic Layer, Cube, or LookML) that defines each business metric exactly once so a text-to-SQL copilot compiles the blessed definition instead of guessing SQL over raw columns. See [Case Study: Conversational Analytics (Text-to-SQL)](16-case-studies/39-conversational-analytics-text-to-sql.md).
+
+**Shop the Look** - A visual-search mode that runs object detection over a full lifestyle photo, then searches each detected region separately so one image returns multiple shoppable products. See [Case Study: E-commerce Visual Search](16-case-studies/51-ecommerce-visual-search.md).
+
+**Spam Trap** - An email address (pristine or recycled) that mailbox providers and blocklists use to catch senders with poor list hygiene; hitting one sharply damages domain reputation. See [Case Study: AI SDR Outbound Sales](16-case-studies/54-ai-sdr-outbound-sales.md).
+
+**Straight-through processing (STP)** - Auto-deciding a case (an insurance claim, a loan) end to end with no human touch, gated to low-severity, high-confidence, low-fraud cases; the primary ROI lever in claims automation. See [Case Study: Insurance Claims Adjudication](16-case-studies/43-insurance-claims-adjudication.md).
+
 ---
 
 ## T
@@ -308,6 +394,16 @@ Quick reference for key terms used throughout this guide.
 
 **Trust-Tagging** - Marking spans of retrieved or tool-result content with a trust level (for example wrapping untrusted text in explicit tags) so the agent and its capability gate refuse to act on instructions embedded in low-trust content. An indirect-prompt-injection defense at the read layer. See [Agentic Security and Sandboxing](07-agentic-systems/09-agentic-security-and-sandboxing.md).
 
+**Temporal grounding** - Returning the exact timestamped span in a video that answers a query, scored by temporal IoU (for example R@1 at IoU >= 0.5) rather than a yes/no. See [Case Study: Long-Form Video Understanding](16-case-studies/49-long-form-video-understanding.md).
+
+**Translation Memory (TM)** - A database of approved source-to-target segment pairs reused for free when new content matches, the localization ground truth a machine-translation model must respect. See [Case Study: Translation and Localization Pipeline](16-case-studies/46-translation-localization-pipeline.md).
+
+---
+
+## U
+
+**Upcoding** - Billing a higher-level or more-specific code than the clinical documentation supports, a False Claims Act violation carrying treble damages; the failure a documentation-grounded coding pipeline is built to prevent. See [Case Study: Medical Coding and RCM](16-case-studies/53-medical-coding-rcm.md).
+
 ---
 
 ## V
@@ -315,6 +411,8 @@ Quick reference for key terms used throughout this guide.
 **VAD (Voice Activity Detection)** - Detecting whether a chunk of audio contains speech, the first stage of a voice agent's turn-taking. Paired with endpointing to decide when the user has finished; fast VAD also enables barge-in. Silero VAD is a common choice. See [Real-Time Voice Agents](18-voice-and-audio-agents/01-realtime-voice-agents.md).
 
 **Vector Database** - Database optimized for storing and searching high-dimensional vectors (embeddings).
+
+**Video RAG** - Retrieving relevant time-coded segments from a pre-built multimodal index, then having a vision-language model reason over only those segments to answer with timestamp citations. See [Case Study: Long-Form Video Understanding](16-case-studies/49-long-form-video-understanding.md).
 
 ---
 
