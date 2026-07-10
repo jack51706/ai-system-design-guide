@@ -22,6 +22,26 @@
 
 **ABAC（Attribute-Based Access Control，屬性型存取控制）** - 根據使用者、資源與環境的屬性，而非固定角色，來進行存取控制。
 
+**Action-item grounding（行動項目接地）** - 要求每個被擷取出的行動項目、決策或風險，都必須引用支持它的確切逐字稿片段（發言者加時間戳），使沒有依據的項目被捨棄，而非被送進記錄系統。請參閱 [Case Study: Async Meeting Intelligence Platform](16-case-studies/41-meeting-intelligence-platform.md)。
+
+**Adaptive keyframe sampling（自適應關鍵影格取樣）** - 依場景與動態活動變化影格擷取率（畫面繁忙時密集、靜態鏡頭時稀疏），而非採用固定影格率，以降低視覺索引成本。請參閱 [Case Study: Long-Form Video Understanding](16-case-studies/49-long-form-video-understanding.md)。
+
+**Adverse Impact（Four-Fifths Rule，差別影響／五分之四規則）** - EEOC 的檢定標準，當某個受保護群體的錄取率低於最高群體錄取率的 80% 時，即標記為歧視。請參閱 [Case Study: AI Recruiting and Resume Screening](16-case-studies/44-ai-recruiting-resume-screening.md)。
+
+**Adverse-action notice（不利處分通知）** - 保險公司或雇主在做出拒絕決定時，依法必須寄出的揭露文件，載明所引用的具體理由，這迫使每個拒絕理由都必須有依據且可解釋。請參閱 [Case Study: Insurance Claims Adjudication](16-case-studies/43-insurance-claims-adjudication.md)。
+
+**Age assurance（年齡保證）** - 依據自述年齡加上行為與年齡估計訊號，以機率方式將使用者歸入成年或疑似未成年層級，用以對未成年人閘控內容。請參閱 [Case Study: AI Companion Platform](16-case-studies/47-ai-companion-character-platform.md)。
+
+**AI-slop（AI 濫製內容）** - 低品質、機器生成的網路內容（大量製造的 SEO 填充文），研究代理在引用前必須偵測並將其降權。請參閱 [Case Study: Deep Research Agent](16-case-studies/42-deep-research-agent.md)。
+
+**Attack Success Rate（ASR，攻擊成功率）** - 對目標 LLM 引發實際政策違規的對抗性探測所佔的比例，依危害類別分別追蹤，並預期隨防禦改善而下降。請參閱 [Case Study: Automated LLM Red-Teaming](16-case-studies/50-automated-llm-red-teaming.md)。
+
+**Audio Overview（音訊概覽）** - 一種 NotebookLM 風格的雙主持人音訊「podcast」，由使用者的來源文件生成，以對話方式討論內容，而非照本宣科朗讀。請參閱 [Case Study: Doc-to-Podcast Audio Generation](16-case-studies/52-doc-to-podcast-audio-generation.md)。
+
+**Automated Employment Decision Tool（AEDT，自動化僱用決策工具）** - 紐約市 Local Law 144 對演算法招聘工具的稱呼，此類工具必須通過獨立的偏見稽核，且稽核結果須公開張貼。請參閱 [Case Study: AI Recruiting and Resume Screening](16-case-studies/44-ai-recruiting-resume-screening.md)。
+
+**Automated red-teaming（自動化紅隊演練）** - 使用模型大規模生成、變異並搜尋對抗性提示，使安全涵蓋範圍能隨威脅演進，而非仰賴靜態的測試集。請參閱 [Case Study: Automated LLM Red-Teaming](16-case-studies/50-automated-llm-red-teaming.md)。
+
 ---
 
 ## B
@@ -35,6 +55,10 @@
 **BM25** - 傳統的關鍵字型排序演算法。常與向量搜尋結合以進行混合檢索。
 
 **Budget Tokens** - Extended Thinking（Claude）或推理（o3）可設定的運算預算。預算越高，內部推理步驟越多，準確度與成本也越高。
+
+**Blast-radius estimate（影響範圍估計）** - 一種在執行前根據服務拓撲所做的計算，估算某個提議的修復措施會影響多少個 pod 與下游服務，並在任何生產環境動作執行前，連同 dry-run 差異一併呈現給核准者。請參閱 [Case Study: SRE Incident-Response Copilot](16-case-studies/48-sre-incident-response-copilot.md)。
+
+**Blind-first review（盲審優先）** - 一種人類在環的標註模式，標註者在 LLM 的建議標籤揭曉之前就先提交自己的標籤，藉此在主觀或安全敏感的類別上破除自動化偏誤。請參閱 [Case Study: Data Annotation Platform](16-case-studies/56-data-annotation-platform.md)。
 
 ---
 
@@ -72,6 +96,24 @@
 
 **Cursor** - AI 原生 IDE（VS Code 的分支），具備深度模型整合，可進行程式碼補全、代理式編輯，以及多檔案上下文感知。
 
+**Canary true-positive（金絲雀真陽性）** - 注入到實時分流管線中、合成但擬真的惡意警示，用以持續衡量系統對真實威脅的召回率。請參閱 [Case Study: SOC Alert-Triage Copilot](16-case-studies/40-soc-security-operations-copilot.md)。
+
+**Citation-support rate（引用支持率）** - 一份報告中，其引用來源確實蘊含該主張的已引用主張所佔的比例，是帶引用報告代理的核心事實性度量。請參閱 [Case Study: Deep Research Agent](16-case-studies/42-deep-research-agent.md)。
+
+**Composed image retrieval（組合式影像檢索）** - 查詢由一張影像加上一段文字修飾語（「這件外套但要綠色的」）構成的檢索，兩者融合成單一個查詢嵌入，或以結構化的屬性篩選來解析。請參閱 [Case Study: E-commerce Visual Search](16-case-studies/51-ecommerce-visual-search.md)。
+
+**Confidence gating（信心閘控）** - 將某個自主動作（例如自動關閉警示）限制在經校準的模型信心跨過高門檻、且獨立已驗證訊號一致同意的情況下，否則預設交由人類升級處理。請參閱 [Case Study: SOC Alert-Triage Copilot](16-case-studies/40-soc-security-operations-copilot.md)。
+
+**Contract playbook（合約攻略手冊）** - 一家公司針對每個條款所訂的標準、退讓與破局（紅線）談判立場集合，作為 redlining copilot 比對條款時所依據、機器可讀的真實依據，而非仰賴模型的一般法律知識。請參閱 [Case Study: Contract Drafting and Redlining](16-case-studies/45-contract-drafting-redlining.md)。
+
+**Coverage-plateau stop（涵蓋率高原停止）** - 一種迴圈終止規則，當每次額外搜尋所帶來的邊際新主張低於某個門檻時，就停止代理的搜尋循環。請參閱 [Case Study: Deep Research Agent](16-case-studies/42-deep-research-agent.md)。
+
+**Crescendo attack（漸強式攻擊）** - 一種多輪越獄手法，透過一連串看似無害的回合逐步升級，直到模型同意某件它在單一提示中原本會拒絕的事情。請參閱 [Case Study: Automated LLM Red-Teaming](16-case-studies/50-automated-llm-red-teaming.md)。
+
+**Claims Allowlist（主張允許清單）** - 一份列舉出對外生成器獲准提出之主張的集合（已核准的價值主張、真實的客戶推薦、已公開發表的統計數字），藉此封鎖捏造的案例研究、虛構的指標與假造的急迫感。請參閱 [Case Study: AI SDR Outbound Sales](16-case-studies/54-ai-sdr-outbound-sales.md)。
+
+**Crisis routing（危機轉介）** - 偵測到自傷或自殺意念的透露時，跳出角色設定以提供真實的危機資源（988、Crisis Text Line）並記錄交接，而非繼續以角色身分回應。請參閱 [Case Study: AI Companion Platform](16-case-studies/47-ai-companion-character-platform.md)。
+
 ---
 
 ## D
@@ -89,6 +131,8 @@
 **Dual-LLM Pattern（雙 LLM 模式）** - 一種提示注入圍堵設計（Simon Willison），將工作拆分給一個可呼叫工具但從不看到原始不受信任文字的特權 LLM，以及一個處理不受信任內容但沒有任何工具存取的隔離（quarantined）LLM，兩者之間只傳遞結構化、已驗證的資料。請參閱 [LLM Security](12-security-and-access/01-llm-security.md)。
 
 **Durable Execution（持久執行）** - 一種執行模型（Temporal、Restate、DBOS），透過僅可追加的事件歷史與確定性重播，讓長時間執行的代理能在當機與重新啟動後存活，提供恰好一次（exactly-once）的副作用、持久計時器，以及能跨越部署存活的暫停。請參閱 [Durable Execution](07-agentic-systems/11-durable-execution.md)。
+
+**Diarization Error Rate（DER，語者分段錯誤率）** - 標準的語者分段品質度量：所歸屬的發言者錯誤（漏聽、誤判有語音，或發言者混淆）的音訊時間所佔的比例，其中重疊語音是主要的錯誤來源。請參閱 [Case Study: Async Meeting Intelligence Platform](16-case-studies/41-meeting-intelligence-platform.md)。
 
 ---
 
@@ -124,6 +168,10 @@
 
 **Function Calling（函式呼叫）** - LLM 輸出結構化工具調用而非純文字的能力。
 
+**Faithfulness gate（忠實性閘門）** - 一道獨立的事實查核流程，把生成的腳本分解成原子主張，並逐一對照來源文件加以驗證，在算繪音訊之前封鎖或重新生成任何沒有依據的主張。請參閱 [Case Study: Doc-to-Podcast Audio Generation](16-case-studies/52-doc-to-podcast-audio-generation.md)。
+
+**Formula correctness gate（公式正確性閘門）** - 生成的試算表公式在寫回之前必須通過的確定性驗證（解析成 AST、參照與範圍檢查、型別與單位合理性、沙箱重算與對帳），是 SQL 正確性閘門在試算表上的對應物。請參閱 [Case Study: Spreadsheet Modeling Agent](16-case-studies/55-spreadsheet-financial-modeling-agent.md)。
+
 ---
 
 ## G
@@ -151,6 +199,8 @@
 **Harness Engineering（測試框架工程）** - 設計圍繞代理的確定性驅動程式碼（上下文組裝、工具執行、預算、停止條件、持久狀態、可觀測性），而非調校模型本身。測試框架是核心（kernel），模型是策略（policy）。請參閱 [Loop Engineering](07-agentic-systems/12-loop-engineering.md)。
 
 **HNSW（Hierarchical Navigable Small World，階層式可導覽小世界）** - 用於向量資料庫中近似最近鄰搜尋的圖形型演算法。
+
+**Honeypot item（labeling，蜜罐項目）** - 一個植入的審查項目，其顯示的預設標籤刻意是錯的，用來抓出那些只會照單全收建議、而非獨立判斷的標註者（或模型）。請參閱 [Case Study: Data Annotation Platform](16-case-studies/56-data-annotation-platform.md)。
 
 **Human-in-the-Loop（HITL，人類在環）** - 由人類監督、核准或修正 AI 輸出的模式。
 
@@ -198,6 +248,8 @@
 
 **Loopmaxxing** - 一種反模式，假設只要迭代次數越多就能自動解決任務。它在沒有可驗證退出條件的目標上會失敗，導致迴圈永不收斂、支出失控。這是 token-maxxing 的多步驟後代。請參閱 [Loop Engineering](07-agentic-systems/12-loop-engineering.md)。
 
+**Leakage（滲漏）** - 在理賠裁定中，自動裁決的理賠案上因溢付加上已支付詐欺所損失的金額；這筆預算限定了直通式處理（straight-through processing）率能安全地拉到多高。請參閱 [Case Study: Insurance Claims Adjudication](16-case-studies/43-insurance-claims-adjudication.md)。
+
 ---
 
 ## M
@@ -215,6 +267,16 @@
 **Model Routing（模型路由）** - 依任務、成本、延遲、能力或語意來選擇由哪個模型服務每個請求，通常搭配級聯（先用便宜模型，信心不足時升級）與跨供應商備援。請參閱 [AI Gateways and Model Routing](11-infrastructure-and-mlops/03-ai-gateways-and-model-routing.md)。
 
 **Multi-Tenancy（多租戶）** - 以共享的基礎設施服務多個客戶，並做到資料隔離。
+
+**Machine Translation Post-Editing（MTPE，機器翻譯後編輯）** - 一種由人類編修機器翻譯草稿、而非從零翻譯的工作流程，保留給中度風險的內容使用。請參閱 [Case Study: Translation and Localization Pipeline](16-case-studies/46-translation-localization-pipeline.md)。
+
+**Mailbox Warmup（信箱暖機）** - 在新的電子郵件網域或信箱上逐步拉高寄送量，好在它承載生產環境的對外郵件之前先建立寄件者信譽。請參閱 [Case Study: AI SDR Outbound Sales](16-case-studies/54-ai-sdr-outbound-sales.md)。
+
+---
+
+## N
+
+**NCCI edits（NCCI 編輯規則）** - CMS 國家正確編碼倡議（National Correct Coding Initiative）的規則表（程序對程序配對與 Medically Unlikely Edits），以確定性方式阻擋醫療編碼中的拆帳（unbundling）與不可能的單位數量。請參閱 [Case Study: Medical Coding and RCM](16-case-studies/53-medical-coding-rcm.md)。
 
 ---
 
@@ -242,6 +304,10 @@
 
 **Prefix Caching（前綴快取）** - 跨請求對常見的提示前綴重複使用 KV cache。
 
+**Persona card（人設卡）** - 一份版本化、經前綴快取的系統提示，固定住一個 AI 角色的身分、語氣、背景故事與硬性界線，使其在數個月間都保持一致。請參閱 [Case Study: AI Companion Platform](16-case-studies/47-ai-companion-character-platform.md)。
+
+**Physician query（醫師查詢）** - 當臨床文件含糊不清時，向醫療提供者發出的合規、不帶引導性的釐清詢問，用以取回正當的編碼具體性，而非逕自推斷。請參閱 [Case Study: Medical Coding and RCM](16-case-studies/53-medical-coding-rcm.md)。
+
 ---
 
 ## Q
@@ -249,6 +315,10 @@
 **QLoRA** - LoRA 結合 4 位元量化，以進行記憶體高效的微調。
 
 **Quantization（量化）** - 降低模型精度（例如從 FP16 到 INT4）以減少記憶體並提升速度。
+
+**Quality Estimation（QE，品質估計）** - 僅從原文與譯文假設出發、無需參考譯文即為機器翻譯品質評分，用以只把有風險的段落轉交人工審查。請參閱 [Case Study: Translation and Localization Pipeline](16-case-studies/46-translation-localization-pipeline.md)。
+
+**Query bank（查詢庫）** - 一組經策劃、已驗證的問題對 SQL 配對，用作少樣本範例，使 text-to-SQL 生成能立基於已知正確的查詢。請參閱 [Case Study: Conversational Analytics (Text-to-SQL)](16-case-studies/39-conversational-analytics-text-to-sql.md)。
 
 ---
 
@@ -265,6 +335,12 @@
 **RLHF（Reinforcement Learning from Human Feedback，從人類回饋進行的強化學習）** - 一種使用人類偏好來對齊模型行為的訓練方法。
 
 **RLVR（RL with Verifiable Rewards，具可驗證獎勵的 RL）** - 推理模型主流的後訓練配方：以程式化的驗證器（數學、程式碼，或具有可檢核答案的邏輯）來獎勵策略，而非使用經學習的獎勵模型，藉此大致避開獎勵模型被鑽漏洞的問題。請參閱 [Training Reasoning Models](03-training-and-adaptation/08-rlvr-and-reasoning-models.md)。
+
+**Read/act boundary（讀取／行動邊界）** - 一條設計規則，基礎設施 copilot 可自主執行唯讀的診斷工具，但每個會改變狀態的動作（回滾、擴縮、重啟、故障切換）都必須是經人類核准的提議，且在工具邊界而非提示中強制執行。請參閱 [Case Study: SRE Incident-Response Copilot](16-case-studies/48-sre-incident-response-copilot.md)。
+
+**Recalc reconciliation（重算對帳）** - 在沙箱化的副本上，以真實的試算表引擎執行生成或編輯後的公式，並在信任或顯示該數字之前，將結果在浮點誤差（epsilon）範圍內與一個獨立推導的結果比對。請參閱 [Case Study: Spreadsheet Modeling Agent](16-case-studies/55-spreadsheet-financial-modeling-agent.md)。
+
+**Red line（clause position，紅線條款立場）** - 公司絕不會接受的對方合約條款（無上限的賠償、寬泛的智財權讓與、自動續約陷阱）；漏掉一條就是 redlining copilot 調高召回率所要抓出、代價不對稱的高成本偽陰性，有別於「redline」這種追蹤修訂的編輯。請參閱 [Case Study: Contract Drafting and Redlining](16-case-studies/45-contract-drafting-redlining.md)。
 
 ---
 
@@ -290,6 +366,16 @@
 
 **System Prompt（系統提示）** - 為 LLM 對話設定上下文與行為的指令。
 
+**Schema linking（結構描述連結）** - text-to-SQL 中的檢索步驟，只挑選與問題相關的資料表與欄位，而非把整個資料倉儲的 DDL 貼進提示中，且它主宰了 text-to-SQL 的準確度。請參閱 [Case Study: Conversational Analytics (Text-to-SQL)](16-case-studies/39-conversational-analytics-text-to-sql.md)。
+
+**Semantic layer（語意層）** - 一個受治理的登錄庫（dbt Semantic Layer、Cube 或 LookML），把每個業務指標剛好定義一次，使 text-to-SQL copilot 得以編譯這份獲認可的定義，而非在原始欄位上臆測 SQL。請參閱 [Case Study: Conversational Analytics (Text-to-SQL)](16-case-studies/39-conversational-analytics-text-to-sql.md)。
+
+**Shop the Look（整體造型選購）** - 一種視覺搜尋模式，先對一整張情境生活照做物件偵測，接著分別搜尋每個偵測到的區域，使單一張影像回傳多項可選購的商品。請參閱 [Case Study: E-commerce Visual Search](16-case-studies/51-ecommerce-visual-search.md)。
+
+**Spam Trap（垃圾郵件陷阱）** - 一種電子郵件地址（全新或回收再用），信箱供應商與封鎖名單用它來抓出名單衛生不佳的寄件者；命中一個就會嚴重損害網域信譽。請參閱 [Case Study: AI SDR Outbound Sales](16-case-studies/54-ai-sdr-outbound-sales.md)。
+
+**Straight-through processing（STP，直通式處理）** - 從頭到尾自動裁決一件案子（一張保單理賠、一筆貸款）而無需任何人為介入，並閘控在低嚴重度、高信心、低詐欺的案件上；是理賠自動化中的主要 ROI 槓桿。請參閱 [Case Study: Insurance Claims Adjudication](16-case-studies/43-insurance-claims-adjudication.md)。
+
 ---
 
 ## T
@@ -308,6 +394,16 @@
 
 **Trust-Tagging（信任標籤）** - 為檢索或工具結果內容的片段標上信任層級（例如把不受信任的文字以明確標籤包裹），讓代理及其能力閘控能拒絕對低信任內容中嵌入的指令採取行動。這是在讀取層的間接提示注入防禦。請參閱 [Agentic Security and Sandboxing](07-agentic-systems/09-agentic-security-and-sandboxing.md)。
 
+**Temporal grounding（時間接地）** - 回傳影片中確切、帶時間戳、能回答查詢的片段，並以時間 IoU（例如 R@1 在 IoU >= 0.5 時）而非是／否來評分。請參閱 [Case Study: Long-Form Video Understanding](16-case-studies/49-long-form-video-understanding.md)。
+
+**Translation Memory（TM，翻譯記憶庫）** - 一個存放已核准原文對譯文段落配對的資料庫，當新內容比對相符時可免費重複使用，是機器翻譯模型必須遵從的在地化真實依據。請參閱 [Case Study: Translation and Localization Pipeline](16-case-studies/46-translation-localization-pipeline.md)。
+
+---
+
+## U
+
+**Upcoding（浮報編碼）** - 申報比臨床文件所能支持者更高階或更具體的代碼，構成 False Claims Act 違規並須負三倍損害賠償；這正是以文件為依據的編碼管線所要防止的失誤。請參閱 [Case Study: Medical Coding and RCM](16-case-studies/53-medical-coding-rcm.md)。
+
 ---
 
 ## V
@@ -315,6 +411,8 @@
 **VAD（Voice Activity Detection，語音活動偵測）** - 偵測一段音訊是否含有語音，是語音代理輪替的第一階段。與 endpointing 搭配以判斷使用者是否已說完；快速的 VAD 也讓 barge-in 得以實現。Silero VAD 是常見選擇。請參閱 [Real-Time Voice Agents](18-voice-and-audio-agents/01-realtime-voice-agents.md)。
 
 **Vector Database（向量資料庫）** - 為儲存與搜尋高維向量（嵌入）而最佳化的資料庫。
+
+**Video RAG（影片 RAG）** - 從預先建好的多模態索引中檢索相關的帶時間碼片段，接著讓視覺語言模型只針對那些片段推理，以帶時間戳引用的方式作答。請參閱 [Case Study: Long-Form Video Understanding](16-case-studies/49-long-form-video-understanding.md)。
 
 ---
 
