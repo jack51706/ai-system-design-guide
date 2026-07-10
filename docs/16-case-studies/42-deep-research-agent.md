@@ -89,15 +89,88 @@ flowchart TB
 7. A separate adversarial verifier re-checks every cited claim: a deterministic service re-fetches the URL, confirms the quoted span is on the page, and runs an NLI entailment check that the source actually supports the claim, while a fresh Opus 4.8 critic hunts for misattribution, overclaim, and staleness.
 8. Claims whose citations fail are cut or sent back for one targeted re-search within remaining budget; nothing unverified ships, and the final report renders each claim with a clickable verified citation and a confidence label, with the full trace (searches, sources, spend) logged.
 
+### A worked example: solid-state battery startups, one task end to end
+
+Take the question the product was built for: "competitive landscape of solid-state battery startups with funding, chemistry, and risks." The planner (Opus 4.8) decomposes it into four sub-questions (SQ1 roster of leading companies, SQ2 funding and latest round each, SQ3 electrolyte chemistry each, SQ4 technical and commercial risks), and the budget controller caps the task at 200,000 tokens, 40 tool calls, and 20 minutes of wall-clock.
+
+**Round 1 (roster).** Broad searches ("solid-state battery startups 2026", "leading solid electrolyte companies") return a candidate set. Triage (Haiku 4.5) keeps five higher-trust sources and drops two thin ones, and the cheap reader (DeepSeek V4 Flash) compresses the survivors into note cards naming QuantumScape, Solid Power, ProLogium, Factorial Energy, and Blue Solutions.
+
+**Round 2 (funding and chemistry).** SQ2 and SQ3 are still thin, so the planner fans out per-entity queries. One returned page, "Top 15 Battery Stocks to 10x in 2026" on a content-farm domain, scores high on the AI-slop classifier (listicle skeleton, no byline, affiliate links, no primary sourcing) and low on domain trust, so it is dropped before any read, a fraction of a cent saved against the credibility cost of citing it. Kept sources produce the chemistry split (QuantumScape and ProLogium oxide/ceramic, Solid Power sulfide, Factorial and Blue Solutions polymer) and per-company funding cards.
+
+**Round 3 (risks and a conflict).** Risk searches surface chemistry-specific failure modes (sulfide moisture sensitivity and H2S evolution, oxide brittleness and interfacial resistance, polymer low room-temperature conductivity) plus cross-cutting risks (lithium dendrites, manufacturing yield, dependence on OEM mass-production timelines around 2027 to 2030). After this round the marginal yield drops below the stop threshold (fewer than one new grounded claim across the last six fetches) with about 60 percent of budget spent, so the coverage-plateau criterion fires and the loop halts instead of chasing a long tail.
+
+**Synthesis and the citation that failed.** The synthesizer (Opus 4.8) drafts the report. One sentence reads "Factorial Energy has raised roughly $1.5 billion to date," cited to a VC market-overview blog. The verifier re-fetches: the URL resolves (exists) and the span "$1.5 billion" is present on the page, but the NLI entailment check fails, because the page's actual sentence is "the solid-state battery market is projected to reach $1.5 billion," a market-size number, not Factorial's funding. That is textbook topical adjacency, a real figure stapled to the wrong subject. The claim is dropped, and with budget remaining the agent runs one targeted re-search against primary sources, landing Factorial's own release and its Crunchbase profile: about $200M through its Series D, with strategic investment from Mercedes-Benz and Stellantis. The corrected, primary-sourced claim ships and the $1.5B version never does.
+
+**The final section, with a surfaced conflict.** The Factorial subsection ends up grounded to a primary source, and the ProLogium subsection surfaces a disagreement rather than smoothing it over: one source puts the Dunkirk gigafactory at EUR 5.2 billion (2023 announcement) and a later source at EUR 4.9 billion (a 2025 revision), so the report states both figures with their dates instead of averaging to a EUR 5.05 billion consensus that appears in neither source.
+
+The loop, condensed to one trace:
+
+```mermaid
+sequenceDiagram
+    participant U as User Question
+    participant P as Planner Opus 4.8
+    participant S as Search plus Triage Haiku 4.5
+    participant R as Cheap Reader V4 Flash
+    participant E as Evidence Store
+    participant V as Citation Verifier
+
+    U->>P: Solid-state battery landscape
+    P->>P: Decompose into roster funding chemistry risks
+    loop Rounds 1 to 3 until coverage plateau
+        P->>S: Fan out queries for open sub-questions
+        S->>S: Drop AI-slop listicle low trust
+        S->>R: Kept pages
+        R->>E: Note cards with claim quote and URL
+        E->>P: Coverage delta since last round
+    end
+    P->>V: Draft report claims
+    V->>V: Factorial 1.5B fails NLI entailment
+    V->>S: Re-source one claim within budget
+    S->>V: Primary source 200M Series D
+    V->>U: Cited report with surfaced conflict
+```
+
+### A verified-claim record
+
+Every cited sentence carries a verification record the pipeline acts on deterministically. The rejected draft claim and its re-sourced replacement, side by side:
+
+```json
+[
+  {
+    "claim_id": "SSB-2026-07-claim-038",
+    "claim": "Factorial Energy has raised roughly $1.5 billion to date.",
+    "section": "Factorial Energy",
+    "cited_url": "https://vc-trends.example/solid-state-2026-overview",
+    "quote_span": "the solid-state battery market is projected to reach $1.5 billion",
+    "support_check": {"exists": true, "span_present": true, "entails": false, "primary_source": false},
+    "reject_reason": "topical adjacency, source states market size not Factorial funding",
+    "confidence": "low",
+    "status": "rejected_resourced"
+  },
+  {
+    "claim_id": "SSB-2026-07-claim-041",
+    "claim": "Factorial Energy raised about $200M through its Series D, with strategic investment from Mercedes-Benz and Stellantis.",
+    "section": "Factorial Energy",
+    "cited_url": "https://factorialenergy.com/news/series-d-close",
+    "quote_span": "Factorial closed a $200 million Series D ... investors Mercedes-Benz and Stellantis",
+    "support_check": {"exists": true, "span_present": true, "entails": true, "primary_source": true},
+    "corroboration": ["https://www.crunchbase.com/organization/factorial-energy"],
+    "confidence": "high",
+    "status": "verified",
+    "supersedes": "SSB-2026-07-claim-038"
+  }
+]
+```
+
 ## Key Design Decisions
 
 ### 1. Plan-then-execute with a hard budget cap
 
-The loop is the product, not the prompt. The planner decomposes the question, runs iterative search-read-reflect cycles, and must decide when it has enough, which is a genuinely hard call ([planning and decomposition](../07-agentic-systems/06-planning-and-decomposition.md)). Without limits the agent either browses forever or quietly spends $50 chasing a tail sub-question. So the budget controller enforces per-task caps on tokens, tool calls, and wall-clock (5 to 30 minutes) in the runtime, not by politely asking the model, and the stop criterion is explicit: stop when coverage of the sub-questions plateaus (marginal new claims per search falls below a threshold) or the budget is nearly spent. This is [loop engineering](../07-agentic-systems/12-loop-engineering.md) applied to an open-ended task: the whole risk is a loop that will not terminate.
+The loop is the product, not the prompt. The planner decomposes the question, runs iterative search-read-reflect cycles, and must decide when it has enough, which is a genuinely hard call ([planning and decomposition](../07-agentic-systems/06-planning-and-decomposition.md)). Without limits the agent either browses forever or quietly spends $50 chasing a tail sub-question. So the budget controller enforces per-task caps on tokens, tool calls, and wall-clock (5 to 30 minutes) in the runtime, not by politely asking the model, and the stop criterion is explicit: stop when coverage of the sub-questions plateaus (marginal new claims per search falls below a threshold, in the worked example fewer than one new grounded claim across the last six fetches) or the budget is nearly spent (that task was capped at 200,000 tokens, 40 tool calls, and 20 minutes, and stopped after round 3 at about 60 percent spend). This is [loop engineering](../07-agentic-systems/12-loop-engineering.md) applied to an open-ended task: the whole risk is a loop that will not terminate.
 
 ### 2. Source trust and the adversarial open web
 
-Not all URLs are equal, and treating them as equal is how slop ends up cited. We rank candidates by domain trust (primary sources, official filings, established outlets, and .gov or .edu above content farms), apply a recency filter for time-sensitive claims, and run a cheap classifier to flag SEO spam and AI-generated slop before spending a single frontier read. Primary sources beat secondary summaries of them, and a load-bearing claim must be corroborated by more than one independent trusted source before it can anchor a section. This triage is the highest-ROI filter in the system precisely because it runs on the cheap tier: dropping a spam page costs a fraction of a cent, while reading and citing it costs the product's credibility.
+Not all URLs are equal, and treating them as equal is how slop ends up cited. We rank candidates by domain trust (primary sources, official filings, established outlets, and .gov or .edu above content farms), apply a recency filter for time-sensitive claims, and run a cheap classifier to flag SEO spam and AI-generated slop before spending a single frontier read (in the worked example, a "Top 15 Battery Stocks to 10x in 2026" content-farm listicle is dropped here, unread). Primary sources beat secondary summaries of them, and a load-bearing claim must be corroborated by more than one independent trusted source before it can anchor a section. This triage is the highest-ROI filter in the system precisely because it runs on the cheap tier: dropping a spam page costs a fraction of a cent, while reading and citing it costs the product's credibility.
 
 ### 3. Do not get prompt-injected by a page
 
@@ -107,9 +180,21 @@ Every fetched page is attacker-controllable, which makes indirect prompt injecti
 
 This is the core quality mechanism, and it is a separate pass on purpose. Grounding first: synthesis can only cite claims that appear in note cards actually read, so the model cannot cite a page it never saw. Then an independent verifier adversarially checks each cited claim on three deterministic gates plus one model gate. Existence: re-fetch the URL, and an unresolvable link is a hard drop (this catches hallucinated URLs outright). Attribution: the quoted span must actually be on the page, which catches a real source stapled to a claim it never made. Entailment: an NLI check confirms the source supports the claim rather than merely mentioning the topic. Then a fresh Opus 4.8 critic, which did not write the report, looks for misread or stale support. The lineage is [Chain-of-Verification](https://arxiv.org/abs/2309.11495), [RARR](https://arxiv.org/abs/2210.08726) attribution-and-revision, and [ALCE](https://arxiv.org/abs/2305.14627) citation metrics. A claim that fails is cut, never softened; the same model that wrote a claim is a poor judge of it, which is why verification is a fresh context.
 
+The gate is checkable, not a vibe. Each cited claim runs the same conditions in order, and the first failing row decides the outcome:
+
+| exists (URL resolves) | span on page | entails (NLI) | primary or corroborated | Outcome |
+|---|---|---|---|---|
+| no | any | any | any | Drop as hallucinated URL, re-source if budget remains |
+| yes | no | any | any | Drop as misattribution, re-source |
+| yes | yes | no | any | Drop as overclaim or topical adjacency, re-source |
+| yes | yes | yes | no (load-bearing claim) | Hold, require a second independent trusted source |
+| yes | yes | yes | yes | Keep with verified citation |
+
+The Factorial "$1.5 billion" draft in the worked example is row three (URL resolves, span present, entailment fails), which is why it is dropped and re-sourced to a primary filing rather than hedged into "reportedly."
+
 ### 5. Long-report synthesis: structure, conflicts, calibrated uncertainty
 
-A 3,000-word report is not a concatenation of snippets. The synthesizer works to an imposed structure (executive summary, per-entity sections, cross-cutting risks, a sources list) so the output is navigable. Conflicting sources are surfaced, not averaged: if one source reports a $40M Series B and another $55M, the report says both and dates them, rather than inventing a false $47.5M consensus that appears in neither source. Confidence is calibrated to evidence: well-corroborated claims are stated plainly, thin single-source claims are hedged and labeled, and genuine unknowns are stated as unknown. Silent averaging of conflicts is one of the most insidious factuality failures because the fabricated number looks perfectly reasonable.
+A 3,000-word report is not a concatenation of snippets. The synthesizer works to an imposed structure (executive summary, per-entity sections, cross-cutting risks, a sources list) so the output is navigable. Conflicting sources are surfaced, not averaged: when one source puts ProLogium's Dunkirk gigafactory at EUR 5.2 billion (2023) and another at EUR 4.9 billion (2025), as in the worked example, the report states both figures with their dates rather than inventing a false EUR 5.05 billion consensus that appears in neither source. Confidence is calibrated to evidence: well-corroborated claims are stated plainly, thin single-source claims are hedged and labeled, and genuine unknowns are stated as unknown. Silent averaging of conflicts is one of the most insidious factuality failures because the fabricated number looks perfectly reasonable.
 
 ### 6. Context management over dozens of long pages
 

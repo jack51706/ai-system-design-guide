@@ -90,15 +90,91 @@ flowchart TB
 8. STP 閘門套用硬性門檻（承保無疑義、信心高、詐欺低、金額低於上限、險種符合資格）並進行路由：自動核准並給付、連同預先填好的工作表轉交人工，或轉交 SIU。
 9. 每一個結果，連同釘住的模型與規則版本以及文件雜湊，都被寫入僅可附加的稽核軌跡；擬議的拒賠會產生一份不利處分通知草稿，供人工裁定人員審閱並簽署。
 
+### 一個實例演練：兩件擋風玻璃理賠，兩種結局
+
+這種關注點分離，在兩件受理當下看起來近乎相同、最後卻走向相反結局的車險理賠上最容易看清楚。
+
+**理賠 A（自動核准）。** FNOL `AUTO-2026-06-19-33471` 通報一片在一張綜合險車險保單下、被高速公路碎屑擊裂的擋風玻璃。理賠申請人上傳三張損害照片，以及一份來自全國連鎖玻璃店的 PDF 更換估價單。Gemini 3.1 Pro 與 Opus 4.8 擷取出估價總額（$612.00，信心 0.98）、VIN 與車牌（兩者都與綁定的保單相符，信心 0.99），以及損害（一道駕駛座下側的擋風玻璃裂痕，在全部三張照片中一致）。保單綁定回傳綜合險承保，並帶有一項在損失日當天生效的整片玻璃批註。DMN 引擎接著把承保評估為明確的規則結果，而絕非一個 LLM 的意見：
+
+- R1 玻璃批註於損失日當天生效：**true**，因此綜合險自負額就玻璃項目予以豁免。
+- R2 事故屬於承保的綜合險損失（道路碎屑，而非碰撞）：**true**。
+- R3 估價總額低於綜合險限額（ACV 遠高於 $612）：**true**。
+- R4 是否有任何除外條款適用（磨損、既有損害、非 OEM 上限、賽車）：**none**。
+- 結果：covered = true、deductible_applied = $0、payout = $612.00。
+
+詐欺訊號很乾淨：歷史影像語料庫中最近的感知雜湊鄰居相隔 31 bits 的 Hamming distance（遠高於 10-bit 的重用門檻），EXIF 時間戳落在所通報的損失時段之內、GPS 靠近被保險車輛的停放地址，而敘事一致性檢查也找不到矛盾，詐欺分數為 0.03。每一個閘門條件都通過（理賠金額 $612 低於 $2,500 上限、驅動理賠金額的欄位信心超過 0.95、詐欺低、承保乾淨、險種符合資格），因此這件理賠直通式處理：自動核准、給付 $612、一筆可重現的紀錄被寫入稽核軌跡。沒有任何理賠人員碰過它。
+
+**理賠 B（轉交 SIU）。** FNOL `AUTO-2026-06-21-33902` 看起來幾乎一樣：一片龜裂的擋風玻璃、三張照片、一份 $588.00 的玻璃估價、同一項整片玻璃批註，以及計算結果完全相同的承保（covered = true、自負額 $0、payout $588.00）。但其中一張提交的照片，其感知雜湊與一張早已存檔、屬於一件不相關先前理賠（`AUTO-2026-03-04-29155`）的影像僅相隔 4 bits 的 Hamming distance，幾乎可以確定是重用，而那個檔案上的 EXIF 顯示拍攝日期在所通報損失的五週之前、GPS 距離所述地點 40 英里。Opus 4.8 敘事檢查標示出 FNOL 描述的是一次清晨的高速公路撞擊，而照片的中繼資料卻把該影像定位在不同的日期與郡別，詐欺分數因而跳升到 0.71。承保計算沒有改變、仍然判定為承保，但閘門不會僅憑承保就採取行動：一個硬性詐欺訊號把這件理賠轉交特別調查單位（Special Investigations Unit），而非自動核准、也非自動拒賠。決定這張被重用影像意味著什麼的，是一名人工調查員，而非模型。
+
+與承保對詐欺這道分工的對應關係是精確的：確定性引擎為兩件理賠都回傳了相同的承保結果，但決定理賠 B 永遠到不了自主給付路徑的，是一個經查證的文件層級訊號（一次 pHash 重用命中加上一項中繼資料矛盾），而非推理器的文字、也非承保計算。
+
+### 裁定紀錄
+
+系統從不發出自由文字的決策；它發出的是一筆經綱要驗證的裁定紀錄，供 STP 閘門與稽核軌跡取用。`coverage` 區塊逐字複製自 DMN 引擎（絕非由 LLM 撰寫），`fraud_signals` 是經查證的偵測器而非模型敘事，而 `stp_decision` 是這兩者的一個確定性函數。以下是理賠 B 的紀錄：
+
+```json
+{
+  "claim_id": "AUTO-2026-06-21-33902",
+  "policy_id": "PA-8842197",
+  "line_of_business": "auto_physical_damage",
+  "loss_date": "2026-06-20",
+  "extracted_facts": [
+    {"field": "damage", "value": "windshield crack, lower driver side",
+     "confidence": 0.97, "source": {"doc": "photo_2", "region": "bbox[0.31,0.55,0.62,0.78]"}},
+    {"field": "estimate_total", "value": 588.00, "currency": "USD",
+     "confidence": 0.98, "source": {"doc": "estimate.pdf", "page": 2}},
+    {"field": "vin", "value": "1HGCM82633A004352", "confidence": 0.99,
+     "source": {"doc": "fnol", "field": "vin"}}
+  ],
+  "coverage": {
+    "covered": true,
+    "deductible": 0.00,
+    "deductible_basis": "full_glass_endorsement_waives_comprehensive_deductible",
+    "limit": "ACV",
+    "exclusions_checked": ["wear_and_tear", "prior_damage", "non_oem_cap", "racing"],
+    "exclusions_applied": [],
+    "rules_version": "dmn-auto-phys-2026.05"
+  },
+  "fraud_signals": [
+    {"type": "phash_reuse", "match_claim": "AUTO-2026-03-04-29155",
+     "hamming_distance": 4, "threshold": 10, "severity": "high"},
+    {"type": "exif_narrative_mismatch",
+     "detail": "photo capture 2026-05-16, GPS 40mi from loss location; FNOL loss date 2026-06-20"}
+  ],
+  "fraud_score": 0.71,
+  "stp_decision": "route_to_siu",
+  "payout_estimate": 588.00,
+  "payout_authorized": 0.00,
+  "rationale": "Coverage clean under the full-glass endorsement (deductible waived, under limit, no exclusion). Auto-approve blocked because submitted photo_2 pHash-matches prior claim AUTO-2026-03-04-29155 at 4-bit Hamming distance and EXIF contradicts the reported loss. Routed to SIU for human investigation; the system issues no denial and no payout.",
+  "pinned_versions": {"vision": "gemini-3.1-pro, opus-4.8", "reasoner": "opus-4.8", "rules": "dmn-auto-phys-2026.05"},
+  "audit_hash": "sha256:9f2c..."
+}
+```
+
+理賠 A 的紀錄形狀相同，但帶有一個空的 `fraud_signals` 陣列、一個 0.03 的 `fraud_score`、一個為 `auto_approve` 的 `stp_decision`，以及一個等於其 `payout_estimate` $612.00 的 `payout_authorized`。因為 `coverage` 區塊是引擎的輸出、且每一項事實都帶有來源出處，任一筆紀錄對稽核人員而言都能重播出完全相同的結果。
+
 ## 關鍵設計決策
 
 ### 1. 確定性承保判定、LLM 擷取：核心分工
 
-定義這套系統的那個設計選擇：LLM 負責擷取與推理，一具確定性引擎負責決定承保。某項事故是否承保、某條除外是否適用、自負額與限額如何相抵，全部都存在於版本化的 [OMG DMN](https://www.omg.org/dmn/) 決策表中，由 [Camunda 8](https://camunda.com/dmn/) 或 Drools 這類引擎執行，而不是在提示裡。一個「推理」出承保結論的 LLM 是不可稽核也不可重現的，而且它會很有信心地把除外條款讀錯。DMN 引擎可測試、有版本、可重跑：可以把確切的決策表與輸入交給監管者或原告律師，他們會得到完全相同的結果。LLM 的工作止於把乾淨、帶引用的事實交給引擎。
+定義這套系統的那個設計選擇：LLM 負責擷取與推理，一具確定性引擎負責決定承保。某項事故是否承保、某條除外是否適用、自負額與限額如何相抵，全部都存在於版本化的 [OMG DMN](https://www.omg.org/dmn/) 決策表中，由 [Camunda 8](https://camunda.com/dmn/) 或 Drools 這類引擎執行，而不是在提示裡。一個「推理」出承保結論的 LLM 是不可稽核也不可重現的，而且它會很有信心地把除外條款讀錯。DMN 引擎可測試、有版本、可重跑：可以把確切的決策表與輸入交給監管者或原告律師，他們會得到完全相同的結果。LLM 的工作止於把乾淨、帶引用的事實交給引擎。這正是理賠 A 在實例演練中所展示的：引擎把 R1 到 R4 發為離散的 true 或 false 規則結果（批註生效、承保事故、低於限額、無除外），而理賠金額是在這些結果之上做的算術（$612 估價減去一筆 $0 的已豁免自負額），而不是模型選定的一個數字。同一具引擎為理賠 B 回傳相同的承保結果；在那裡改變結局的，是一個承保引擎從來看不到、於下游處理的詐欺訊號。
 
 ### 2. STP 閘控是 ROI 槓桿，而你要刻意為它設上限
 
 自動裁決只有在便宜、乾淨、高信心且低詐欺訊號的理賠上才划算。閘門要求以下全部條件：毫無疑義的確定性承保、在驅動理賠金額的欄位上高於門檻的擷取信心、低詐欺分數、低於 STP 上限的理賠金額（例如，數千美元以下的財損理賠），以及符合 STP 資格的險種。其餘一切都轉交人工。提高上限或放寬信心會拉升 STP 率與帳面上的節省，但這也直接拉高滲漏，因此 STP 率是對照一個經衡量的滲漏預算來調校，而不是被最大化。一個務實的目標是大約 35 到 45 percent 的理賠自動裁決，集中在低嚴重度的車險與財產險。
+
+這道閘門是一份可查核的規格，而不是憑感覺。STP 資格化約為四項輸入（理賠金額、驅動理賠金額欄位上的擷取信心、詐欺訊號，以及承保明確度），對應到恰好四種結果之一：
+
+| 理賠金額 | 擷取信心 | 詐欺訊號 | 承保明確度 | 結果 |
+|---|---|---|---|---|
+| 低於上限 | 高（超過 0.95） | 無 | 已承保、無疑義 | 自動核准並給付 |
+| 低於上限 | 高 | pHash 重用、EXIF 或 ELA、或敘事不符 | 任意 | 轉交 SIU |
+| 低於上限 | 低（0.95 或以下） | 無 | 已承保 | 轉交人工 |
+| 任意 | 任意 | 任意 | 未承保、或有疑義 | 轉交人工（絕不自動拒賠） |
+| 超過上限 | 任意 | 任意 | 任意 | 轉交人工 |
+| 低於上限 | 高 | 無 | 已承保但險種不符資格（人身傷害、全損、訴訟中） | 轉交人工 |
+
+這裡刻意沒有自動拒賠這一列。一個未承保的結果是最該交付人工審查的情況，而非自動化拒賠的理由，因為一次錯誤的自動拒賠正是決策 3 的惡意失效模式。自動核准是閘門唯一能採取的自主行動，而唯有最上面那一列能走到它。實例演練中的理賠 A 就是那最上面一列；理賠 B 則是第二列。
 
 ### 3. 自由地自動核准，幾乎絕不自動拒賠
 
@@ -110,7 +186,7 @@ flowchart TB
 
 ### 5. 詐欺訊號是 SIU 的觸發器，而非一項裁定
 
-這裡的文件層級詐欺偵測與 [Real-Time Fraud Detection](14-fraud-detection.md) 不同：沒有 100ms 的預算，也沒有交易串流，只有要交叉查核的證據。這些訊號是對照先前理賠的感知雜湊比對（同一張凹陷保險桿的照片被提交了兩次）、標示出經編修或素材庫影像的 EXIF 與錯誤層級分析，以及一道會抓出報案日期早於損失日、或醫療帳單與所述撞擊情形不一致的 LLM 敘事一致性檢查。關鍵在於，高詐欺分數絕不會自動拒賠；它會轉交特別調查單位（SIU）。詐欺嫌疑是一個調查的觸發器，而把一個原始分數當作承保決策來據以行動，既是惡意也是糟糕的統計。
+這裡的文件層級詐欺偵測與 [Real-Time Fraud Detection](14-fraud-detection.md) 不同：沒有 100ms 的預算，也沒有交易串流，只有要交叉查核的證據。這些訊號是對照先前理賠的感知雜湊比對（同一張凹陷保險桿的照片被提交了兩次）、標示出經編修或素材庫影像的 EXIF 與錯誤層級分析，以及一道會抓出報案日期早於損失日、或醫療帳單與所述撞擊情形不一致的 LLM 敘事一致性檢查。關鍵在於，高詐欺分數絕不會自動拒賠；它會轉交特別調查單位（SIU）。詐欺嫌疑是一個調查的觸發器，而把一個原始分數當作承保決策來據以行動，既是惡意也是糟糕的統計。具體而言，感知雜湊以一個 64-bit pHash 上的 Hamming distance，把每一張提交的影像與歷史語料庫相比對：相隔約 10 bits 或以內的比對被當作重用（理賠 B 以 4 bits 命中一件先前理賠），而真正相異的損害照片則坐落在遠更高處（理賠 A 最近的鄰居是 31 bits）。EXIF 與錯誤層級分析（ELA，依 Krawetz）會標示重新壓縮，以及與損失相矛盾的中繼資料，例如拍攝日期早於損失日、或 GPS 遠離所述地點，而 Opus 4.8 敘事檢查則跨 FNOL、照片與估價單交叉查核日期與地理。這其中任何一項的命中都會轉交 SIU，無論承保計算多麼乾淨，而這正是理賠 B 的結局。
 
 ### 6. 法規可解釋性是一項建置需求，而非外包裝
 
@@ -127,6 +203,27 @@ flowchart TB
 ### 9. 何時直通式處理是錯誤的選擇
 
 有些理賠無論信心多高都絕不可自動裁決。任何涉及人身傷害的理賠、任何全損、任何大額財產損失、任何有律師代理（律師介入）或進入訴訟的理賠，以及任何帶有承保疑義或先前詐欺標記的理賠，每一次都轉交人工。原因在於尾端成本是無上限的，名譽與法律的風險曝露讓省下的人力相形見絀，而傷害與訴訟理賠取決於模型並不具備的判斷與協商。STP 是給分布中高流量、低嚴重度那個主體用的工具，而不是尾端，假裝並非如此，正是保險公司挨告的原因。
+
+## 確定性承保決策
+
+承保是可重現的核心，因此值得把它看成 DMN 引擎在事實加上綁定保單之上實際執行的那棵決策樹。每一個節點都是 LLM 無法更動的規則結果，而兩片未承保的葉節點（除外，或超過限額）都轉交人工，絕不進入自動化拒賠。
+
+```mermaid
+flowchart TD
+    F[擷取事實加上綁定保單] --> R1{玻璃批註於損失日當天生效}
+    R1 -->|Yes| DED0[自負額豁免，設為 0]
+    R1 -->|No| DEDC[套用綜合險自負額]
+    DED0 --> R2{事故屬於承保的綜合險損失}
+    DEDC --> R2
+    R2 -->|No| NC[未承保，轉交人工，絕不自動拒賠]
+    R2 -->|Yes| R3{估價總額低於承保限額}
+    R3 -->|No| CAP[以限額為上限，標記交人工]
+    R3 -->|Yes| R4{是否有任何除外條款適用}
+    R4 -->|Yes| NC
+    R4 -->|No| COV[已承保，理賠金額等於估價減自負額]
+    COV --> OUT[確定性結果送往詐欺檢查與 STP 閘門]
+    CAP --> OUT
+```
 
 ## STP 閘門決策流程
 
@@ -240,6 +337,7 @@ flowchart TB
 - Microsoft, [Azure AI Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/overview)
 - Anthropic, [Vision with Claude](https://docs.anthropic.com/en/docs/build-with-claude/vision)
 - Google, [Gemini API vision and document understanding](https://ai.google.dev/gemini-api/docs/vision)
+- Neal Krawetz, [Looks Like It, perceptual image hashing](http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html)
 - Coalition Against Insurance Fraud, [Fraud statistics](https://insurancefraud.org/fraud-stats/)
 
 相關章節：[Document Intelligence Pipeline](10-document-intelligence.md)、[Real-Time Fraud Detection](14-fraud-detection.md)、[OCR and Layout](../10-document-processing/01-ocr-and-layout.md)、[AI Governance and Compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md)、[Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md)。

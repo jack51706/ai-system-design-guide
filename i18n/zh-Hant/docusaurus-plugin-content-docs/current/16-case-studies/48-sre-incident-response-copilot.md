@@ -29,29 +29,29 @@ flowchart TB
     HIST[(事故歷史向量儲存)] --> ORCH
 
     subgraph Read["讀取工具，自主、唯讀 RBAC"]
-        ORCH --> LOGS[日誌：Loki 與 Elastic 透過 LogQL]
-        ORCH --> METRICS[指標：Prometheus 與 Datadog 透過 PromQL]
-        ORCH --> TRACES[追蹤：Tempo 與 Jaeger 透過 TraceQL]
-        ORCH --> DEPLOY[部署事件：Argo CD 與 Spinnaker]
-        ORCH --> TOPO[拓撲：Istio mesh 與 Backstage catalog]
+        ORCH --> LOGS[日誌 Loki 與 Elastic 透過 LogQL]
+        ORCH --> METRICS[指標 Prometheus 與 Datadog 透過 PromQL]
+        ORCH --> TRACES[追蹤 Tempo 與 Jaeger 透過 TraceQL]
+        ORCH --> DEPLOY[部署事件 Argo CD 與 Spinnaker]
+        ORCH --> TOPO[拓撲 Istio mesh 與 Backstage catalog]
         ORCH --> KGET[kubectl get 與 describe]
     end
 
-    LOGS --> SUMM[遙測摘要器：Haiku 4.5 與 DeepSeek V4 Flash]
+    LOGS --> SUMM[遙測摘要器 Haiku 4.5 與 DeepSeek V4 Flash]
     METRICS --> SUMM
     TRACES --> SUMM
-    DEPLOY --> CORR[關聯引擎：以實體、時間與拓撲聯結]
+    DEPLOY --> CORR[關聯引擎 以實體、時間與拓撲聯結]
     TOPO --> CORR
     KGET --> CORR
     SUMM --> CORR
 
-    CORR --> RCA[RCA 推理器：Opus 4.8 延伸思考]
-    RCA --> GROUND[佐證檢查：每個主張都引用一條日誌行、一項指標或一次部署]
-    GROUND --> SLACK[事故 Slack 頻道：假設、影響範圍、建議步驟]
+    CORR --> RCA[RCA 推理器 Opus 4.8 延伸思考]
+    RCA --> GROUND[佐證檢查 每個主張都引用一條日誌行、一項指標或一次部署]
+    GROUND --> SLACK[事故 Slack 頻道 假設、影響範圍、建議步驟]
 
     SLACK --> HUMAN[待命工程師]
-    HUMAN -->|核准| GATE[動作閘門：dry-run 加上影響範圍估計]
-    GATE --> WRITE[寫入工具：回滾、擴縮、重啟、failover]
+    HUMAN -->|核准| GATE[動作閘門 dry-run 加上影響範圍估計]
+    GATE --> WRITE[寫入工具 回滾、擴縮、重啟、failover]
     WRITE --> AUDIT[(簽章稽核日誌)]
     HUMAN --> TIMELINE[事故時間軸加上事後檢討草稿]
 ```
@@ -84,6 +84,44 @@ flowchart TB
 8. 若待命人員核准某個動作，閘門會計算一次 dry-run 與一份影響範圍估計（受影響的 pod、下游服務、預期的錯誤秒數），然後才執行寫入工具，並把它記錄到簽章稽核軌跡。
 9. 在事故解決時，Copilot 會從頻道的對話記錄，加上它所蒐集的遙測，草擬一份不究責的事後檢討，並把該案件歸檔，供 RCA 重放評估之用。
 
+### 一個實例：checkout p99 尖峰被追溯到上游兩跳之外
+
+看一次呼叫從頭到尾跑完。在 UTC 02:14，PagerDuty 觸發 `checkout p99 latency over 800 ms`（SLO 是 250 ms），並在事故 Slack 頻道開立 `INC-2026-07-03-0214`。編排器釘住發出告警的服務（`checkout`）、區域（`us-east-1`）與一個 15 分鐘的時間窗，然後平行展開讀取工具。下面每一個主張都標註了支持它的那一個訊號。
+
+- **指標（Prometheus）。** `histogram_quantile(0.99, checkout_request_duration_seconds)` 在 02:02 從 240 ms 階躍到 820 ms，而 `checkout` 的 CPU 與錯誤率保持平穩。所以 `checkout` 是慢，但它本身沒壞，這指向下游。
+- **追蹤（Tempo）。** 緩慢的 `checkout` span 全都阻塞在 `orders-api` 上，而 `orders-api` 又阻塞在 `payments-api` 上，後者的 DB span 從 8 ms 跳到 610 ms。延遲在上游兩跳之外，而不在那個發出呼叫的服務裡。
+- **部署（Argo CD）。** `payments-api` 的版本 `a3f9c21` 在 02:02 同步，正好就是 p99 階躍的時刻，而它的 diff 把一個有索引的查找換成了一個無索引的 `WHERE status IN (...)` 掃描。
+- **日誌（Loki）。** `payments-api` 的 logs 顯示 `slow query (612 ms) on payments.txn` 從 02:02 起反覆出現，而在部署之前並沒有這樣的行。
+
+關聯引擎依時間（全都在 02:02）、拓撲（`checkout` 依賴 `orders-api`、`orders-api` 依賴 `payments-api`）與實體（`payments-api`）把這些兜起來。Opus 4.8 草擬出一份排名過的假設，以那次部署成因居首，並把連線池耗盡（connection-pool exhaustion）列為排名較低的替代方案，再從拓撲算出一份影響範圍：回滾 `payments-api` 會觸及 24 個 pod 與呼叫路徑上的 3 個服務。它把 `rollout_undo payments-api` 提議成一個需人類核准的 Argo Rollouts 動作，而絕不觸發它。
+
+現在來看那個把這件事跟一場展示區分開來的元風險。在同一場事故期間，Tempo 本身也降級了（它與飽和的 `payments-api` 共用節點），所以 trace 查詢回傳了部分 span，其餘的則逾時。Copilot 不會用猜測去填補這個缺口：它在出貨這個假設時帶上一個 `tempo_timeout` 的部分遙測旗標（「traces 不完整，假設仰賴 metrics、那次部署與 logs」），並把信心從 0.9 調降到 0.72，好讓待命人員把它讀成一條待驗證的強力線索，而不是一紙定論。工程師檢查了部署的 diff、表示同意，並點下核准；閘門在回滾執行之前算繪出那份 24 個 pod、3 個服務的 dry-run，而 `checkout` p99 在 90 秒內恢復到 250 ms。
+
+### RCA 記錄
+
+Copilot 從不只貼出散文；它會發出一份經 schema 驗證的 RCA 記錄，承載每一個主張的證據、影響範圍，以及帶有核准旗標的建議動作，好讓頻道與稽核日誌是在結構之上、而非在敘事之上進行推理。
+
+```json
+{
+  "incident_id": "INC-2026-07-03-0214",
+  "alerting_service": "checkout",
+  "hypothesis": "payments-api deploy a3f9c21 introduced an unindexed query that raised DB latency, cascading to checkout p99",
+  "confidence": 0.72,
+  "partial_telemetry": ["tempo_timeout"],
+  "evidence": [
+    {"source": "prometheus", "ref": "checkout p99 240ms to 820ms at 02:02Z", "why": "latency step matches the deploy time"},
+    {"source": "tempo", "ref": "trace 7fa2 payments-api db span 8ms to 610ms", "why": "slow hop is two services upstream of checkout"},
+    {"source": "argocd", "ref": "payments-api rev a3f9c21 synced 02:02Z", "why": "diff swaps an indexed lookup for an unindexed status scan"},
+    {"source": "loki", "ref": "payments-api slow query 612ms on payments.txn", "why": "confirms the query regression in logs"}
+  ],
+  "blast_radius": {"pods": 24, "services": ["payments-api", "orders-api", "checkout"], "stateful": false},
+  "proposed_action": {"type": "rollout_undo", "target": "payments-api@a3f9c21", "requires_approval": true, "dry_run": "24 pods, ~20s elevated errors"},
+  "alternatives": ["db connection-pool exhaustion, ranked lower, no pool-saturation metric"]
+}
+```
+
+`requires_approval` 這個欄位不是建議性的。執行 `rollout_undo` 的那個寫入工具，在沒有一枚由 Slack 閘門鑄造的簽章核准權杖的情況下會拒絕執行（決策 5），所以即使一個把這個旗標翻成 `false` 的 bug，也無法讓這個動作變成自主的。
+
 ## 關鍵設計決策
 
 ### 1. 自由地讀、絕不動作：這條界線就是整個設計
@@ -92,7 +130,7 @@ flowchart TB
 
 ### 2. 針對可觀測性的檢索，而非文件
 
-核心的技術問題不是散文檢索，而是把 logs、metrics、traces、部署事件與拓撲兜合成單一個根因假設，這是針對即時遙測的檢索。針要找的是 300 多個服務裡到底哪一個壞了，而答案通常不是那個發出呼叫的服務：`checkout` 上的一個告警，常常是由上游兩跳之外的一次變更所造成。所以關聯是具拓撲意識的，它依共享的實體、時間鄰近度與相依圖的邊來兜合候選訊號，而不是把每一個後端孤立看待。近期部署是目前為止產出最高的特徵，因為絕大多數事故都可追溯到某次變更，所以「過去 30 分鐘內對影響範圍內任一服務出貨了什麼」會最先被查詢。這呼應了 [Roy et al.](https://arxiv.org/abs/2403.04123) 在 agentic RCA 上的發現：一個能動態拉取 logs 與 metrics 的 ReAct agent，在事實正確度上遠勝一個在靜態脈絡上進行推理的 agent。檢索方面的紀律請見 [Agentic RAG](../06-retrieval-systems/08-agentic-rag.md)。
+核心的技術問題不是散文檢索，而是把 logs、metrics、traces、部署事件與拓撲兜合成單一個根因假設，這是針對即時遙測的檢索。針要找的是 300 多個服務裡到底哪一個壞了，而答案通常不是那個發出呼叫的服務：`checkout` 上的一個告警，常常是由上游兩跳之外的一次變更所造成。所以關聯是具拓撲意識的，它依共享的實體、時間鄰近度與相依圖的邊來兜合候選訊號，而不是把每一個後端孤立看待。近期部署是目前為止產出最高的特徵，因為絕大多數事故都可追溯到某次變更，所以「過去 30 分鐘內對影響範圍內任一服務出貨了什麼」會最先被查詢。這呼應了 [Roy et al.](https://arxiv.org/abs/2403.04123) 在 agentic RCA 上的發現：一個能動態拉取 logs 與 metrics 的 ReAct agent，在事實正確度上遠勝一個在靜態脈絡上進行推理的 agent。上面那個實例就是這種兜合的縮影：Tempo 的 trace 定位出那個緩慢的一跳、Argo CD 的事件點名了改了什麼，而拓撲的邊證明了 `checkout` 與 `payments-api` 是相連的，而這些沒有一個是單靠在 `checkout` 上觸發的那個告警所能揭露的。檢索方面的紀律請見 [Agentic RAG](../06-retrieval-systems/08-agentic-rag.md)。
 
 ### 3. 為每個假設提供佐證，否則丟棄
 
@@ -100,11 +138,21 @@ flowchart TB
 
 ### 4. 任何動作之前，先做影響範圍估計與 dry-run
 
-如果人類看不到自己正在核准什麼，那麼核准就不夠。在任何被提議的寫入之前，閘門會從拓撲算出一份影響範圍估計（有多少個 pod、哪些下游服務依賴目標、它是否有狀態），以及一份 dry-run 差異（`kubectl --dry-run=server`，或一次 Argo Rollouts 分析），好讓頻道在有人點擊之前就看到「這次回滾會觸及 40 個 pod 與 12 個下游服務，預期約 30 秒的錯誤升高」。破壞性或高影響範圍的動作（任何觸及一個有狀態服務、一個資料庫，或一個共享閘道的動作）都帶有一道額外確認，而對最危險的那些，還要一道兩人核准。這個動作是確定性且樣板化的，是一個具名的 runbook 步驟，而非自由格式的模型輸出，所以 LLM 選擇要提議*哪一個* runbook，但絕不撰寫實際執行的那道指令。
+如果人類看不到自己正在核准什麼，那麼核准就不夠。在任何被提議的寫入之前，閘門會從拓撲算出一份影響範圍估計（有多少個 pod、哪些下游服務依賴目標、它是否有狀態），以及一份 dry-run 差異（`kubectl --dry-run=server`，或一次 Argo Rollouts 分析），好讓頻道在有人點擊之前就看到具體的影響（「這次回滾會觸及呼叫路徑上的 24 個 pod 與 3 個服務，預期約 20 秒的錯誤升高」，也就是那個實例裡的 dry-run）。破壞性或高影響範圍的動作（任何觸及一個有狀態服務、一個資料庫，或一個共享閘道的動作）都帶有一道額外確認，而對最危險的那些，還要一道兩人核准。這個動作是確定性且樣板化的，是一個具名的 runbook 步驟，而非自由格式的模型輸出，所以 LLM 選擇要提議*哪一個* runbook，但絕不撰寫實際執行的那道指令。
 
 ### 5. 透過 MCP 的 runbook 自動化：讀取工具自主，寫入工具受把關
 
-工具是透過 [MCP 2.0](../07-agentic-systems/03-tool-use-and-mcp.md) 暴露給 Copilot 的，而讀/寫的切分是在工具邊界上強制執行，而非在提示裡。唯讀的診斷工具（`loki_query`、`promql_query`、`traceql_query`、`list_deploys`、`kubectl_get`）被標記為非破壞性，並可被自主呼叫。寫入工具（`rollout_undo`、`scale`、`restart`、`shift_traffic`）則被登錄為需人類核准，且在沒有一枚由 Slack 閘門鑄造的簽章核准權杖的情況下，實體上根本無法觸及。這很重要，因為提示層級的「動作前請先詢問」指示並不是一種安全控制；由執行期強制的邊界才是。讀取工具同樣在一個嚴格的每事故查詢預算下執行，好讓 Copilot 無法猛攻一個已經在苦撐的後端（決策 F5）。新的 runbook 會以新的受把關工具的形式加入，這正是這套系統在從不擴張其自主權限的前提下，成長其涵蓋範圍的方式。
+工具是透過 [MCP 2.0](../07-agentic-systems/03-tool-use-and-mcp.md) 暴露給 Copilot 的，而讀/寫的切分是在工具邊界上強制執行，而非在提示裡。唯讀的診斷工具（`loki_query`、`promql_query`、`traceql_query`、`list_deploys`、`kubectl_get`）被標記為非破壞性，並可被自主呼叫。寫入工具（`rollout_undo`、`scale`、`restart`、`shift_traffic`）則被登錄為需人類核准，且在沒有一枚由 Slack 閘門鑄造的簽章核准權杖的情況下，實體上根本無法觸及。這很重要，因為提示層級的「動作前請先詢問」指示並不是一種安全控制；由執行期強制的邊界才是。讀取工具同樣在一個嚴格的每事故查詢預算下執行，好讓 Copilot 無法猛攻一個已經在苦撐的後端（決策 F5）。新的 runbook 會以新的受把關工具的形式加入，這正是這套系統在從不擴張其自主權限的前提下，成長其涵蓋範圍的方式。這個切分是一張由執行期強制的表，而非提示禮儀的問題：
+
+| 工具類別 | 範例工具 | 存取權 | 自主性 |
+|---|---|---|---|
+| 日誌 | `loki_query`、`elastic_query` | 唯讀憑證 | 自主 |
+| 指標 | `promql_query`、`datadog_query` | 唯讀憑證 | 自主 |
+| 追蹤 | `traceql_query`、`jaeger_query` | 唯讀憑證 | 自主 |
+| 部署與拓撲 | `list_deploys`、`catalog_lookup` | 唯讀憑證 | 自主 |
+| 叢集檢視 | `kubectl_get`、`kubectl_describe` | 唯讀 RBAC（`get`、`list`、`watch`） | 自主 |
+| 回滾與擴縮 | `rollout_undo`、`scale`、`restart` | 寫入 RBAC | 需人類核准、簽章權杖 |
+| 流量與 failover | `shift_traffic`、`failover` | 寫入 RBAC | 需人類核准、共享閘道需兩人 |
 
 ### 6. 為了速度與成本而做的模型分層與脈絡快取
 
@@ -112,7 +160,7 @@ flowchart TB
 
 ### 7. 安全失敗：可觀測性與 LLM 也可能同時掛掉
 
-這是把玩具與生產級工具區分開來的那個決策。在一次重大事故期間，Loki 或 Prometheus 可能降級（它們常常與壞掉的東西共用基礎設施），而 LLM API 可能被限流或變慢。Copilot 把部分遙測與供應商逾時當成常態看待。每一個讀取工具都有一個硬性逾時（約 20 秒）；若某個後端掛了，Copilot 會就它*確實*擁有的訊號繼續推進，並明確標記「metrics 後端逾時，假設僅根據 logs 與部署，信心已調降」。若 LLM 供應商降級，它會安全地退回（fail open）到一個確定性的後備：貼出原始的關聯資料而不給假設，好讓人類仍然拿到那份已組裝好的脈絡。最重要的是，Copilot 嚴格來說是可有可無的：它從不把關、阻擋或延遲一位人類應變者，而如果它完全掛掉，待命人員就完全照它存在之前的方式繼續處理。這是把 [reliability patterns](../13-reliability-and-safety/03-reliability-patterns.md) 中的縱深防禦，套用在這個本該在危機中幫忙的工具上。
+這是把玩具與生產級工具區分開來的那個決策。在一次重大事故期間，Loki 或 Prometheus 可能降級（它們常常與壞掉的東西共用基礎設施），而 LLM API 可能被限流或變慢。Copilot 把部分遙測與供應商逾時當成常態看待。每一個讀取工具都有一個硬性逾時（約 20 秒）；若某個後端掛了，Copilot 會就它*確實*擁有的訊號繼續推進，並明確標記「metrics 後端逾時，假設僅根據 logs 與部署，信心已調降」（在那個實例裡，Tempo 逾時了，而假設在出貨時帶上一個 `tempo_timeout` 旗標，信心也從 0.9 砍到 0.72）。若 LLM 供應商降級，它會安全地退回（fail open）到一個確定性的後備：貼出原始的關聯資料而不給假設，好讓人類仍然拿到那份已組裝好的脈絡。最重要的是，Copilot 嚴格來說是可有可無的：它從不把關、阻擋或延遲一位人類應變者，而如果它完全掛掉，待命人員就完全照它存在之前的方式繼續處理。這是把 [reliability patterns](../13-reliability-and-safety/03-reliability-patterns.md) 中的縱深防禦，套用在這個本該在危機中幫忙的工具上。這也是與[觀測你自己的 LLM 應用](32-llm-observability-incident-response.md)之間那條鮮明的界線：在那裡，你擁有並信任那個發出遙測的來源（你自己應用的 OpenTelemetry spans 與 token traces），而主體是你自己的模型呼叫，然而在這裡，遙測是你可能並不擁有的一般性生產環境基礎設施，它的 log 內容是攻擊者能影響的（F7），而可觀測性後端本身，就可能是你正在除錯的那場事故的傷亡者。
 
 ### 8. ChatOps、時間軸與事後檢討生成
 
@@ -133,7 +181,7 @@ flowchart LR
     D --> F[關聯可得訊號]
     E --> F
     F --> G{LLM 供應商健康嗎？}
-    G -->|降級| H[後備：貼出原始關聯資料，無假設]
+    G -->|降級| H[後備 貼出原始關聯資料，無假設]
     G -->|正常| I[有佐證的假設加上影響範圍加上建議步驟]
     H --> J[人類以手動 runbook 繼續處理]
     I --> K{人類是否核准某個動作？}
@@ -142,6 +190,29 @@ flowchart LR
     L --> M[驗證指標恢復，更新時間軸]
     J --> M
     M --> N[從頻道加上遙測草擬不究責的事後檢討]
+```
+
+## 動作閘門
+
+閘門是那個攸關安全的元件，是一個機率性系統能觸及生產環境狀態變更的唯一那一個點，所以值得單獨看它。它是一連串確定性的檢查，介於一個被核准的提案與一次被執行的寫入之間；任何失敗都會繞回到人類手上，而唯讀工具則根本從不進入它。
+
+```mermaid
+flowchart TD
+    P[來自 Copilot 的提議步驟] --> W{是寫入工具嗎？}
+    W -->|否，唯讀| RUN[在每事故查詢預算下自主執行]
+    W -->|是| BR[從拓撲算出影響範圍]
+    BR --> DR[伺服器端 dry-run 差異]
+    DR --> SHOW[在 Slack 顯示 pod、下游服務、預期錯誤秒數]
+    SHOW --> STATE{有狀態、資料庫或共享閘道？}
+    STATE -->|是| TWO[要求兩人核准]
+    STATE -->|否| ONE[要求一位待命人員核准]
+    TWO --> TOK{簽章核准權杖已鑄造？}
+    ONE --> TOK
+    TOK -->|否| HOLD[沒有權杖，動作維持惰性]
+    TOK -->|是| EXEC[執行樣板化的 runbook 步驟]
+    EXEC --> VERIFY{目標指標恢復了嗎？}
+    VERIFY -->|是| LOG[寫入簽章稽核日誌並更新時間軸]
+    VERIFY -->|否| BACK[自動回滾那次回滾並重新升級]
 ```
 
 ## 失效模式與緩解措施

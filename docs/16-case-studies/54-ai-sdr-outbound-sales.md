@@ -86,15 +86,62 @@ flowchart TB
 8. Inbound replies are classified (interested, objection, referral, unsubscribe, out-of-office, not-interested); unsubscribes hit the suppression list immediately, out-of-office reschedules, and interested or complex threads are drafted and handed to a human rep with full context, never auto-negotiated.
 9. Every touch, reply, guardrail verdict, and outcome is written to CRM via MCP tools and to the event warehouse; meetings book through a calendar tool, and positive-reply, spam-complaint, and unsubscribe rates feed the deliverability and quality dashboards.
 
+### A worked example: a Series B VP of Engineering
+
+Walk one prospect from list to reply. The seller is an internal developer platform vendor, and the prospect is Dana Okafor, VP of Engineering at Cirrus Robotics.
+
+**Intake and compliance.** Dana enters from the "post-Series-B scaling" campaign list, bound to a rep and to region US. The compliance gate checks the global suppression list (absent), prior opt-outs (none), and the lawful basis for a US business contact (opt-out basis under CAN-SPAM), so Dana is eligible; had she been an EU contact, the gate would instead demand a documented legitimate-interest assessment under GDPR and ePrivacy, and prior consent in stricter member states. A second Cirrus contact on the same list, the CTO, unsubscribed from a webinar campaign four months ago, so the gate suppresses that address outright across every mailbox and domain even though the account is now hot. One account, two gate outcomes: eligible and suppressed.
+
+**Grounded research.** The research layer retrieves the trigger event: Cirrus announced a Series B of 45 million dollars on 2026-06-18, corroborated by two independent sources (the funding announcement and the SEC Form D filing), both cached with provenance. It also pulls Dana's role and tenure (VP Engineering, 14 months) and a tech-stack signal (a job post naming a monorepo and self-hosted CI). Each fact carries a source, and a tempting "just migrated to Kubernetes" detail comes back uncited, so the distiller drops it before generation.
+
+**Generation and a caught over-claim.** Sonnet 4.7 drafts a first touch grounded in the Series B and the CI signal, with a low-friction ask (a 20-minute call). Reaching for persuasion, the draft invents a proof point: "we helped a Series-B robotics company cut infra spend 40 percent." The output guardrail rejects it on two independent grounds, that the customer case study is not in the approved named-reference allowlist (it fabricates a success story the company cannot stand behind) and that the 40 percent figure is not a published, approved stat. The guardrail holds the draft, strips the invented claim, and the generator rewrites using only an approved value prop ("teams cut median CI wait time from 9 minutes to 4"). Draft one is held, draft two clears, and that is the send-versus-hold decision in the flesh.
+
+**Deliverability gate.** The control plane picks a warmed mailbox on a domain at day 34 of warmup with 18 of 40 daily sends remaining, confirms SPF, DKIM, and DMARC alignment, reads Google Postmaster reputation as High and the domain complaint rate at 0.04 percent (well under the 0.3 percent line), and confirms the address passed verification and is not a spam trap. All green, so the send is scheduled at a human-plausible time.
+
+**Reply and handoff.** Three days later Dana replies, "Good timing, we are doubling the platform team, send a couple of slots." The Haiku 4.5 classifier labels it interested, the sequence engine stops every remaining touch, and the thread is handed to a human account executive with the full research and thread context. The AI may propose calendar slots, but it never negotiates terms, because the interested-buyer moment is exactly where a human closer takes over.
+
+The point: the model drafted the copy, but verified provenance (the cited Series B, the allowlisted value prop) and deterministic gates (suppression, lawful basis, reputation) decided what actually left the building, and a human, not the agent, owns the deal.
+
+### The outbound record
+
+The system emits one schema-validated record per touch, so compliance, deliverability, and grounding are checkable fields a gate can read rather than prose to trust. This is the record for the send above.
+
+```json
+{
+  "prospect_id": "CIRRUS-DOKAFOR-0417",
+  "campaign": "post-series-b-scaling",
+  "region": "US",
+  "research_citations": [
+    {"fact": "Series B, $45M, announced 2026-06-18", "source": "https://press.example/cirrus-series-b", "corroboration": "sec_form_d"},
+    {"fact": "role VP Engineering, 14mo tenure", "source": "https://linkedin.example/in/dokafor"},
+    {"fact": "self-hosted CI on a monorepo", "source": "https://jobs.example/cirrus-staff-platform"}
+  ],
+  "message": {
+    "channel": "email",
+    "subject": "scaling the platform team after the Series B",
+    "value_prop_id": "vp-ci-wait-time",
+    "ask": "20-minute intro call",
+    "body_grounded_in": ["Series B", "self-hosted CI"]
+  },
+  "compliance": {"suppressed": false, "opt_out_ok": true, "lawful_basis": "can_spam_opt_out"},
+  "deliverability": {"domain_rep": "high", "warmup_ok": true, "daily_capacity_remaining": 18, "spf_dkim_dmarc": "aligned", "spam_trap": false},
+  "claims_verified": true,
+  "rejected_claims": [
+    {"claim": "we helped a Series-B robotics company cut infra spend 40%", "reason": "unapproved_customer_reference_and_unpublished_stat"}
+  ],
+  "status": "sent"
+}
+```
+
 ## Key Design Decisions
 
 ### 1. Deliverability is a first-class control plane, not an afterthought
 
-This is the non-obvious systems problem that separates a real design from a demo. Mailbox providers score the reputation of the sending domain and IP, and that reputation is the channel's lifeblood: lose it and everything, including the reps' hand-written mail, lands in spam. So the control plane owns four things. Authentication: every domain publishes SPF, DKIM, and DMARC, and sends must align, because Google and Yahoo now reject or spam-file unauthenticated bulk mail ([RFC 7489](https://datatracker.ietf.org/doc/html/rfc7489)). Warmup and volume caps: new domains ramp slowly and each mailbox is capped near 30 to 50 cold sends a day, which is why 500,000 touches a month forces a pool of hundreds of mailboxes across dozens of domains, rotated so no single asset spikes. Reputation monitoring: the complaint rate is watched against Google Postmaster and held well under the 0.3 percent threshold, and a rising rate throttles or pauses the offending domain automatically. Spam-trap avoidance: never buy lists, verify every address, and sunset stale contacts, because hitting pristine or recycled [spam traps](https://www.spamhaus.org/faq/section/Spamtraps) tanks reputation fast. Volume without quality does not scale outbound, it destroys it.
+This is the non-obvious systems problem that separates a real design from a demo. Mailbox providers score the reputation of the sending domain and IP, and that reputation is the channel's lifeblood: lose it and everything, including the reps' hand-written mail, lands in spam. So the control plane owns four things. Authentication: every domain publishes SPF, DKIM, and DMARC, and sends must align, because Google and Yahoo now reject or spam-file unauthenticated bulk mail ([RFC 7489](https://datatracker.ietf.org/doc/html/rfc7489)). Warmup and volume caps: new domains ramp slowly and each mailbox is capped near 30 to 50 cold sends a day, which is why 500,000 touches a month forces a pool of hundreds of mailboxes across dozens of domains, rotated so no single asset spikes. Reputation monitoring: the complaint rate is watched against Google Postmaster and held well under the 0.3 percent threshold, and a rising rate throttles or pauses the offending domain automatically. Spam-trap avoidance: never buy lists, verify every address, and sunset stale contacts, because hitting pristine or recycled [spam traps](https://www.spamhaus.org/faq/section/Spamtraps) tanks reputation fast. Warmup is a schedule, not a switch: a fresh domain starts near 20 sends a day and ramps over 4 to 8 weeks before it carries a full 40-a-day cold load, and [Google Postmaster](https://support.google.com/mail/answer/9981691) reputation is read as a band (High, Medium, Low, Bad) that gates how hard a domain may push. In the worked example the chosen mailbox sits at day 34 of warmup with a High reputation and a 0.04 percent complaint rate, which is why it clears, while a domain reading Low or spiking past 0.3 percent is throttled or paused before it can send. Volume without quality does not scale outbound, it destroys it.
 
 ### 2. Grounded personalization: research the prospect, cite every fact
 
-Personalization only helps if it is true. The system retrieves facts about the account and person (funding news, a product launch, the prospect's role and tenure, the tech stack from job posts or a BuiltWith-style signal) and grounds the message in those retrieved facts with provenance, the same discipline as [RAG fundamentals](../06-retrieval-systems/01-rag-fundamentals.md). A hallucinated "congrats on your Series C" that never happened is worse than a generic template, because it proves the sender is a bot and did not do the work. So the generator may only reference facts that came back with a source, the distiller drops uncited facts, and the guardrail (Decision 4) re-checks that every specific claim in the draft traces to a retrieved source. When research is thin, the message degrades gracefully to a role-level relevant angle rather than inventing a detail. Account research is cached and shared, so the cost of being accurate is paid once per account, not once per email.
+Personalization only helps if it is true. The system retrieves facts about the account and person (funding news, a product launch, the prospect's role and tenure, the tech stack from job posts or a BuiltWith-style signal) and grounds the message in those retrieved facts with provenance, the same discipline as [RAG fundamentals](../06-retrieval-systems/01-rag-fundamentals.md). A hallucinated "congrats on your Series C" that never happened is worse than a generic template, because it proves the sender is a bot and did not do the work. So the generator may only reference facts that came back with a source, the distiller drops uncited facts, and the guardrail (Decision 4) re-checks that every specific claim in the draft traces to a retrieved source. When research is thin, the message degrades gracefully to a role-level relevant angle rather than inventing a detail. Account research is cached and shared, so the cost of being accurate is paid once per account, not once per email. The bar is provenance, and for a headline trigger it is corroboration: in the worked example the Series B is usable only because it returns from two independent sources (the funding announcement and the SEC Form D), while an uncited "just migrated to Kubernetes" guess is dropped before it can reach a draft.
 
 ### 3. Compliance is mandatory infrastructure: suppression, opt-out, lawful basis
 
@@ -102,7 +149,7 @@ Outbound email is regulated, and the rules are build requirements, not a memo. A
 
 ### 4. Guardrails against over-claiming and brand risk, with a claims allowlist
 
-A cold email is a public statement from the brand, so the output guardrail is strict. A claims allowlist enumerates what the system is permitted to assert (approved value props, real and named customer references, published stats), and any claim outside it is blocked: no invented case studies, no fabricated metrics ("cut costs 40 percent" with no basis), no fake urgency ("only 2 spots left"), and no impersonation of a real named colleague or a false existing relationship. A grounding verifier ties personalization claims back to retrieved sources, and a lightweight classifier flags manipulative or non-compliant phrasing. This is the [Guardrails](../13-reliability-and-safety/01-guardrails.md) pattern aimed at brand and legal risk rather than toxicity: the failure mode here is a fluent, confident, false sentence, so the guardrail treats the draft as a claim to be verified, not prose to be trusted.
+A cold email is a public statement from the brand, so the output guardrail is strict. A claims allowlist enumerates what the system is permitted to assert (approved value props, real and named customer references, published stats), and any claim outside it is blocked: no invented case studies, no fabricated metrics ("cut costs 40 percent" with no basis), no fake urgency ("only 2 spots left"), and no impersonation of a real named colleague or a false existing relationship. A grounding verifier ties personalization claims back to retrieved sources, and a lightweight classifier flags manipulative or non-compliant phrasing. This is the [Guardrails](../13-reliability-and-safety/01-guardrails.md) pattern aimed at brand and legal risk rather than toxicity: the failure mode here is a fluent, confident, false sentence, so the guardrail treats the draft as a claim to be verified, not prose to be trusted. The worked example shows the mechanism firing: a draft that invents a proof point ("we helped a Series-B robotics company cut infra spend 40 percent") is rejected on two independent grounds, that the customer case study is not in the approved named-reference allowlist and that the 40 percent figure is not a published stat, and the draft is held until it is rewritten to an approved value prop. Two independent reasons to reject is the intent, because either one alone should stop the send.
 
 ### 5. Reply handling with a hard human handoff, never auto-negotiation
 
@@ -114,7 +161,7 @@ A touch is not one email, it is a cadence: an initial message, two or three foll
 
 ### 7. Measure the right metric: positive replies and meetings, not sends or opens
 
-The engagement-versus-reputation tension is the whole game, and the wrong metric loses it. Raw send volume and open rate both reward the spam-cannon behavior, and open rate is anyway unreliable after [Apple Mail Privacy Protection](https://www.apple.com/newsroom/2021/06/apple-advances-its-privacy-leadership-with-ios-15-ipados-15-macos-monterey-and-watchos-8/) pre-fetches pixels. So the north-star metrics are positive-reply rate and meetings booked, with spam-complaint rate and unsubscribe rate as hard guardrails on top. The system optimizes for fewer, better, more-grounded touches that earn replies, and it treats a rising complaint rate as a stop signal that overrides any volume target. A campaign that triples sends while positive replies stay flat and complaints rise is failing, not scaling, and the dashboards are built so that is obvious.
+The engagement-versus-reputation tension is the whole game, and the wrong metric loses it. Raw send volume and open rate both reward the spam-cannon behavior, and open rate is anyway unreliable after [Apple Mail Privacy Protection](https://www.apple.com/newsroom/2021/06/apple-advances-its-privacy-leadership-with-ios-15-ipados-15-macos-monterey-and-watchos-8/) pre-fetches pixels. So the north-star metrics are positive-reply rate and meetings booked, with spam-complaint rate and unsubscribe rate as hard guardrails on top. The system optimizes for fewer, better, more-grounded touches that earn replies, and it treats a rising complaint rate as a stop signal that overrides any volume target. A campaign that triples sends while positive replies stay flat and complaints rise is failing, not scaling, and the dashboards are built so that is obvious. The unit that matters is positive replies per thousand grounded touches, not raw send count, so a team cannot manufacture the appearance of success by simply sending more, which is precisely the behavior the wrong metric rewards.
 
 ### 8. Model tiering and research caching for single-digit-cent touches
 
@@ -144,6 +191,46 @@ flowchart TD
     REPT -->|no| PAUSE[Throttle or Pause Domain]
     REPT -->|yes| SENDOK[Send at Human-Plausible Rate]
     SENDOK --> LOGT[Log Touch to CRM and Warehouse]
+```
+
+Every send clears the same ordered gate, and the outcomes are three, not two: a fixable problem holds the touch, a permanent one suppresses the contact, and only a fully clean touch sends.
+
+| Condition at send time | Outcome |
+|---|---|
+| On the global suppression list or a prior opt-out | Suppress (never contact, across all mailboxes) |
+| No lawful basis for the region, or a consumer or embargoed contact | Suppress |
+| A personalization claim does not trace to a cited source | Hold (strip to role-level, then re-verify) |
+| A claim is off the allowlist, or uses fake urgency or impersonation | Hold (rewrite or route to human review) |
+| Mailbox not warmed or daily cap reached | Hold (queue for the next window) |
+| Domain reputation degraded or complaint rate over 0.3 percent | Hold (throttle or pause the domain) |
+| All checks pass | Send at a human-plausible rate |
+
+## Outbound and Reply Flow
+
+```mermaid
+sequenceDiagram
+    participant L as Prospect and untrusted reply
+    participant C as Compliance Gate
+    participant R as Research and Distiller Haiku 4.5
+    participant G as Generator Sonnet 4.7 and Guardrail
+    participant D as Deliverability Control Plane
+    participant H as Human Rep
+
+    C->>C: Check suppression, opt-out, lawful basis
+    Note over C: Suppressed or no basis stops here
+    C->>R: Eligible prospect
+    R->>G: Cited facts only, uncited facts dropped
+    Note over G: Guardrail rejects off-allowlist customer claim
+    G->>G: Rewrite to an approved value prop
+    G->>D: Grounded, claims-verified draft
+    D->>D: Check warmup, capacity, SPF DKIM DMARC, reputation
+    alt All gates pass
+        D-->>L: Send at a human-plausible rate
+    else Reputation degraded or no capacity
+        D->>D: Throttle, pause, or queue
+    end
+    L->>H: Reply classified interested, sequence stops
+    Note over H: Human proposes slots, never auto-negotiates
 ```
 
 ## Failure Modes and Mitigations

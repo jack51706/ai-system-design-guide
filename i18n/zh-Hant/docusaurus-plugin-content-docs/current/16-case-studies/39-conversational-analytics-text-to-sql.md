@@ -87,11 +87,71 @@ flowchart TB
 8. 結果驗證以確定性方式執行：空的、全為 null 的，或量級荒謬的結果會被標記，「沒有資料」會與「值為零」區分開來，而對照指標已知界限而超出範圍的值會觸發棄答。
 9. 系統渲染出一張圖表加上一段淺白的文字摘要，並且總是展示它的計算過程：使用的 SQL、用到的指標與資料表，以及它所做的任何假設；完整的互動會被寫入稽核日誌。
 
+### 一個實作範例：依區隔的 NRR，一則作答與一則棄答
+
+這個設計最容易透過同一個早上被問到的兩個問題來理解：一個交付出經驗證的數字，另一個則誠實棄答。
+
+**Question A（已交付）。** 一位財務副總在 Slack 裡問：「上一季相對前一年，各區隔的淨營收留存率是多少」。SSO 把這個請求綁定到她的身分與一個唯讀的 Snowflake 角色。歧義閘門（Haiku 4.5）把它分類為可回答：NRR 是受治理的，`by segment` 對應到 `customer_segment` 維度（Enterprise、Mid-Market、SMB），而 `last quarter` 解析為 fiscal Q1 FY2026（2026 年 2 月到 4 月）相對於 fiscal Q1 FY2025，因為指標登錄表宣告了公司的預設報表日曆為財務制。那個解析會被記錄成一個有陳述的假設，而非一次無聲的猜測。Schema 連結拉出 `net_revenue_retention` 指標與三個已驗證的查詢庫範例；整份 DDL 絕不會被展示。
+
+草擬模型組合出一個 MetricFlow 查詢（指標 `net_revenue_retention`、group by `customer_segment`、財務季粒度並帶一個相對前一年的比較），而語意層把它在世代粒度上編譯成 Snowflake SQL。為了守住這個數字，閘門抽樣了 K = 5 個候選。其中四個乾淨地透過 MetricFlow 組合出來並且一致：Enterprise 111.2、Mid-Market 104.5、SMB 96.8（percent，本季）。第五個則自由書寫了一個到 `invoice_line` 的 JOIN，它扇出到明細列粒度卻沒有去重到客戶層級，在多明細帳戶上把擴張 ARR 乘大了，回傳 Enterprise 118.7。sqlglot 解析了它、靜態閘門放行了它（一個在位元組上限之內、有效的唯讀 SELECT），而它的 118.7 落在登錄表 0 到 200 percent 的 NRR 界限之內，所以沒有任何單一查詢的檢查抓到它。自我一致性抓到了：Enterprise 上一個 7.5 point 的落差遠遠超過了 0.5 point 的一致容差，所以什麼都沒出貨。這個不一致升級到 Opus 4.8，它診斷出扇出、把離群值改寫成純粹透過受治理指標來組合，並重新抽樣；接著全部五個候選都在 111.2 取得一致。Opus 評審確認這段 SQL 在兩個財務窗口上、於世代粒度依 `customer_segment` 分組，驗證器看到六列在界限內的非 null 資料列，而系統交付了一張分組長條圖，編譯後的 SQL 與假設都在一鍵之遙可見。
+
+**Question B（已棄答）。** 幾分鐘後一位 PM 問：「是哪個定價變更驅動了 Enterprise NRR 的下滑」。這是因果歸因，而不是一個跨維度的指標。沒有任何受治理指標能表達「是哪個變更驅動了」一個變動，而發明一個 JOIN 去猜，正好就是這個產品存在所要防止的那種自信錯誤數字的失效。歧義閘門把它分類為模型外，而系統誠實地棄答：它提供它能計算的東西（Enterprise NRR 隨時間的逐季走勢，以及擴張與縮減的組成），並說歸因需要一位分析師。沒有 SQL 執行，也沒有數字被顯示。
+
+重點在於：模型在兩個情況下都草擬了 SQL，但決定 A 出貨而 B 不出貨的，是那些經驗證的訊號（K 抽樣的一致性、量級界限、評審裁定）與範圍分類器，而不是流暢的文字。
+
+### 已驗證的作答物件
+
+copilot 絕不出貨一張光禿禿的圖表；它發出一個經 schema 驗證的作答物件，由介面渲染、由稽核日誌儲存。UI 所信任的每一個欄位都是一個經驗證的訊號，而非模型的文字。
+
+```json
+{
+  "question": "what was net revenue retention by segment last quarter vs the year before",
+  "asker_role": "finance_read_only",
+  "resolved_metric": "net_revenue_retention",
+  "dimensions": ["customer_segment"],
+  "time_grain": "fiscal_quarter",
+  "compare_periods": ["FY2026-Q1", "FY2025-Q1"],
+  "dialect": "snowflake",
+  "dialect_sql": "SELECT customer_segment, fiscal_quarter, net_revenue_retention FROM semantic.nrr WHERE fiscal_quarter IN ('FY2026-Q1','FY2025-Q1') GROUP BY 1,2",
+  "verified_signals": {
+    "row_count": 6,
+    "empty_or_all_null": false,
+    "magnitude_check": "pass_0_to_200_pct",
+    "self_consistency_agree": true,
+    "k_samples": 5,
+    "k_agree": 5,
+    "judge_verdict": "matches_question_and_grain"
+  },
+  "confidence": 0.94,
+  "shown_assumptions": [
+    "last quarter = fiscal Q1 FY2026 (Feb to Apr 2026), per finance calendar",
+    "NRR = (starting ARR + expansion - contraction - churn) / starting ARR, excludes new-logo",
+    "segment = governed customer_segment dimension"
+  ],
+  "status": "shipped"
+}
+```
+
+對於 Question B，這個物件在任何 SQL 之前就短路了，而這是一個第一級的結果，不是一個錯誤：
+
+```json
+{
+  "question": "which pricing change drove the Enterprise NRR dip",
+  "resolved_metric": null,
+  "dialect_sql": null,
+  "verified_signals": {"scope_class": "out_of_model_causal"},
+  "confidence": null,
+  "shown_assumptions": [],
+  "status": "abstained",
+  "abstain_reason": "causal attribution has no governed metric; offered the NRR trend and expansion breakdown instead"
+}
+```
+
 ## 關鍵設計決策
 
 ### 1. 語意層是每一項指標的單一真實來源
 
-整個設計都建立在這一點上。「淨營收留存率」不是 `SUM(revenue)`；它是一條世代公式（一個世代的起始 ARR，加上擴張、減去縮減與流失，除以起始 ARR，並排除新客營收）。一個從原始資料表推斷出這條公式的模型，會以看似合理、充滿自信的方式出錯。所以指標要住在一個語意層裡，由擁有它們的人定義一次就好：[dbt Semantic Layer with MetricFlow](https://docs.getdbt.com/docs/build/about-metricflow)、[Cube](https://cube.dev/) 或 [LookML](https://cloud.google.com/looker/docs/what-is-lookml)。模型的工作是挑對指標、挑對維度與時間粒度；由這一層把它編譯成正確的 SQL。這正是為什麼 Snowflake [Cortex Analyst](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst/semantic-model-spec) 要求一份語意模型 YAML，而不是指向原始 schema。語意層在這裡不是一個「有了更好」的加分項，它是把一個開放式的幻覺表面，轉化成一個有界、受治理表面的關鍵所在。
+整個設計都建立在這一點上。「淨營收留存率」不是 `SUM(revenue)`；它是一條世代公式（一個世代的起始 ARR，加上擴張、減去縮減與流失，除以起始 ARR，並排除新客營收）。一個從原始資料表推斷出這條公式的模型，會以看似合理、充滿自信的方式出錯。所以指標要住在一個語意層裡，由擁有它們的人定義一次就好：[dbt Semantic Layer with MetricFlow](https://docs.getdbt.com/docs/build/about-metricflow)、[Cube](https://cube.dev/) 或 [LookML](https://cloud.google.com/looker/docs/what-is-lookml)。模型的工作是挑對指標、挑對維度與時間粒度；由這一層把它編譯成正確的 SQL。這正是為什麼 Snowflake [Cortex Analyst](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst/semantic-model-spec) 要求一份語意模型 YAML，而不是指向原始 schema。語意層在這裡不是一個「有了更好」的加分項，它是把一個開放式的幻覺表面，轉化成一個有界、受治理表面的關鍵所在。在上面的實作範例裡，模型只挑選 `net_revenue_retention` 指標、`customer_segment` 維度與財務季粒度；由 MetricFlow 寫出世代公式，所以即使某個被抽樣的候選把 JOIN 弄錯了，模型也不可能把定義搞錯。
 
 ### 2. 檢索 schema 與已驗證範例，絕不傾倒整份倉儲 DDL
 
@@ -101,13 +161,28 @@ flowchart TB
 
 生成的 SQL 是一個假設。在花掉任何一分點數之前，它要先通過一道由程式碼、而非感覺構成的閘門。[sqlglot](https://github.com/tobymao/sqlglot) 針對確切的目標方言（Snowflake、BigQuery 或 Databricks）解析 SQL，並檢視其 AST 以確認它是單一陳述式、只有一個 `SELECT`、沒有任何 DDL 或 DML 節點。若缺少 `LIMIT` 就注入一個。一次 BigQuery [dry run](https://cloud.google.com/bigquery/docs/estimate-costs) 或一次 Snowflake `EXPLAIN` 估算位元組與列數，任何超出預算的都會在它執行之前被拒絕。只有在這些確定性檢查通過之後，機率性的檢查才會執行（決策 5）。把便宜、確定的檢查擺在最前面，是 [guardrails](../13-reliability-and-safety/01-guardrails.md) 的紀律：絕不花一次 LLM 呼叫或一次倉儲掃描，去捕捉一個解析器免費就能捕捉的東西。
 
+這道閘門是一條管線，而每一個階段都路由到三種結果之一，執行、修復或棄答：
+
+| 閘門檢查 | 觸發它的條件 | 路由 |
+|---|---|---|
+| sqlglot 解析與方言 | 無法針對目標方言解析 | 修復 |
+| AST 形狀 | 不是單一的唯讀 SELECT（DDL、DML 或多陳述式） | 拒斥為注入，接著棄答 |
+| 成本估算（dry run 或 EXPLAIN） | 估算掃描超過每次查詢的位元組上限（預設 50 GB，依資料集調校） | 修復以收窄，否則棄答 |
+| 跨 K 的自我一致性 | K 個結果的分歧超過指標容差 | 修復或升級至 Opus 4.8 |
+| 量級對照登錄表界限 | 結果落在指標宣告的界限之外 | 棄答 |
+| 空的或全為 null 的結果 | 零列，或每個值皆為 null | 棄答並回報沒有相符的資料 |
+| LLM 評審 | SQL 沒有算出所問的指標或粒度 | 修復或棄答 |
+| 全部檢查 | 上述每一道閘門都通過 | 執行並出貨 |
+
+這個偏好是刻意的：任何無法被廉價修復的失敗，都以棄答告終，絕不以出貨一個未經驗證的數字告終。上面的 Question A 只有在扇出候選被修復之後，才通過了每一列；而 Question B 從未觸及這張表，因為範圍分類器先一步棄答了。
+
 ### 4. 以提問者身分執行，而非服務帳戶
 
 copilot 絕不可變成一個洗白權限的側通道。如果它以一個具特權的服務帳戶去查詢倉儲、再於 app 內過濾結果，一個 bug 或一次提示注入就可能外洩提問者看不到的資料。反之，提問者的身分會（透過 Okta 與倉儲 OAuth）被交換成一個唯讀角色，而查詢就在那個角色下執行，因此 Snowflake [row access policies](https://docs.snowflake.com/en/user-guide/security-row-intro) 與 [masking policies](https://docs.snowflake.com/en/user-guide/security-column-intro)、BigQuery [row-level security](https://cloud.google.com/bigquery/docs/row-level-security-intro)，或 Databricks [Unity Catalog row filters and column masks](https://docs.databricks.com/en/data-governance/unity-catalog/row-and-column-filters.html) 都由倉儲本身來強制執行。copilot 繼承了治理，而不是重新實作它。參見 [Access Control](../12-security-and-access/02-access-control.md)。
 
 ### 5. 自我一致性加上一個 LLM 評審：錯誤數字的防線
 
-這是「絕不出現一個自信的錯誤數字」的核心。對任何非瑣碎的問題，草擬模型會在非零溫度下抽樣 K 個候選查詢（[self-consistency](https://arxiv.org/abs/2203.11171)）；通過靜態閘門之後，存活下來的候選會以唯讀方式執行，並比較它們的結果。如果 K 條獨立的推導在數字上取得一致，信心就高；如果它們彼此不一致，那就是棄答或升級至 Opus 4.8 的訊號，而不是挑一個然後祈禱。另外，一個 Opus 4.8 評審會讀取問題、編譯後的 SQL 與結果，並回答一個狹窄的問題：這段 SQL 是否用了對的指標與粒度、算出了所問的東西？這個評審不被信任去寫 SQL，只被信任去捕捉不相符之處。這個迴圈中任何地方的不一致，都會被導向棄答或一個真人，而這正是全部的重點。
+這是「絕不出現一個自信的錯誤數字」的核心。對任何非瑣碎的問題，草擬模型會在非零溫度下抽樣 K 個候選查詢（[self-consistency](https://arxiv.org/abs/2203.11171)）；通過靜態閘門之後，存活下來的候選會以唯讀方式執行，並比較它們的結果。如果 K 條獨立的推導在數字上取得一致，信心就高；如果它們彼此不一致，那就是棄答或升級至 Opus 4.8 的訊號，而不是挑一個然後祈禱。K 預設為 5，並會為面向主管或高基數的問題調高。一致性是按指標定義的，而不是精確的字串比對：對於像 NRR 這樣的比率，結果必須落在 0.5 個百分點的容差之內。在上面的實作範例裡，五個候選中有四個在 111.2 取得一致，而第五個，一個把擴張重複計算的扇出，在 118.7 上不一致，這正是那個阻止了一個看似合理的錯誤數字出貨的訊號。另外，一個 Opus 4.8 評審會讀取問題、編譯後的 SQL 與結果，並回答一個狹窄的問題：這段 SQL 是否用了對的指標與粒度、算出了所問的東西？這個評審不被信任去寫 SQL，只被信任去捕捉不相符之處。這個迴圈中任何地方的不一致，都會被導向棄答或一個真人，而這正是全部的重點。
 
 ### 6. 釐清相對假設，並總是展示你的計算過程
 
@@ -143,6 +218,33 @@ flowchart TD
     AGREE -->|Yes| JUDGE2[LLM 評審：SQL 是否符合問題？]
     JUDGE2 -->|No| DECL2
     JUDGE2 -->|Yes| SHIP[交付圖表加上 SQL 加上假設]
+```
+
+## 自我一致性與修復迴圈
+
+在實作範例中抓到扇出的那個「先分歧、後一致」動態，以一個隨時間展開的互動來看。
+
+```mermaid
+sequenceDiagram
+    participant U as 透過 Slack 的提問者
+    participant G as 正確性閘門
+    participant W as 以提問者角色運行的倉儲
+    participant O as Opus 4.8 修復與評審
+
+    U->>G: 問題已解析為受治理指標
+    G->>G: 編譯指標並抽樣 K 個候選
+    G->>W: 執行 K 個唯讀候選
+    W-->>G: K 個結果集
+    alt Results disagree beyond tolerance
+        G->>O: 把離群值升級以修復
+        O-->>G: 扇出已診斷、查詢已改寫
+        G->>W: 重新執行已修復的候選
+        W-->>G: 結果現在一致了
+    end
+    G->>O: 對照問題與粒度評審 SQL
+    O-->>G: 裁定為相符
+    G-->>U: 圖表加上 SQL 加上假設
+    Note over G: 若仍不一致或評審駁回，則誠實棄答
 ```
 
 ## 失效模式與緩解措施

@@ -77,11 +77,83 @@ flowchart TB
 7. Disagreements (human vs model, or annotator vs annotator) route to consensus and, if still split, to an adjudicator; the final label is written with full provenance: source, confidence, method, model version, reviewer.
 8. Corrected labels update annotator scorecards and retrain the label model; uncertain and high-disagreement items feed the active-learning queue; a versioned dataset with a card exports to downstream training, whose model lift becomes the metric that re-prioritizes future labeling.
 
+### A worked example: one 10,000-item content-classification batch
+
+A single batch shows where the design earns its keep. A downstream team needs 10,000 community forum posts labeled into a 6-way topic taxonomy (product-feedback, billing, technical-support, feature-request, spam, off-topic) to train an intent router. The task is objective enough to auto-accept the easy majority, which is exactly the regime LLM pre-labeling is for.
+
+**Pre-label and route.** Haiku 4.5 pre-labels all 10,000 posts, each with a calibrated confidence (token logprobs blended with five self-consistency samples), while Snorkel labeling functions (billing-keyword regexes, URL-density spam heuristics, a length-and-caps rule) vote in parallel and the label model fuses them. The router auto-accepts the 6,400 posts where confidence is over 0.92, the label model agrees, and the class is non-sensitive. The remaining 3,600 go to humans: about 1,900 low-confidence (under 0.75), about 1,400 where the LLM and the label model disagree (query-by-committee), and about 300 flagged possibly-harassment that are blind-first and never auto-acceptable. Paying humans for 3,600 items instead of 10,000 is the whole economic case.
+
+**Measure quality live.** A doubly-labeled slice of 500 human-reviewed posts gets a second independent annotator, and overall Cohen's kappa is 0.81 (almost-perfect on the Landis and Koch bands), above the 0.75 ship bar. But the feature-request versus product-feedback pair scores only 0.53 in isolation, which flags a guideline ambiguity (the annotators are not lazy, the boundary is underspecified), so the guideline is clarified and that slice is re-labeled before ship.
+
+**Catch automation bias with a honeypot.** Gold and honeypot items are seeded at 8 percent of the human queue (about 290 probes). One honeypot is a plainly billing-refund post shown with a deliberately wrong pre-label of spam at model_conf 0.93. Annotator A22 accepts spam, that is, rubber-stamps the model. The honeypot catches it: A22 has now missed 3 of 11 honeypots this week and shows a 2 percent edit rate on shown pre-labels against a 14 percent cohort median, the twin signatures of automation bias. A22 is auto-suspended and their recent labels are queued for re-adjudication. Annotator A08, shown the same honeypot, overrides it to billing and passes.
+
+**The circularity trap, made concrete.** Item 7731, a post using a new slang term, was pre-labeled off-topic at 0.94 and auto-accepted. Nothing in the accept path saw a human. What catches it is the standing gold audit of the auto-accepted stream: a fresh 2 percent human-labeled sample shows audited precision on the slang cluster falling to 91 percent, under the 98 percent bar. The cluster is pulled from auto-accept, routed to humans, and its recent auto-accepts are re-adjudicated. This is the trap the whole platform exists to prevent: without that audit, a confident wrong pre-label silently becomes the ground truth that trains the next model, which then learns the same blind spot with more confidence. The model is never allowed to certify its own labels.
+
+**Aim the next batch.** After training on this batch, the refreshed model runs over the roughly 2M unlabeled backlog, active learning selects the 10,000 highest-uncertainty items (uncertainty sampling plus query-by-committee), and the new slang cluster dominates the selection, so the next batch spends human effort exactly where the model is weakest rather than uniformly. Unlike the [Synthetic Data Generation Pipeline](37-synthetic-data-generation.md), which manufactures new inputs, here every label traces back to a real item and to a named human of record on the contested ones.
+
+### A sample label record
+
+Every item carries its full routing and provenance so a dataset card and an audit can reconstruct exactly how the label was produced. Three records from the batch above tell the story: an auto-accept later caught by audit, a honeypot a reviewer rubber-stamped, and a genuine human correction.
+
+```json
+[
+  {
+    "item_id": "post-7731",
+    "model": "haiku-4.5",
+    "model_label": "off_topic",
+    "model_conf": 0.94,
+    "human_label": null,
+    "agreement": null,
+    "final_label": "off_topic",
+    "route": "auto_accept",
+    "is_honeypot": false,
+    "note": "cluster pulled to human review after gold-audit precision fell to 0.91"
+  },
+  {
+    "item_id": "hp-0442",
+    "model": "haiku-4.5",
+    "model_label": "spam",
+    "model_conf": 0.93,
+    "human_label": "spam",
+    "agreement": true,
+    "final_label": "billing",
+    "route": "human_review",
+    "is_honeypot": true,
+    "annotator": "A22",
+    "result": "fail_rubber_stamp"
+  },
+  {
+    "item_id": "post-3185",
+    "model": "haiku-4.5",
+    "model_label": "feature_request",
+    "model_conf": 0.71,
+    "human_label": "product_feedback",
+    "agreement": false,
+    "final_label": "product_feedback",
+    "route": "human_review",
+    "is_honeypot": false,
+    "annotator": "A08"
+  }
+]
+```
+
 ## Key Design Decisions
 
 ### 1. Route scarce human attention by confidence and disagreement, not uniformly
 
-The core economic move. A cheap LLM pre-labels all 10M items; the router auto-accepts the confident, agreeing majority and sends only the uncertain and contested minority to humans. The auto-accept threshold trades cost against quality directly, so set it empirically: pick the highest threshold at which audited auto-accept accuracy against gold stays above the dataset's quality bar (say 98 percent), and route everything below it. In practice 55 to 75 percent auto-accept is typical, which is the difference between paying humans for 10M items and paying for 3M. This is textbook human-in-the-loop routing; see [Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md).
+The core economic move. A cheap LLM pre-labels all 10M items; the router auto-accepts the confident, agreeing majority and sends only the uncertain and contested minority to humans. The auto-accept threshold trades cost against quality directly, so set it empirically: pick the highest threshold at which audited auto-accept accuracy against gold stays above the dataset's quality bar (say 98 percent), and route everything below it. In practice 55 to 75 percent auto-accept is typical, which is the difference between paying humans for 10M items and paying for 3M. In the worked batch above, this rule auto-accepted 6,400 of 10,000 posts and sent 3,600 to humans. The routing is a checkable table, not a vibe:
+
+| Model confidence | Label-model / weak-supervision agreement | Class | Route |
+|---|---|---|---|
+| over 0.92 | agrees | objective, non-sensitive | Auto-accept (with gold-audit sampling) |
+| over 0.92 | disagrees | any | Human review (query-by-committee) |
+| 0.75 to 0.92 | agrees | objective | Human review (single pass) |
+| 0.75 to 0.92 | disagrees | any | Human review, then consensus |
+| under 0.75 | any | any | Human review (blind-first) |
+| any | any | sensitive or subjective | Blind-first human, never auto-accept |
+| post-review annotators disagree | n/a | any | Consensus, then adjudicate |
+
+This is textbook human-in-the-loop routing; see [Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md).
 
 ### 2. Measure label quality continuously with kappa, gold, and consensus
 
@@ -89,7 +161,7 @@ You cannot manage what you do not measure, and "the LLM seems good" is not a mea
 
 ### 3. Break the circularity so LLM and human errors stay independent
 
-The trap that makes this whole domain dangerous. If the human just sees and confirms the LLM's label, their "review" is correlated with the model's error: any mistake the model makes confidently sails through, becomes the ground truth that trains the next model, and gets repeated with more confidence. This is not model collapse (recursive training on generated data, [Shumailov et al., 2024](https://www.nature.com/articles/s41586-024-07566-y), see [Synthetic Data Generation](37-synthetic-data-generation.md)); it is labeling real data where labeler and reviewer share a blind spot. Defenses: blind-first review for subjective and sensitive classes, honeypots that flip the pre-label to catch rubber-stamping, and a standing rule that a class where the pre-labeler shares the failure mode you are trying to measure is never auto-accepted. Note that a high LLM-human kappa is not reassurance here: if both share a cultural bias they agree for the wrong reason, and kappa looks great.
+The trap that makes this whole domain dangerous. If the human just sees and confirms the LLM's label, their "review" is correlated with the model's error: any mistake the model makes confidently sails through, becomes the ground truth that trains the next model, and gets repeated with more confidence. This is not model collapse (recursive training on generated data, [Shumailov et al., 2024](https://www.nature.com/articles/s41586-024-07566-y), see [Synthetic Data Generation](37-synthetic-data-generation.md)); it is labeling real data where labeler and reviewer share a blind spot. Defenses: blind-first review for subjective and sensitive classes, honeypots that flip the pre-label to catch rubber-stamping, and a standing rule that a class where the pre-labeler shares the failure mode you are trying to measure is never auto-accepted. Note that a high LLM-human kappa is not reassurance here: if both share a cultural bias they agree for the wrong reason, and kappa looks great. The worked batch shows the trap in miniature: item 7731 was auto-accepted at 0.94 confidence, and only the standing gold audit of the auto-accepted stream (see the auto-accept audit loop below) caught that the model was systematically wrong on a slang cluster, before those labels could train the next model.
 
 ### 4. Weak supervision as a cheap independent third signal
 
@@ -97,7 +169,7 @@ Snorkel-style weak supervision ([Ratner et al., 2017](https://arxiv.org/abs/1711
 
 ### 5. Active learning: spend the labeling budget where it moves the model
 
-Human labels are the scarce resource, so spend them where they change the downstream model most, not uniformly. Uncertainty sampling (label the items the model is least sure about) and query-by-committee (label where the LLM and the label model disagree) are the classic levers ([Settles, 2009](https://burrsettles.com/pub/settles.activelearning.pdf)). The flywheel: label a batch, train, run the new model over unlabeled data, find the hard and newly-uncertain cases, and route those to humans next. This is the same uncertainty signal the eval stack uses to find failure slices; see [LLM Evaluation](../14-evaluation-and-observability/01-llm-evaluation.md). Done well, active learning reaches a target accuracy with a fraction of the labels random sampling needs.
+Human labels are the scarce resource, so spend them where they change the downstream model most, not uniformly. Uncertainty sampling (label the items the model is least sure about) and query-by-committee (label where the LLM and the label model disagree) are the classic levers ([Settles, 2009](https://burrsettles.com/pub/settles.activelearning.pdf)). The flywheel: label a batch, train, run the new model over unlabeled data, find the hard and newly-uncertain cases, and route those to humans next. This is the same uncertainty signal the eval stack uses to find failure slices; see [LLM Evaluation](../14-evaluation-and-observability/01-llm-evaluation.md). Done well, active learning reaches a target accuracy with a fraction of the labels random sampling needs. In the worked batch, the refreshed model ran over the roughly 2M unlabeled backlog and active learning selected the 10,000 highest-uncertainty items for the next round, dominated by the newly-discovered slang cluster, so the next batch concentrated human effort exactly where the model had just been caught failing.
 
 ### 6. Preference and RLHF data: pairwise, calibrated judges, reward-hacking guards
 
@@ -136,6 +208,26 @@ flowchart TD
     SC --> REC
     ACC --> STORE[(Label Store)]
     REC --> STORE
+```
+
+## The Auto-Accept Audit Loop
+
+Auto-accept is the only place a label ships without a human, so it gets the safety-critical treatment: a standing audit that stops the model from certifying its own ground truth. A fresh, fully human-labeled sample of the auto-accepted stream is scored continuously, and if audited precision on any class or cluster falls below the quality bar, that slice is pulled back to humans and its recent auto-accepts are re-adjudicated. This is the concrete mechanism that breaks the circularity trap (Decision 3), and it is what caught item 7731 in the worked example.
+
+```mermaid
+flowchart TD
+    AA[Auto-Accepted Stream] --> SAMP[Fresh Human Gold Sample 2 percent]
+    SAMP --> P{Audited precision at or above 98 percent?}
+    P -->|yes| KEEP[Keep auto-accept for this class]
+    P -->|no| PULL[Pull class or cluster from auto-accept]
+    PULL --> HUMAN[Route slice to human review]
+    PULL --> AL[Active Learning targets the slice]
+    HUMAN --> RELABEL[Re-adjudicate recent auto-accepts]
+    KEEP --> GT[(Ground Truth Label Store)]
+    RELABEL --> GT
+    AL -.next batch.-> HUMAN
+    GT -.trains.-> NEXT[Next Model]
+    NEXT -.pre-labels then audited again.-> AA
 ```
 
 ## Failure Modes and Mitigations

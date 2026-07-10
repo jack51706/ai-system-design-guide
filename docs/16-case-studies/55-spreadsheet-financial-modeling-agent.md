@@ -85,6 +85,64 @@ flowchart TB
 8. On approval, the write goes back through the API, the dependency closure is recalculated to catch errors that surfaced downstream, and the change plus its provenance is appended to a reversible log.
 9. Audit requests take a read-only branch: consistency and structural checks plus LLM review produce ranked findings and never touch a cell.
 
+### A worked example: adding a net revenue retention row per cohort
+
+The analyst types "add a net revenue retention row for each cohort" into the Sheets add-on over `SaaS_Model.xlsx`, a live cohort revenue build. The request exercises the whole write path.
+
+**Read the graph, not the grid.** The model builder pulls the workbook through the Graph API and reconstructs dependencies instead of rendered numbers. It recovers the grain: `Cohorts` has one row per acquisition month, rows 4 to 15 (cohorts `2025-01` through `2025-12`), month-0 MRR per cohort sits in `Cohorts!C4:C15`, and the revenue detail is a tidy ledger on `Data`, one row per (cohort, calendar month), rows 2 to 731, exposed as named ranges `led_mrr` (`Data!$C$2:$C$731`), `led_cohort` (`Data!$A$2:$A$731`), and `led_month` (`Data!$B$2:$B$731`). NRR is defined here as latest-period retained MRR over month-0 MRR, so each cohort row needs a numerator that totals that cohort's MRR in `Latest_Month`.
+
+**Generate the formula.** The draft model proposes, for cohort row 4 in a new column `P`:
+
+`=SUMIFS(Data!$C$2:$C$730, Data!$A$2:$A$730, $B4, Data!$B$2:$B$730, Latest_Month) / $C4`
+
+The bug is a fencepost: it typed the three ranges as explicit `...$2:$730`, one row short of the `led_mrr` block that ends at row 731. Because the ranges are absolute, the shortfall always drops the very last ledger row, which belongs to cohort `2025-12` (row 15) and carries $8,400 of its latest-month MRR.
+
+**Sandbox recalc reconciliation.** The gate clears the cheap deterministic checks (it parses, the references resolve) and recalculates the whole new column in a sandboxed copy with the `formulas` engine. Cohort `2025-12` returns $117,600 / $120,000 = 0.980, a contraction. Reconciliation then recomputes the same quantity a second, independent way, an accounting cross-foot: it sums the twelve per-cohort numerators, which must tie to a latest-month grand total taken independently over the full `led_mrr` range, and gets $1,412,100 against a grand total of $1,420,500. The gap is exactly $8,400, orders of magnitude outside the reconciliation epsilon (relative `1e-9`, absolute `$0.005`). In parallel the reference-and-range check flags that `Data!$C$2:$C$730` stops one row short of the contiguous `led_mrr` block. Both signals converge on the same fencepost. This is the [Reinhart-Rogoff](https://en.wikipedia.org/wiki/Growth_in_a_Time_of_Debt) shape exactly: an aggregation range that silently drops the boundary row and flips a headline, here `2025-12` from 105 percent expansion to 98 percent contraction.
+
+**Fix, then a tracked diff.** The block routes to repair; because a deterministic check localized the cause to a range boundary, Opus 4.8 rewrites the three ranges to the maintained named ranges (`led_mrr`, `led_cohort`, `led_month`) so the formula self-extends. The re-recalc returns $126,000 / $120,000 = 1.050 for `2025-12`, the cross-foot ties to the cent, and the column reconciles. Only now is a diff rendered (new column `P`, per-row old-versus-new with recalculated previews). The analyst approves; the write goes back through the API, the dependency closure recomputes with no new `#REF!`, and the change lands in the reversible log. Nothing was auto-applied and no existing formula was touched.
+
+### The same model in audit mode
+
+Point the agent at the same `SaaS_Model.xlsx` read-only and it hunts the classic bug classes instead of building. Two findings surface:
+
+- **Hardcoded number inside a formula.** `Cohorts!H9` reads `=G9*1.08`, where `1.08` is a churn-adjusted growth assumption typed as a literal instead of a reference to the `Assumptions` sheet's `Gross_Churn` driver, so it never moves when the analyst flexes the assumption. The auditor flags the numeric literal (outside the allowlist of true constants such as `12` months) and proposes `=G9*(1-Gross_Churn)`. This is the JPMorgan operator/plug class.
+- **Inconsistent formula across a row.** `Cohorts!F4:F15` (month-3 retained MRR) is a uniform `=SUMIFS(...)` in every cell except `F11`, which was hand-edited months ago to `=SUMIFS(...)+500`, a since-forgotten manual true-up. [ExceLint](https://arxiv.org/abs/1901.11100)-style consistency detection flags `F11` as the lone outlier in a uniform range and ranks it by blast radius (how many downstream cells depend on it). The agent writes nothing; it emits ranked findings.
+
+The contrast is the point: the same dependency-graph read powers a gated write and a zero-write audit, and the audit targets the exact error classes (off-by-one ranges, hardcoded plugs, inconsistent rows) that the [EuSpRIG](https://eusprig.org/research-info/horror-stories/) record is built from.
+
+### The formula-change record
+
+Every proposed edit is emitted as a schema-validated change record, not free prose, so the gate and the audit log reason over the same structured object. This is the record for the fixed `2025-12` cell:
+
+```json
+{
+  "change_id": "chg-2026-07-10-0442",
+  "workbook": "SaaS_Model.xlsx",
+  "sheet": "Cohorts",
+  "cell": "P15",
+  "intent": "add net revenue retention row per cohort",
+  "old": null,
+  "new": "=SUMIFS(led_mrr, led_cohort, $B15, led_month, Latest_Month) / $C15",
+  "recalc_preview": {"numerator": 126000.0, "denominator": 120000.0, "value": 1.05},
+  "validation": {
+    "parses": true,
+    "refs_ok": true,
+    "types_ok": true,
+    "sandbox_recalc": true,
+    "recalc_reconciled": true,
+    "reconcile_method": "cross-foot vs independent latest-month grand total",
+    "epsilon": {"relative": 1e-9, "absolute": 0.005, "observed_delta": 0.0}
+  },
+  "downstream_errors": [],
+  "prior_draft_rejected": "range Data!$C$2:$C$730 short one row vs led_mrr",
+  "route": "opus-4.8-repair",
+  "requires_approval": true,
+  "status": "pending_review"
+}
+```
+
+The gate trusts only the structured `validation` block; a record with `recalc_reconciled` false or any `downstream_errors` can never reach the approval queue, and `requires_approval` is always true for a write.
+
 ## Key Design Decisions
 
 ### 1. Ground on the live cell graph, not the rendered grid
@@ -93,15 +151,27 @@ The whole design rests on this. A rendered value of `1,240,000` in cell `D14` co
 
 ### 2. Formula generation is verifiable code, gated before it is written
 
-A generated formula is a hypothesis, not an answer, and it clears a gate that is code before it clears one that is vibes. This is the direct analog of the [text-to-SQL correctness gate](39-conversational-analytics-text-to-sql.md), and it runs deterministic checks first because they are free: the formula is parsed to an AST, every cell reference and range is validated against the real grid (does `Revenue` resolve, does the range cover the intended rows), and types and units are sanity-checked so a growth rate is never `SUM`-med and a per-unit price is never added to a total. Only after the cheap certain checks pass does the expensive probabilistic one run. This is the [guardrails](../13-reliability-and-safety/01-guardrails.md) discipline: never spend an LLM call to catch what a parser catches for free. The gold-set eval that scores this gate is a [SpreadsheetBench](https://arxiv.org/abs/2406.14991)-style suite of task, before-workbook, and after-workbook triples, so "correct" means the recalculated result matches, not that the formula reads plausibly.
+A generated formula is a hypothesis, not an answer, and it clears a gate that is code before it clears one that is vibes. This is the direct analog of the [text-to-SQL correctness gate](39-conversational-analytics-text-to-sql.md), and it runs deterministic checks first because they are free: the formula is parsed to an AST, every cell reference and range is validated against the real grid (does `Revenue` resolve, does the range cover the intended rows), and types and units are sanity-checked so a growth rate is never `SUM`-med and a per-unit price is never added to a total. Only after the cheap certain checks pass does the expensive probabilistic one run. This is the [guardrails](../13-reliability-and-safety/01-guardrails.md) discipline: never spend an LLM call to catch what a parser catches for free. The gold-set eval that scores this gate is a [SpreadsheetBench](https://arxiv.org/abs/2406.14991)-style suite of task, before-workbook, and after-workbook triples, so "correct" means the recalculated result matches, not that the formula reads plausibly. The gate is a fixed ordered sequence, and each check maps to write, block, or escalate:
+
+| Validation check (in order) | Passes | Fails |
+|---|---|---|
+| Parses to a valid formula AST | next check | block, auto-repair |
+| References and named ranges resolve | next check | block, auto-repair |
+| Range spans the full contiguous block (no fencepost) | next check | block, auto-repair (off-by-one / Reinhart-Rogoff class) |
+| Types and units coherent (no rate summed, no currency over a count) | next check | block, auto-repair |
+| Sandbox recalc raises no `#REF!`, `#DIV/0!`, or circular reference | next check | block, auto-repair |
+| Reconciles with an independent derivation within epsilon | write (render diff) | block for repair if a check localizes the cause, else escalate to analyst |
+| Analyst approves the rendered diff | write back plus recalc closure | discard and log |
+
+"Block" runs the automated repair loop (re-draft, or escalate the repair itself to Opus 4.8); "escalate" hands a human the disagreement rather than guessing at it. The worked example fails the reconciliation row on cohort `2025-12`, but because the co-firing range check localizes the cause to a one-row fencepost, it blocks for auto-repair rather than escalating, before a single cell is written.
 
 ### 3. The engine is the calculator, never the model
 
-The most seductive failure is the LLM doing arithmetic in its head. It must not, ever. Every value the agent produces or depends on is executed in a real spreadsheet engine (`formulas`, [PyCel](https://github.com/dgorissen/pycel), or a headless LibreOffice recalculation) on a sandboxed copy, and the result is reconciled before it is shown. This is where spreadsheet-specific state bites: `#REF!`, `#DIV/0!`, and `#N/A` must be detected and propagated honestly rather than papered over, circular references have to be found and either resolved with iterative calculation or refused, and floating-point drift means "reconcile" is an epsilon comparison, not `==`. Executing rather than trusting is the same instinct as running SQL instead of believing the model's predicted result, but the surface is larger because a single edit can silently change a cell fifty rows away.
+The most seductive failure is the LLM doing arithmetic in its head. It must not, ever. Every value the agent produces or depends on is executed in a real spreadsheet engine (`formulas`, [PyCel](https://github.com/dgorissen/pycel), or a headless LibreOffice recalculation) on a sandboxed copy, and the result is reconciled before it is shown. This is where spreadsheet-specific state bites: `#REF!`, `#DIV/0!`, and `#N/A` must be detected and propagated honestly rather than papered over, circular references have to be found and either resolved with iterative calculation or refused, and floating-point drift means "reconcile" is an epsilon comparison, not `==`. Executing rather than trusting is the same instinct as running SQL instead of believing the model's predicted result, but the surface is larger because a single edit can silently change a cell fifty rows away. Reconciliation is deliberately a two-derivation agreement check, not a single recompute: the sandbox executes the generated formula, an independent derivation recomputes the same target a different way (a cross-foot to a grand total, a groupby over the source ledger, or a closed-form identity), and the two must agree within an epsilon (relative `1e-9`, absolute `$0.005`) because floating-point drift makes `==` a bug. In the worked example that cross-foot is exactly what surfaces the $8,400 shortfall the recalc alone would have reported as a clean, confident, wrong 98 percent.
 
 ### 4. Auditing is a first-class, read-only mode
 
-Given that most operational spreadsheets already contain errors ([Panko / EuSpRIG](https://arxiv.org/abs/0802.3457)), auditing is not a side feature, it is half the product, and it writes nothing. The auditor hunts the classic, expensive bugs: hardcoded numbers buried inside formulas (the `=A1*1.2` where `1.2` should be a driver cell), formulas inconsistent across a row or column where one cell was hand-edited, broken external links, and sign errors. Structural, consistency-based detection in the spirit of [ExceLint](https://arxiv.org/abs/1901.11100) finds the outlier formula in a range deterministically, and an LLM layer explains and prioritizes it. These are the exact shapes behind the famous disasters: the [Reinhart-Rogoff](https://en.wikipedia.org/wiki/Growth_in_a_Time_of_Debt) range that omitted five countries and JPMorgan's [sum-instead-of-average](https://en.wikipedia.org/wiki/2012_JPMorgan_Chase_trading_loss). Findings are ranked by blast radius (how much of the model depends on the suspect cell) so the analyst sees the load-bearing error first.
+Given that most operational spreadsheets already contain errors ([Panko / EuSpRIG](https://arxiv.org/abs/0802.3457)), auditing is not a side feature, it is half the product, and it writes nothing. The auditor hunts the classic, expensive bugs: hardcoded numbers buried inside formulas (the `=A1*1.2` where `1.2` should be a driver cell), formulas inconsistent across a row or column where one cell was hand-edited, broken external links, and sign errors. Structural, consistency-based detection in the spirit of [ExceLint](https://arxiv.org/abs/1901.11100) finds the outlier formula in a range deterministically, and an LLM layer explains and prioritizes it. These are the exact shapes behind the famous disasters: the [Reinhart-Rogoff](https://en.wikipedia.org/wiki/Growth_in_a_Time_of_Debt) range that omitted five countries and JPMorgan's [sum-instead-of-average](https://en.wikipedia.org/wiki/2012_JPMorgan_Chase_trading_loss). Findings are ranked by blast radius (how much of the model depends on the suspect cell) so the analyst sees the load-bearing error first. The audit-mode pass in the worked example is this exact behavior: on the same `SaaS_Model.xlsx` it flags `H9`'s hardcoded `1.08` (a driver that should reference `Gross_Churn`) and `F11`'s lone `+500` outlier in an otherwise uniform row, writing nothing. These are not hypothetical: per-cell error rates of 1 to 5 percent ([Panko / EuSpRIG](https://arxiv.org/abs/0802.3457)) mean a 2,000-formula model carries tens of latent bugs, so audit recall is a headline SLO, not a nicety.
 
 ### 5. Every write is a reviewable, reversible diff
 
@@ -122,6 +192,23 @@ At 50,000 operations a day the economics only work with tiering. Most operations
 ### 9. When the agent should stay read-only, and when a human wins
 
 Be honest about the boundary. On a novel, bespoke model where the structure is being invented in the room (a first-of-its-kind waterfall, a deal-specific LBO), the agent should draft and audit but not drive, because the judgment-heavy assumptions (what discount rate, which comparables, how to treat an earnout) are the analyst's call, not a fact the model can derive, exactly as the [Contract Redlining copilot](45-contract-drafting-redlining.md) defers the decision to accept a clause to a lawyer. For anything the deterministic layer can settle, the deterministic layer wins: a parser, a recalc engine, and a consistency check are more trustworthy than an LLM and run first. And for high-stakes third-party workbooks (an auditor reviewing a client's model, a regulator's submission), the agent runs audit-only with writes disabled entirely, because the safe, high-value move is finding the error, not editing someone else's load-bearing file.
+
+## The Recalc Reconciliation
+
+Reconciliation is the load-bearing check, so it is worth seeing on its own. The agent never trusts a single recompute; it derives the same target quantity two independent ways and demands they agree within a floating-point epsilon. A lone recalc of a wrong formula returns a wrong number confidently (the 98 percent above); only an independent derivation that disagrees exposes it. When they disagree, a deterministic check (a fencepost range, a cycle) that localizes the cause converts an abstain into a mechanical auto-repair; an unexplained disagreement escalates to the analyst rather than guessing.
+
+```mermaid
+flowchart TD
+    Q[Target quantity per cohort NRR] --> A[Derivation A recalc generated formula in sandbox]
+    Q --> B[Derivation B independent cross-foot to grand total]
+    A --> CMP{A and B agree within epsilon?}
+    B --> CMP
+    CMP -->|yes| PASS[Reconciled, render diff for approval]
+    CMP -->|no| LOC{Deterministic check localizes cause?}
+    LOC -->|yes fencepost or cycle| REPAIR[Block, auto-repair via Opus 4.8]
+    LOC -->|no| ESC[Escalate to analyst, abstain]
+    REPAIR --> A
+```
 
 ## Write Path: Gate and Verify Loop
 

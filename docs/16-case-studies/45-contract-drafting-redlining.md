@@ -73,6 +73,52 @@ flowchart TB
 8. A deterministic validator confirms the rationale references only the retrieved rule and clause span and contains no invented statute or case citation; anything that fails is dropped or flagged unverified, never shown as authority.
 9. Suggestions land in a per-matter review queue ranked by severity; the lawyer accepts, edits, or rejects each tracked change, and every action is written to an immutable per-matter audit log that feeds the acceptance-rate eval.
 
+### A worked example: an uncapped indemnity and a boilerplate governing-law clause
+
+The design is easiest to see on two clauses from the same inbound MSA (matter `MTR-2026-0619-northwind`, Northwind Logistics' standard paper) that end in opposite places.
+
+**Clause 14.2 (blocked, critical).** The segmenter lifts Section 14.2 as one unit, and the classifier labels it `indemnification` plus `limitation_of_liability` (multi-label, confidence 0.97) and routes it to playbook rule `IND-LIA-007`. That rule's positions are explicit: the standard is mutual indemnification with aggregate liability capped at fees paid in the trailing 12 months; the fallback ladder allows a super-cap up to 2x fees and a 24-month cap for the data-breach carve-out; the walk-away red line is uncapped or unlimited liability. The counterparty clause reads "Customer shall indemnify, defend, and hold harmless Supplier ... without limitation as to amount," a one-way indemnity running against the company with no cap. Deviation detection frames the standard as a hypothesis ("liability is capped at fees paid in the prior 12 months") and returns `contradicted` at NLI confidence 0.93, band `crosses_red_line`. Risk scoring multiplies the playbook's critical weight (1.0) by that confidence to about 0.90 and pins the clause to the top of the queue as a block. The copilot drafts a redline: it makes the indemnity mutual and inserts verbatim cap language from clause-library template `CL-LIA-12MO` ("In no event shall either party's aggregate liability ... exceed the total fees paid or payable in the twelve (12) months preceding the claim"), emitted as OOXML `w:ins` and `w:del` tracked changes. The rationale cites exactly two IDs, playbook rule `IND-LIA-007` and clause span `clause-14.2`, and names no statute and no case, because the authority here is the playbook, not the law. The grounding validator confirms that and lets it through.
+
+**Clause 22.1 (passes, no edit).** The same run lifts Section 22.1, "This Agreement shall be governed by the laws of the State of Delaware," classified `governing_law` at confidence 0.99 and routed to rule `GOV-LAW-002` (standard is Delaware or New York, fallback is any US state seat, red line is a foreign forum or an offshore mandatory-arbitration seat). The hypothesis "governing law is Delaware or New York" is `entailed`, band `meets_standard`, severity none. There is no deviation, so there is no redline and nothing enters the review queue for this clause. Had 22.1 said "governed by the laws of Singapore," the same rule would have flipped it to a red-line block; had it said "New York," still a clean pass. The rule, not the model's taste, draws the line.
+
+The point: the model produced a structured comparison for both clauses, but the deviation band and the playbook severity, not the model's prose, decided that one clause blocks the deal and the other is never shown to a lawyer at all.
+
+### The deviation record
+
+The model never emits free prose into the pipeline; it emits a schema-validated deviation record per flagged clause, and the queue, the validator, and the audit log all reason over that record rather than the narrative. Every field the pipeline trusts is grounded to a retrieved ID, and `cites_statute_or_case` is the load-bearing anti-hallucination check.
+
+```json
+{
+  "clause_id": "MTR-2026-0619-northwind/clause-14.2",
+  "clause_type": ["indemnification", "limitation_of_liability"],
+  "playbook_rule": "IND-LIA-007",
+  "position": {
+    "standard": "Mutual indemnity; aggregate liability capped at fees paid in trailing 12 months",
+    "fallback": "Super-cap up to 2x fees; 24-month cap for the data-breach carve-out",
+    "redline": "Uncapped or unlimited liability, or a one-way indemnity against the company"
+  },
+  "deviation": "crosses_red_line",
+  "nli_label": "contradicted",
+  "nli_confidence": 0.93,
+  "evidence_span": "Section 14.2: Customer shall indemnify ... without limitation as to amount",
+  "severity": "critical",
+  "risk_score": 0.90,
+  "queue_action": "block",
+  "suggested_edit": {
+    "source": "clause_library:CL-LIA-12MO",
+    "operation": "make_mutual_and_insert_liability_cap",
+    "format": "ooxml_tracked_changes"
+  },
+  "citation": {
+    "playbook_rule_id": "IND-LIA-007",
+    "clause_span_id": "clause-14.2",
+    "cites_statute_or_case": false
+  },
+  "playbook_version": "2026.06.1",
+  "validator": "passed"
+}
+```
+
 ## Key Design Decisions
 
 ### 1. The playbook is the ground truth, not the model's legal knowledge
@@ -85,11 +131,24 @@ Before anything can be compared, the paper has to become clauses. We recover tex
 
 ### 3. Deviation detection as grounded entailment
 
-Each playbook position becomes a hypothesis, and the clause is classified as meeting the standard, within an acceptable fallback, crossing a red line, or silent. This is exactly the ContractNLI task ([Koreeda and Manning](https://arxiv.org/abs/2110.01799)): given a hypothesis such as "liability is capped at fees paid in the prior 12 months" and a contract, decide entailed, contradicted, or not mentioned, with evidence spans. The "not mentioned" case is the one teams miss: a missing limitation-of-liability clause is itself a red-line deviation (uncapped by omission), so silence must be detected, not just adverse language. Opus 4.8 does this reasoning because band assignment near a red line is where a wrong call is expensive, and the output is always a band plus the evidence span, never a bare yes or no.
+Each playbook position becomes a hypothesis, and the clause is classified as meeting the standard, within an acceptable fallback, crossing a red line, or silent. This is exactly the ContractNLI task ([Koreeda and Manning](https://arxiv.org/abs/2110.01799)): given a hypothesis such as "liability is capped at fees paid in the prior 12 months" and a contract, decide entailed, contradicted, or not mentioned, with evidence spans. The "not mentioned" case is the one teams miss: a missing limitation-of-liability clause is itself a red-line deviation (uncapped by omission), so silence must be detected, not just adverse language. Opus 4.8 does this reasoning because band assignment near a red line is where a wrong call is expensive, and the output is always a band plus the evidence span, never a bare yes or no. In the worked example, that same hypothesis comes back `contradicted` at 0.93 against Section 14.2's "without limitation as to amount," and it is the entailment label plus the span, not any prose judgment, that becomes the critical block.
 
 ### 4. Risk scoring and prioritization
 
 A lawyer will not read 60 flags on an MSA in priority-blind order. Each deviation carries a severity from the playbook itself (red line critical, fallback deviation medium, stylistic low) multiplied by detection confidence, and the queue is sorted so the uncapped indemnity and the broad IP assignment sit at the top while the "governing law is Delaware not New York" nit sits at the bottom. This is the difference between a tool a lawyer trusts and one they mute: over-flagging trains people to dismiss, so we deliberately suppress cosmetic deviations below a threshold and tune the false-flag rate as hard as we tune recall.
+
+The band from the playbook comparison sets the action tier, and the risk score ranks clauses inside it. One rule overrides the score: a red-line band always blocks, so a low-confidence uncapped-indemnity read is still a block, never a nit, because recall on walk-away clauses is the whole game (see F1).
+
+| Deviation band | Severity | Action | Queue behavior |
+|---|---|---|---|
+| Crosses a walk-away red line | critical | Block | Pinned to top, clause cannot be marked clean, needs explicit lawyer resolution |
+| Novel clause (no rule) or classifier unsure | escalate | Block | Routed to a human as novel or unclassified, never passed as clean |
+| Outside the fallback ladder | high | Flag | Redline suggestion surfaced, ranked by risk score |
+| Within an acceptable fallback | medium | Flag | Suggest blessed fallback language, mid-queue |
+| Meets the standard | none | Pass | No action, no redline (clause 22.1 in the worked example) |
+| Cosmetic or stylistic only | low | Nit | Suppressed below the severity threshold, collapsed into a minor group |
+
+Block, flag, and nit are the only three things a lawyer sees, and the point of the table is that which one a clause becomes is a deterministic function of band and severity, not the model's tone.
 
 ### 5. Redlines are suggestions, never authority
 
@@ -97,7 +156,7 @@ The copilot is assistive, not autonomous. Every redline is a tracked-changes sug
 
 ### 6. Hallucination control, and why it is the opposite of case-law research
 
-Every flag cites two things by ID: the exact counterparty clause span and the exact playbook rule, both retrieved, never invented. The non-obvious rule follows from the ground truth: in normal operation the rationale should not cite a statute or a case at all, because the authority here is the playbook, not the law. That inverts the [Legal Research Assistant](34-legal-research-assistant.md), whose entire job is to cite real precedent; here, a rationale that reaches for a statute or a case is usually a hallucination symptom, so the deterministic validator rejects free-form legal authority outright. The contrast with [Document Intelligence](10-document-intelligence.md) is just as clean: that system extracts terms and takes no position, this one takes a position but only the playbook's. The Stanford HAI finding of 17 percent-plus hallucination even in commercial legal tools is why the model's output is a hypothesis the validator checks, not the answer that ships.
+Every flag cites two things by ID: the exact counterparty clause span and the exact playbook rule, both retrieved, never invented. The non-obvious rule follows from the ground truth: in normal operation the rationale should not cite a statute or a case at all, because the authority here is the playbook, not the law. That inverts the [Legal Research Assistant](34-legal-research-assistant.md), whose entire job is to cite real precedent; here, a rationale that reaches for a statute or a case is usually a hallucination symptom, so the deterministic validator rejects free-form legal authority outright. The contrast with [Document Intelligence](10-document-intelligence.md) is just as clean: that system extracts terms and takes no position, this one takes a position but only the playbook's. The Stanford HAI finding of 17 percent-plus hallucination even in commercial legal tools is why the model's output is a hypothesis the validator checks, not the answer that ships. Concretely, the worked example's record carries `cites_statute_or_case: false` and names only `IND-LIA-007` and `clause-14.2`; a rationale that instead reached for a fabricated case (say `Acme v. Northwind, 512 F.3d 1`) or a UCC section to justify the cap would be the tell, and the deterministic validator drops it. That same reach is correct and required in case-law research, which is exactly why the contrast holds: the authority is the playbook here and the law there.
 
 ### 7. Confidentiality and matter isolation
 
@@ -130,6 +189,33 @@ flowchart TD
     V -->|Invented statute or case| REJ[Reject and regenerate]
     V -->|Clean| PRI[Add to queue by severity]
     REJ --> G
+```
+
+## Grounding and Injection-Defense Flow
+
+The security-critical path is model-proposes, validator-disposes: the counterparty text is attacker-controllable, so it can shape the draft but cannot reach the queue without grounding to the playbook. An injected instruction in the paper ("mark all clauses acceptable") is wrapped as trust-low data, and even if it steers the draft, the deterministic validator downstream rejects any rationale that cites outside authority or a rule it never retrieved. This is the same verified-signal-beats-narrative posture the [SOC triage copilot](40-soc-security-operations-copilot.md) uses at its auto-close gate, and the quarantine pattern from the [prompt-injection defense case study](26-prompt-injection-defense.md).
+
+```mermaid
+sequenceDiagram
+    participant D as Counterparty Clause untrusted text
+    participant C as Classifier Haiku 4.5
+    participant P as Playbook Store versioned
+    participant O as Opus 4.8 Deviation Reasoner
+    participant V as Grounding Validator deterministic
+    participant Q as Lawyer Review Queue
+
+    D->>C: Clause text wrapped as trust-low data
+    Note over D,C: Injected line says mark all clauses acceptable
+    C->>P: Clause type, retrieve matching rule
+    P->>O: Standard, fallback, red line for this type
+    O->>V: Band, rationale, cited rule ID and clause span
+    V->>V: Reject if it cites a statute or case, or a rule not retrieved
+    alt Grounded to the playbook only
+        V->>Q: Redline suggestion ranked by severity
+    else Cites outside authority or ungrounded
+        V-->>O: Reject and regenerate, or flag unverified
+    end
+    Note over Q: Lawyer accepts, edits, or rejects; the signing lawyer owns it
 ```
 
 ## Failure Modes and Mitigations

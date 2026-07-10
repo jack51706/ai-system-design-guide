@@ -1,6 +1,6 @@
 # 案例研究：醫療編碼與收入循環自動化
 
-一家醫療體系（或 RCM 廠商）每月處理約 200 萬次病患就診，由認證編碼員閱讀臨床文件記錄，並指派驅動向付款方申報的計費代碼（ICD-10-CM 診斷、CPT/HCPCS 程序、住院用的 MS-DRG）。團隊打造了一條 LLM 流水線，讀取病歷並提出附引用實證的代碼，交由認證編碼員審閱。單一最困難的限制條件是：編碼錯誤在兩個方向上都是災難性的：編碼不足會白白放棄已賺得的收入，而過度編碼（申報超過病歷所記載的內容）就是高估編碼（upcoding），屬於 False Claims Act 下附帶三倍損害賠償的醫療詐欺，因此系統必須保守、以實證為界、且可稽核，並且絕不能為金錢最佳化。與協助臨床醫師做照護決策的 [Clinical Decision Support Copilot](35-clinical-decision-support.md) 不同，本系統是在照護完成之後做出計費決策。
+一家醫療體系（或 RCM 廠商）每月處理約 200 萬次病患就診，由認證編碼員閱讀臨床文件記錄，並指派驅動向付款方申報的計費代碼（ICD-10-CM 診斷、CPT/HCPCS 程序、住院用的 MS-DRG）。團隊打造了一條 LLM 流水線，讀取病歷並提出附引用實證的代碼，交由認證編碼員審閱。單一最困難的限制條件是：編碼錯誤在兩個方向上都是災難性的：編碼不足會白白放棄已賺得的收入，而過度編碼（申報超過病歷所記載的內容）就是高估編碼（upcoding），屬於 False Claims Act 下附帶三倍損害賠償的醫療詐欺，因此系統必須保守、以實證為界、且可稽核，並且絕不能為金錢最佳化。與協助臨床醫師做照護決策的 [Clinical Decision Support Copilot](35-clinical-decision-support.md) 不同，本系統是在照護完成之後才做出計費決策；而與產生臨床病程記錄的 [Voice AI scribe](13-voice-ai-healthcare.md) 不同，本系統受已定稿的病程記錄所約束，絕不可加入文件記錄尚未陳述的臨床事實。
 
 ## 商業問題
 
@@ -79,15 +79,100 @@ flowchart TB
 8. 拒付風險模型會對照歷史給付通知樣態為組裝好的申報評分，並將高風險申報標記出來，以便在請款前修正或發出文件查詢。
 9. 信心與風險關卡只會自動定案最簡單、高信心的就診；其餘全部落到一張預填了代碼、引用、規則結果與 DRG 的編碼員工作表上，而每一個結果都會在 837 申報送出之前，連同所有已固定的版本一併寫入可重現的稽核軌跡。
 
+### 實例演練：單次門診就診，從頭到尾
+
+這套紀律在單次複診病患的門診就診上最容易看清楚，我們把它從病歷一路走到申報。以下是醫師的病程記錄（摘錄，且每個候選代碼都綁定到其中一段）：
+
+- 「58 歲複診病患，因第 2 型糖尿病回診追蹤，並發現左前臂有一處新病灶。主訴雙足麻刺感已兩個月。」
+- 「今日 A1c 為 8.1 percent。繼續 metformin。已檢視居家血糖記錄。」
+- 「理學檢查：左前臂有一處 1.4 cm 外觀良性的病灶。雙足脈搏完整，未做 monofilament 測試。」
+- 「處置：取得同意後，切除該 1.4 cm 病灶並保留 0.2 cm 邊緣（切除直徑 1.8 cm），以縫線做簡單縫合，檢體送病理。」
+- 「醫囑：靜脈採血做 A1c 加一組完整代謝套組。」
+
+抽取會提出候選，每一個都綁定到一段段落，並丟棄任何無法引用的項目：
+
+| 候選 | 類型 | 引用段落 | 結果 |
+|---|---|---|---|
+| E11.9 第 2 型糖尿病，無併發症 | ICD-10-CM | 「因第 2 型糖尿病回診追蹤」 | 依記載保留 |
+| D23.62 良性腫瘤，左上肢皮膚 | ICD-10-CM | 「左前臂外觀良性的病灶」 | 保留，因已陳述而編入側別 |
+| 99214 複診門診就診，中度 MDM，modifier -25 | CPT E/M | 糖尿病藥物管理加上一個可分開辨識的新問題 | 保留，未升級為 99215 |
+| 11402 切除良性病灶，切除直徑 1.1 至 2.0 cm | CPT | 「切除該 1.4 cm 病灶並保留 0.2 cm 邊緣」 | 保留 |
+| 11102 切線式切片 | CPT | 「檢體送病理」 | 遭 NCCI 阻擋（見下文） |
+| E11.42 糖尿病併多發性神經病變 | ICD-10-CM | （無，未陳述關聯） | 未編碼，發出查詢 |
+| 36415 靜脈採血，5 單位 | CPT | 「靜脈採血做 A1c 加一組代謝套組」 | 單位數經 MUE 修正 |
+
+接著確定性引擎執行，發生了三件天真的 LLM 會弄錯的事：
+
+- **抓到 NCCI 拆綁。** 抽取看到「檢體送病理」，於是在 11402（切除）之外又提出了 11102（切片）。NCCI PTP 表把 11102 列為 11402 的第 2 欄代碼，而由於是同一次就診中的同一處病灶，沒有任何已記載的區別性服務足以支持一個 -59 修飾碼，因此切片被綑綁並丟棄。兩者都申報就會構成拆綁。簡單縫合同樣被綑綁進切除之中，因此也不會另外加上修補代碼。
+- **MUE 抓到不可能的單位數。** 抽取讀到五項開立的檢驗分析物，於是把 36415（靜脈採血）提為 5 單位。一次就診就是一次抽血，36415 的 MUE 上限是 1，因此 5 單位在醫療上不太可能，引擎便把它修正為 1，而不是申報五次抽血。
+- **具體性用查詢，而非推斷。** 病程記錄記載了糖尿病，另外也記載了足部麻刺感，但從未陳述該麻刺感源自糖尿病。具體性更高的代碼 E11.42（糖尿病併多發性神經病變）是一個慢性併發症代碼，且會對應到權重更高的風險校正 HCC，因此推斷那個關聯就是高估編碼。系統改為擱置 E11.42，並發出一則非誘導查詢。
+
+這次就診不會自動定案。它帶著一個同日程序（附 modifier -25 的 E/M）以及一則未結的醫師查詢，因此落到一張預填了代碼、引用、那兩項編輯動作與查詢的編碼員工作表上，並在醫師回覆之後由編碼員簽署。對照認證編碼員標準答案評分時，勝利在於編出 E11.9 並發出查詢，而不是推斷 E11.42 本會記入的額外 RVU；系統的分數取決於與編碼員一致，絕不取決於它本可捕捉到的金額。
+
+### 已編碼的申報記錄
+
+工作表與稽核軌跡是由單一份經 schema 驗證的記錄所驅動，而非自由格式的文字。每一個保留的代碼都帶著它的實證範圍，而已解決的編輯與未結的查詢都是關卡能以確定性方式讀取的一等欄位。
+
+```json
+{
+  "encounter_id": "ENC-2026-07-03-114872",
+  "date_of_service": "2026-07-03",
+  "encounter_type": "outpatient_office_established",
+  "code_set_editions": {"icd10cm": "FY2026", "cpt": "2026", "hcpcs": "2026", "ncci": "2026Q3"},
+  "codes": [
+    {"code": "99214", "type": "cpt_em", "modifier": ["25"], "confidence": 0.82,
+     "evidence_span": "note/mdm: T2DM drug management plus new forearm lesion evaluated same visit"},
+    {"code": "E11.9", "type": "icd10cm", "confidence": 0.95,
+     "evidence_span": "note/assessment@ch1204-1229: 'follow-up of type 2 diabetes'"},
+    {"code": "D23.62", "type": "icd10cm", "confidence": 0.90,
+     "evidence_span": "note/exam@ch1631-1673: 'benign-appearing lesion, left forearm'"},
+    {"code": "11402", "type": "cpt", "units": 1, "confidence": 0.88,
+     "evidence_span": "note/procedure@ch1902-1971: 'excised the 1.4 cm lesion with 0.2 cm margins'"},
+    {"code": "36415", "type": "cpt", "units": 1, "confidence": 0.86,
+     "evidence_span": "note/orders@ch2110-2158: 'venipuncture for A1c plus a metabolic panel'"}
+  ],
+  "dropped_candidates": [
+    {"code": "11102", "type": "cpt", "reason": "ncci_ptp_bundled_into_11402_same_lesion_no_modifier_59_basis"},
+    {"code": "E11.42", "type": "icd10cm", "reason": "diabetes_neuropathy_linkage_not_documented_query_issued"}
+  ],
+  "edits": {"ncci_pass": true, "mue_pass": true, "medical_necessity_pass": true, "modifier_pass": true},
+  "edit_actions": [
+    {"edit": "ncci_ptp", "pair": ["11402", "11102"], "result": "block", "resolution": "removed 11102"},
+    {"edit": "mue", "code": "36415", "submitted_units": 5, "ceiling": 1, "result": "corrected", "resolution": "units set to 1"}
+  ],
+  "queries": [
+    {"query_id": "Q-114872-1", "topic": "diabetes_complication_linkage", "leading": false, "status": "open",
+     "prompt": "The record documents type 2 diabetes and bilateral foot tingling. In your clinical judgment, is the tingling a manifestation of the diabetes, a separate condition, or unable to determine? Please document."}
+  ],
+  "status": "coder_review",
+  "auto_finalize_eligible": false,
+  "gate_reason": "open_physician_query; same_day_procedure_with_em_modifier_25"
+}
+```
+
 ## 關鍵設計決策
 
 ### 1. 以文件記錄接地的編碼，絕不推斷：抗幻覺的核心
 
-定義這個系統的規則，是編碼法遵中最古老的一條規則：「未記錄，即視為未做」。每一個建議代碼都必須引用支持它的確切病歷段落，而一個沒有支持段落的代碼並不是低信心代碼，它是一項法遵違規，因此會在任何人看到它之前被丟棄。模型被明確禁止推斷它自認「合理」的臨床事實：如果病程記錄寫著「肺炎」卻沒有病原體，系統就編為未指明的肺炎或發出查詢，它不會因為檢驗「暗示」了細菌性肺炎，就升級到權重較高的細菌性肺炎。這是接地生成的紀律（參見 [Guardrails](../13-reliability-and-safety/01-guardrails.md)），以零容忍度套用，因為一個推斷出來的代碼就是一筆高估編碼的申報。
+定義這個系統的規則，是編碼法遵中最古老的一條規則：「未記錄，即視為未做」。每一個建議代碼都必須引用支持它的確切病歷段落，而一個沒有支持段落的代碼並不是低信心代碼，它是一項法遵違規，因此會在任何人看到它之前被丟棄。模型被明確禁止推斷它自認「合理」的臨床事實：如果病程記錄寫著「肺炎」卻沒有病原體，系統就編為未指明的肺炎或發出查詢，它不會因為檢驗「暗示」了細菌性肺炎，就升級到權重較高的細菌性肺炎。這是接地生成的紀律（參見 [Guardrails](../13-reliability-and-safety/01-guardrails.md)），以零容忍度套用，因為一個推斷出來的代碼就是一筆高估編碼的申報。具體而言，這個引用是一段結構化範圍（文件 id、章節、字元偏移），而不是一句「病程記錄有支持」的含糊斷言，如此一來編碼員或稽核員都能直接跳到來源文字。在前述實例中，系統依「因第 2 型糖尿病回診追蹤」這句話編出 E11.9（第 2 型糖尿病，無併發症），並拒絕僅憑另外記載的足部麻刺感就把它提升為 E11.42（第 2 型糖尿病併多發性神經病變），因為那個未經陳述的關聯，正是會把一次常規就診變成病歷並不支持的、權重更高的風險校正（[HCC](https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics/risk-adjustment)）申報的那種推斷。
 
 ### 2. 確定性規則引擎對比 LLM 推理：核心分離
 
-NCCI edits、MUEs、醫療必要性規則、綑綁與拆綁邏輯、修飾碼規則，以及 DRG 分組器，全都是確定性、已發布的規則集，它們不屬於提示的一部分。LLM 抽取臨床事實並將它們對應到候選代碼；由一個規則引擎對照 CMS [NCCI](https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits) 表與 [MS-DRG grouper](https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/ms-drg-classifications-and-software) 驗證那些候選。一個「推理」自己穿過綑綁編輯的 LLM 是無法稽核的，並且會自信地拆綁一組它不該拆的配對。這個引擎是版本化、可測試、可重跑的，因此可以把確切的編輯表與輸入交給一位 RAC 稽核員，而他將重現出完全相同的結果。
+NCCI edits、MUEs、醫療必要性規則、綑綁與拆綁邏輯、修飾碼規則，以及 DRG 分組器，全都是確定性、已發布的規則集，它們不屬於提示的一部分。LLM 抽取臨床事實並將它們對應到候選代碼；由一個規則引擎對照 CMS [NCCI](https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits) 表與 [MS-DRG grouper](https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/ms-drg-classifications-and-software) 驗證那些候選。一個「推理」自己穿過綑綁編輯的 LLM 是無法稽核的，並且會自信地拆綁一組它不該拆的配對。這個引擎是版本化、可測試、可重跑的，因此可以把確切的編輯表與輸入交給一位 RAC 稽核員，而他將重現出完全相同的結果。NCCI PTP 表為每一組配對編上一個修飾碼指標（0 代表這組配對永遠不能拆綁，1 代表當病歷記載了一項區別性服務時修飾碼可以把它分開，9 代表該編輯已不再適用），而每一個 MUE 都帶有一個 MUE 裁定指標（MAI 1、2 或 3），用以固定其單位上限是否有任何可能被覆寫，因此這些裁決是由表格驅動的，而非判斷。
+
+每一個候選都要跑過同一道確定性關卡，而每一項檢查都恰好有三種結果：放行該代碼、阻擋它，或把它轉成一則醫師查詢：
+
+| 規則檢查 | 放行（代碼繼續） | 阻擋（移除代碼） | 查詢（詢問醫師） |
+|---|---|---|---|
+| 實證引用，「未記錄，即視為未做」 | 引用一段確切的病歷段落 | 任何地方都沒有支持段落 | 段落存在但模稜兩可 |
+| 服務日期的代碼集有效性 | 在生效中的 ICD-10-CM/CPT/HCPCS 版次內 | 於該日期已停用或無效 | （不適用） |
+| ICD-10-CM 具體性 | 已記載到所需的軸向（側別、類型） | 無效或截斷的代碼詞幹 | 有暗示但未陳述更具體的代碼 |
+| NCCI PTP 綑綁 | 代碼可分開申報 | 第 2 欄代碼被綑綁，無修飾碼依據 | 區別性服務有可能但未記載 |
+| MUE 單位數 | 單位數在每日上限之內或等於上限 | 單位數超過絕對的 MAI 2 上限 | 單位數高於 MAI 3 基準但有病歷佐證時仍屬合理 |
+| 醫療必要性，LCD/NCD | 診斷在給付清單上 | 沒有給付診斷，也沒有可記載的診斷 | 有可支持給付的診斷但未陳述 |
+| 修飾碼邏輯，-25 與 -59 | 文件記錄支持該修飾碼 | 需要修飾碼但完全無佐證 | 修飾碼可能適用但區別性服務未記載 |
+
+在前述實例中，切片未通過 NCCI 那一列（阻擋），靜脈採血未通過 MUE 那一列（阻擋那個不可能的數量，以上限 1 重新提交），而糖尿病與神經病變的關聯未通過具體性那一列（查詢），同時每一個保留的代碼都以一段引用段落通過了實證那一列。
 
 ### 3. 絕不獎勵收入：評估指標是準確率，而非金錢
 
@@ -95,7 +180,7 @@ NCCI edits、MUEs、醫療必要性規則、綑綁與拆綁邏輯、修飾碼規
 
 ### 4. 查詢，而非猜測：模稜兩可會觸發醫師查詢
 
-當文件記錄不完整或彼此矛盾時，認證編碼員不會自己挑一個代碼，他們會發出一則醫師查詢，而系統精確地複製了這套工作流程。缺少部位側別、未指明病原體、沒有明確敗血症陳述的「urosepsis」、植入但未命名的裝置：每一種都會產生一則依 [AHIMA/ACDIS practice standards](https://www.ahima.org/) 起草的合規、非誘導查詢（提供包含「無法判定」在內的選項，絕不誘導向給付較高的答案）。查詢正是讓系統能同時做到完整與保守的機制：它透過醫師取回合法可編碼的具體性，而不是從模型的先驗中製造出來。
+當文件記錄不完整或彼此矛盾時，認證編碼員不會自己挑一個代碼，他們會發出一則醫師查詢，而系統精確地複製了這套工作流程。缺少部位側別、未指明病原體、沒有明確敗血症陳述的「urosepsis」、植入但未命名的裝置：每一種都會產生一則依 [AHIMA/ACDIS practice standards](https://www.ahima.org/) 起草的合規、非誘導查詢（提供包含「無法判定」在內的選項，絕不誘導向給付較高的答案）。查詢正是讓系統能同時做到完整與保守的機制：它透過醫師取回合法可編碼的具體性，而不是從模型的先驗中製造出來。一則誘導性的查詢（「請確認病患患有糖尿病性多發性神經病變」）本身就是一項法遵違規，因此產生器被範本約束為多選或開放式格式，且一律帶有「無法判定」選項，絕不點名那個高權重想要的診斷。前述實例的查詢，詢問已記載的足部麻刺感究竟源自糖尿病、屬於獨立病況，還是無法判定，正是這個模式：它浮現出醫師能合法確認的具體性，而系統從不指向那個能給付的答案。
 
 ### 5. 人在迴路中：編碼員是審閱者，自主是例外
 
@@ -222,7 +307,7 @@ ICD-10-CM 每年 10 月 1 日更新，而 Coding Clinic 指導每季變動，因
 - CMS, [National Correct Coding Initiative (NCCI) Edits](https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits)
 - CDC/NCHS, [ICD-10-CM](https://www.cdc.gov/nchs/icd/icd-10-cm/index.html) and CMS, [ICD-10 code sets](https://www.cms.gov/medicare/coding-billing/icd-10-codes)
 - AMA, [CPT (Current Procedural Terminology)](https://www.ama-assn.org/practice-management/cpt) and CMS, [HCPCS Level II](https://www.cms.gov/medicare/coding-billing/healthcare-common-procedure-system)
-- CMS, [MS-DRG Classifications and Software](https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/ms-drg-classifications-and-software)
+- CMS, [MS-DRG Classifications and Software](https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/ms-drg-classifications-and-software) and [Risk Adjustment (CMS-HCC)](https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics/risk-adjustment)
 - DOJ, [The False Claims Act](https://www.justice.gov/civil/false-claims-act)
 - HHS OIG, [Compliance and enforcement](https://oig.hhs.gov/)
 - CMS, [Recovery Audit Program](https://www.cms.gov/data-research/monitoring-programs/medicare-fee-service-compliance-programs/recovery-audit-program) and [CERT](https://www.cms.gov/data-research/monitoring-programs/improper-payment-measurement-programs/comprehensive-error-rate-testing-cert)
@@ -233,4 +318,4 @@ ICD-10-CM 每年 10 月 1 日更新，而 Coding Clinic 指導每季變動，因
 - Mullenbach et al., [Explainable Prediction of Medical Codes from Clinical Text, NAACL 2018 (arXiv:1802.05695)](https://arxiv.org/abs/1802.05695)
 - Huang et al., [PLM-ICD: Automatic ICD Coding with Pretrained Language Models (arXiv:2207.05289)](https://arxiv.org/abs/2207.05289)
 
-相關章節：[Clinical Decision Support Copilot](35-clinical-decision-support.md)、[Insurance Claims Adjudication](43-insurance-claims-adjudication.md)、[Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md)、[AI Governance and Compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md)、[OCR and Layout](../10-document-processing/01-ocr-and-layout.md)。
+相關章節：[Clinical Decision Support Copilot](35-clinical-decision-support.md)、[Voice AI Assistant for Healthcare](13-voice-ai-healthcare.md)、[Insurance Claims Adjudication](43-insurance-claims-adjudication.md)、[Human-in-the-Loop Patterns](../07-agentic-systems/08-human-in-the-loop-patterns.md)、[AI Governance and Compliance](../13-reliability-and-safety/04-ai-governance-and-compliance.md)、[OCR and Layout](../10-document-processing/01-ocr-and-layout.md)。
