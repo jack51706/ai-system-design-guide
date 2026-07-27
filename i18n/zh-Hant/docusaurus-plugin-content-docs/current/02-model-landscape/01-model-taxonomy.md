@@ -2,7 +2,9 @@
 
 本章提供一份截至 **2026 年 7 月** 的完整模型生態指南，涵蓋模型家族、能力，以及生產系統的選型準則。
 
-> **最後驗證：2026 年 7 月 20 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+> **最後驗證：2026 年 7 月 27 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+>
+> **2026 年 7 月 20 日至 27 日更新：** Anthropic 發布了 **Claude Opus 5**（7 月 24 日，`claude-opus-5`），作為 Fable 5 之外更快、更便宜的選擇：定價與 Opus 4.8 相同，每 1M token $5/$25，具備 1M token 上下文與 128K 最大輸出，僅提供 adaptive thinking（無獨立的 extended thinking 切換），並新增五段式 effort 設定；Anthropic 自家的模型比較頁與早期報導都形容其品質接近 Fable 5，但價格僅為一半，目前已是 Claude Max 的預設模型，也是 Claude Pro 上可用的最強模型，並回報在 Frontier-Bench 與 GDPval-AA 上取得最先進成績（來源：[Anthropic 模型總覽](https://platform.claude.com/docs/en/about-claude/models/overview)、[Bloomberg](https://www.bloomberg.com/news/articles/2026-07-24/anthropic-unveils-more-cost-efficient-model-for-everyday-tasks)、[Axios](https://www.axios.com/2026/07/24/anthropic-releases-new-model-opus-5)、[CNBC](https://www.cnbc.com/2026/07/24/anthropic-claude-opus-5-ai-fable-5-cost.html)）。DeepSeek 的 **DeepSeek V4** 已於 7 月 20 日前後脫離預覽版、進入一般可用（V4-Pro 為 1.6T 總參數／490 億啟用參數，V4-Flash 為 2,840 億總參數／130 億啟用，皆具備 1M token 上下文並開放權重），舊版 `deepseek-chat`／`deepseek-reasoner` API 別名已於 7 月 24 日 UTC 時間 15:59 正式停用，改用 6 月宣布的尖峰／離峰定價結構（來源：[DeepSeek API 文件更新紀錄](https://api-docs.deepseek.com/news/)、[DeepSeek API 文件](https://api-docs.deepseek.com/news/news260424/)）。Google 於 7 月 21 日推出三款效率層新模型：**Gemini 3.6 Flash**、**Gemini 3.5 Flash-Lite**，以及針對資安調校的 **Gemini 3.5 Flash Cyber**，將 Gemini 3.6 Flash 的輸出價格調降 17%（降至每 1M token $1.50/$7.50），在長週期編碼任務上更可將有效 token 用量減少最多 65%；同一天 Google 證實已開始預訓練 **Gemini 4**，尚未公布發布時程，而 **Gemini 3.5 Pro** 本身仍未推出（來源：[VentureBeat](https://venturebeat.com/technology/googles-gemini-3-6-flash-model-cuts-ai-agent-token-costs-by-up-to-65-on-long-horizon-engineering-tasks-and-3-5-pro-is-on-the-way)、[Unite.AI](https://www.unite.ai/google-ships-three-gemini-flash-models-as-its-flagship-slips/)）。Moonshot 證實 **Kimi K3**（7 月 16 至 17 日預覽的 2.8T 參數 MoE 模型）的開放權重（MXFP4 格式約 594GB）將於 7 月 27 日在 Hugging Face 的 `huggingface.co/moonshotai` 上架，符合先前的預告（來源：[Tech Times](https://www.techtimes.com/articles/321551/20260725/kimi-k3-open-weights-arrive-sunday-self-hosting-cuts-china-data-risk-api-never-can.htm)）。
 >
 > **2026 年 7 月 4 日至 19 日更新：** OpenAI 的 **GPT-5.6** 系列（Sol、Terra、Luna）已於 7 月 9 日達到一般可用，結束僅限政府核准夥伴的預覽階段；每 1M token 定價維持 6 月預覽水準（Sol 為 $5/$30、Terra 為 $2.50/$15、Luna 為 $1/$6），Sol 也已在 Cerebras 上線，速度可達每秒 750 個 token（來源：[OpenAI](https://openai.com/index/gpt-5-6/)、[CNBC](https://www.cnbc.com/2026/07/08/openai-expanding-gpt-5point6-ai-model-release-ending-government-limits.html)、[Simon Willison](https://simonwillison.net/2026/Jul/9/gpt-5-6/)）。xAI 在 2026 年 2 月與 SpaceX 完成合併後，現以 **SpaceXAI** 名義營運，並於 7 月 8 日推出 **Grok 4.5**：一款與 Cursor 聯合訓練、聚焦編碼與代理任務的模型（Cursor 以 600 億美元估值被 SpaceX 收購一事於發布同時揭露，但截至本文撰寫時尚未完成交割），定價為每 1M token $2/$6；Artificial Analysis 將其 Intelligence Index 排名列為全球第 4（分數 54），在 SWE-Bench Pro 上落後 Fable 5 與 GPT-5.6 Sol，但在 SWE Marathon 上領先（來源：[xAI](https://x.ai/news/grok-4-5)、[TechCrunch](https://techcrunch.com/2026/07/08/spacexai-releases-grok-4-5-which-elon-describes-as-an-opus-class-model/)、[Artificial Analysis](https://artificialanalysis.ai/articles/grok-4-5-brings-spacexai-to-the-the-intelligence-frontier)）。Moonshot AI 於 7 月 16 至 17 日發布 **Kimi K3**：一個 2.8T 參數的 MoE 模型（Stable LatentMoE 架構，896 個專家中啟用 16 個），是目前為止發布過最大的開放權重模型，具備 1M token 上下文；在 Artificial Analysis 的 Intelligence Index 上排名第 4（分數 57），落後於 Fable 5、GPT-5.6 Sol 與 Gemini，混合有效價格約為每 1M token $2.31，Moonshot 表示開放權重將於 7 月 27 日前釋出（來源：[CNBC](https://www.cnbc.com/2026/07/17/moonshot-ai-kimi-k3-model-openai-anthropic-china.html)、[TechCrunch](https://techcrunch.com/2026/07/16/moonshots-upcoming-kimi-3-is-expected-to-close-the-gap-with-anthropics-opus-4-8/)、[Tom's Hardware](https://www.tomshardware.com/tech-industry/artificial-intelligence/moonshot-releases-2-8-trillion-parameter-kimi-k3)）。數日後，Alibaba 於 7 月 19 日預覽了 **Qwen3.8-Max**：一款 2.4T 參數的旗艦模型，是繼 Kimi K3 之後第二大公開已知的模型，Alibaba 將其定位為僅次於 Fable 5；獨立基準測試尚未公布（本週流傳的任何分數實為 Qwen3.7-Max 的數字，並非 Qwen3.8 的），1M token 上下文僅見於工具整合說明中，官方模型卡並未證實，存取方式綁定在 Token Plan／Qoder 中，最低每月 $6 起，開放權重「即將」釋出（來源：[Bloomberg](https://www.bloomberg.com/news/articles/2026-07-19/alibaba-s-qwen-unveils-preview-of-flagship-ai-model)、[MarkTechPost](https://www.marktechpost.com/2026/07/19/alibaba-previews-qwen3-8-max-a-2-4-trillion-parameter-multimodal-model-days-after-moonshots-kimi-k3-open-weight-launch/)）。Google 的 **Gemini 3.5 Pro** 仍未推出：報導指出目標為 7 月 17 日，據稱經過內部重建（修正遞迴工具呼叫與 SVG 生成的問題），但截至 7 月 19 日，Google 尚未證實日期、上下文長度或定價（來源：[Tech Times](https://www.techtimes.com/articles/320308/20260713/gemini-35-pro-targets-july-17-after-full-rebuild-every-spec-remains-unconfirmed.htm)）。DeepSeek 先前預告的 **DeepSeek V4** 正式（脫離預覽版）發布（連同首次的尖峰／離峰 API 定價）原訂 7 月中旬，但截至本文撰寫時仍未推出。另外，Mistral 證實一款尚未命名的開放權重模型已於 7 月進入早期存取階段，提供給研究、政府與產業合作夥伴，稱其為新模型家族的起點；目前尚未公布參數量或基準測試結果（來源：[Tech Times](https://www.techtimes.com/articles/319798/20260706/mistral-ai-targets-frontier-gap-open-weight-model-entering-july-early-access.htm)）。
 >
@@ -87,6 +89,26 @@
 | 發布 | 2026 年 6 月 9 日 |
 
 **為何重要：** 以相當或略強的能力與低得多的價格接替 Claude Mythos Preview。Fable/Mythos 的拆分將雙軌發布模式正式化：一個有保護措施的一般發布，一個提供給經審核防禦者的無限制發布。
+
+### Claude Opus 5（Anthropic）- 2026 年 7 月新品
+
+| 屬性 | 數值 |
+|-----------|-------|
+| 模型 ID | `claude-opus-5` |
+| 上下文視窗 | 1M tokens |
+| 最大輸出 | 128K tokens |
+| 輸入成本 | 每 1M tokens $5.00（與 Opus 4.8 相同） |
+| 輸出成本 | 每 1M tokens $25.00（與 Opus 4.8 相同） |
+| 思考 | 僅提供 adaptive thinking，無獨立的 extended thinking 切換；effort 預設為 `high`，並提供五段式 effort 設定 |
+| 多模態 | 文字 + 視覺 |
+| 基準測試 | 依 Anthropic 與早期媒體報導，在 Frontier-Bench 與 GDPval-AA 上達到最先進水準；截至本文撰寫時尚未見獨立排行榜證實 |
+| 發布 | 2026 年 7 月 24 日（在 Claude API、AWS 上的 Claude Platform、Amazon Bedrock、Vertex AI、Microsoft Foundry 一般可用） |
+
+**這是什麼：** Anthropic 將 Opus 5 定位為適合「複雜的代理式編碼與企業工作」，而 Fable 5 仍是原始能力的上限。Anthropic 官方文件與早期報導都形容其品質接近 Fable 5，但價格約為一半。
+
+**最適合：** 目前已是 Claude Max 的預設模型，也是 Claude Pro 上可用的最強模型；對目前使用 Opus 4.8 的團隊而言，是同價位的能力升級。
+
+**考量：** 定價與其所取代的 Opus 4.8 完全相同，因此應視為能力升級而非降價。發布時尚未公布獨立的 SWE-bench／Terminal-Bench 數字；在依賴廠商自行比較的數據前，請先在排行榜上查證（來源：[Anthropic 模型總覽](https://platform.claude.com/docs/en/about-claude/models/overview)、[9to5Mac](https://9to5mac.com/2026/07/24/anthropic-upgrades-claude-with-new-opus-5-model-details-here/)）。
 
 ### Claude Opus 4.8（Anthropic）- 2026 年 5 月
 
