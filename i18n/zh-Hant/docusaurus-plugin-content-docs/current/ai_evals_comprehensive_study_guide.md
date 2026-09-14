@@ -17,6 +17,7 @@
 - 如何運用統計校正來修正評審的誤差
 - 如何閉環：把評估結果轉化為系統改進
 - 如何用你選擇的可觀測性平台（Phoenix、LangWatch、Langfuse、Braintrust、LangSmith，或你自建的平台）完成以上所有事
+- 如何把這一切組裝起來：第 17 章是一個畢業專題，逐檔案打造一個完整可運作的應用（機器人、資料集、評審、CI 閘門、監控、改進循環），每一步都附上真實數字
 
 **平台範例：** 本指南以三個開源平台作為主要範例：**Arize Phoenix**（自架）、**LangWatch**（雲端或自架）與 **Langfuse**（雲端或自架）。其方法論與平台無關，請依你實際使用的工具加以調整。在程式碼因平台而異之處，本指南會把 Phoenix、LangWatch 與 Langfuse 三種變體並列呈現，讓你不必讀完三份指南就能擇一採用。
 
@@ -40,6 +41,7 @@
 14. [實務實作指南](#chapter-14)
 15. [應避免的常見錯誤](#chapter-15)
 16. [工具與資源](#chapter-16)
+17. [畢業專題：一個完整的應用程式，端到端](#chapter-17)
 
 **附錄：**
 - [A：給 PM 與 QA 的詞彙表](#appendix-a)
@@ -6302,6 +6304,718 @@ plot_dashboard(failure_rates)
 8. **修正偏差** - 用 judgy 取得誠實的指標
 9. **為你的提示做版本控管** - 追蹤何時改了什麼
 10. **依資料反覆改善** - 而非靠直覺
+
+---
+
+## 第 17 章：畢業專題：一個完整的應用程式，端到端 {#chapter-17}
+
+前面每一章都在教一種樂器：第 2 章的追蹤、第 3 章的錯誤分析、第 4 章的評審、第 9 章與第 14 章的閘門與監控。這一章要合奏整個樂團。我們會**逐一檔案打造一個小而真實的應用程式，以及它完整的評估堆疊**，不省略任何東西：應用程式碼、種子資料集、實際的錯誤分析筆記、附校準數字的評審提示、CI 工作流程、監控 worker，以及一次帶有前後對照數據的完整改進循環。如果本指南其他部分讀起來像理論，這一章就是你本週就能照著打字執行的部分。
+
+本章有兩條基本規則。第一，下面每個數字都是「內部一致」的：標註數量、TPR/TNR 數值與 judgy 校正全都對得起來，所以你可以自己驗算（而且你應該驗算；這個習慣正是這份工作的本質）。第二，實作走查以 **Phoenix** 作為平台，因為它完全在本機執行、不用註冊（`pip install`，一個程序，搞定），但每個整合點都列在[替換對照表](#capstone-swap)裡，讓你可以拿著附錄 F 在 LangWatch 或 Langfuse 上做出一模一樣的建置。
+
+#### 目錄
+
+- [你要打造的東西](#capstone-scope)
+- [逐一檔案看這個 Repo](#capstone-layout)
+- [步驟 1：應用程式本體](#capstone-app)
+- [步驟 2：看得見的追蹤](#capstone-tracing)
+- [步驟 3：從零生出資料集](#capstone-dataset)
+- [步驟 4：錯誤分析，附上實際筆記](#capstone-error-analysis)
+- [步驟 5：用程式碼評估對付客觀失敗](#capstone-code-evals)
+- [步驟 6：誠實校準的飲食評審](#capstone-judge)
+- [步驟 7：CI 閘門](#capstone-ci)
+- [步驟 8：生產環境監控](#capstone-monitoring)
+- [步驟 9：找到、修好、證明：一次完整的改進循環](#capstone-improvement)
+- [整套東西的成本](#capstone-cost)
+- [在 LangWatch 或 Langfuse 上做同樣的建置](#capstone-swap)
+- [自己跑一遍的檢查清單](#capstone-checklist)
+- [重點整理](#capstone-takeaways)
+
+---
+
+### 你要打造的東西 {#capstone-scope}
+
+這個應用就是本指南一路使用的範例的具體化：一個**用簡訊（SMS）回覆的 Recipe Bot**。使用者傳來「easy vegan Italian dinner for 4」，機器人解析請求、用 BM25 從小型語料庫檢索候選食譜（第 6 章），然後組出一則純文字回覆，推薦一道食譜。三個節點，刻意精簡；這條管線完整的 7 狀態版本是第 7 章的主題，而這裡的一切都能逐節點延伸到那個版本。
+
+```
+User SMS query
+    |
+[1. ParseRequest]     gpt-5.5, JSON out          defended by: constraint_preserved (code)
+    |
+[2. GetRecipes]       BM25 + dietary tag filter  defended by: constraint_preserved (code)
+    |
+[3. ComposeResponse]  gpt-5.5, plain text        defended by: no_markdown, has_structure (code)
+    |                                             + dietary judge (LLM, calibrated)
+SMS reply
+```
+
+讓評估變得不可省略的產品限制：
+
+- **飲食限制近乎安全問題。** 告訴乳糜瀉患者某道食譜無麩質、實際上卻有，那是真實的傷害，不是 UX 瑕疵。這一項會變成 LLM 評審。
+- **SMS 是純文字。** Markdown 在手機上會直接顯示成 `**星號**`。這一項會變成免費的程式碼評估。
+- **食譜回答有可檢查的形狀。** 要有食材清單和編號步驟，否則站在爐子前根本沒法用。又一個免費的程式碼評估。
+
+按照第 14 章的角色分工表，誰做什麼：工程師負責步驟 1-3 與 7-8，PM 親自做步驟 4 和步驟 6 的標註，QA 擁有評審校準數字的所有權，並在閘門上線前簽核。
+
+使用的模型：應用本體用 `gpt-5.5`，查詢生成與評審用 `gpt-5.5-mini`（依第 14 章起步堆疊的建議：先用便宜的評審，校不準再升級到 Opus 4.8 或 GPT-5.6）。跑完整章、連犯錯都算進去的總花費：約 12 美元，[章末](#capstone-cost)有逐項清單。
+
+### 逐一檔案看這個 Repo {#capstone-layout}
+
+```
+recipe-bot-evals/
+├── app/
+│   ├── bot.py                 # the 3-node pipeline, instrumented (Step 1)
+│   └── retriever.py           # BM25 over data/recipes.json (Step 1)
+├── data/
+│   ├── recipes.json           # 200-recipe corpus with dietary tags
+│   ├── queries.jsonl          # 150 generated test queries (Step 3)
+│   ├── batch_results.jsonl    # bot outputs for those queries (Step 3)
+│   ├── error_notes.csv        # open-coding notes from Step 4
+│   └── golden_set.jsonl       # labeled traces; grows over time (Steps 6-9)
+├── evals/
+│   ├── code_checks.py         # deterministic evaluators + their own tests (Step 5)
+│   ├── judge_dietary.py       # the LLM judge + TPR/TNR validation (Step 6)
+│   └── run_ci_eval.py         # the gate CI executes (Step 7)
+├── scripts/
+│   ├── gen_queries.py         # dimensional sampling -> queries.jsonl (Step 3)
+│   ├── run_batch.py           # replay queries through the bot (Step 3)
+│   └── monitor.py             # hourly production sampling + alerting (Step 8)
+├── .github/workflows/evals.yml
+└── requirements.txt           # openai, arize-phoenix, openinference-instrumentation-openai,
+                               # rank-bm25, judgy
+```
+
+每個檔案都對應到深入解釋它的章節：`bot.py` 與追蹤對應第 2 章，`gen_queries.py` 對應第 3 章，`judge_dietary.py` 對應第 4 章與第 12 章，`code_checks.py` 對應第 5 章，`retriever.py` 對應第 6 章，`run_ci_eval.py` 對應第 11 章與第 14 章，`monitor.py` 對應第 9 章與第 13 章，步驟 9 的校正算術則對應第 10 章。
+
+### 步驟 1：應用程式本體 {#capstone-app}
+
+一本從評估開始講的評估指南是在騙你；你得先有個東西可以評估。以下就是整個應用。先看檢索器，它是第 6 章 BM25 建議的最小可用形式：
+
+```python
+# app/retriever.py
+import json
+import re
+
+from rank_bm25 import BM25Okapi
+
+# Recipe-aware tokenizer: keeps numbers and fractions ("375", "1/2"),
+# because they are real search terms in this domain (Chapter 6).
+_TOKEN_RE = re.compile(r"(?:\d+/?\d+)|(?:\d+(?:\.\d+)?)|[a-z]+")
+
+def tokenize(text: str) -> list[str]:
+    return _TOKEN_RE.findall((text or "").lower())
+
+class RecipeRetriever:
+    def __init__(self, path: str):
+        with open(path, encoding="utf-8") as f:
+            self.recipes = json.load(f)
+        corpus = [
+            tokenize(f"{r['title']} {' '.join(r['ingredients'])} {r['instructions']}")
+            for r in self.recipes
+        ]
+        self.index = BM25Okapi(corpus)
+
+    def search(self, keywords: list[str], dietary_restriction: str | None = None,
+               k: int = 3) -> list[dict]:
+        scores = self.index.get_scores(tokenize(" ".join(keywords)))
+        ranked = sorted(zip(self.recipes, scores), key=lambda p: -p[1])
+        if dietary_restriction:
+            # Hard filter: a recipe without the tag never reaches the composer.
+            ranked = [(r, s) for r, s in ranked if dietary_restriction in r["tags"]]
+        return [r for r, _ in ranked[:k]]
+```
+
+`data/recipes.json` 的一筆資料，讓格式不留懸念：
+
+```json
+{
+  "id": "r-042",
+  "title": "One-Pot Vegan Mushroom Risotto",
+  "tags": ["vegan", "vegetarian", "dairy-free"],
+  "minutes": 35,
+  "servings": 4,
+  "ingredients": ["arborio rice 300g", "mushrooms 400g", "olive oil 2 tbsp",
+                  "vegetable stock 1l", "nutritional yeast 3 tbsp"],
+  "instructions": "1. Saute mushrooms in olive oil... 6. Stir in nutritional yeast."
+}
+```
+
+語料庫怎麼生都行（開放的食譜資料集，或一支生成腳本），但務必聽進一個警告：**如果語料庫是 LLM 生成的，請抽樣人工核對飲食標籤。** 標錯的語料庫會讓標籤錯誤變成真值錯誤，而下游的每一個評估都會默默繼承它們。
+
+接著是機器人。仔細讀 `COMPOSE_PROMPT_V1`：它藏了至少三個不同的 bug，本章的評估迴圈會在步驟 5 與步驟 9 抓到它們。如果你現在就看出其中幾個，請假裝沒看到。這個練習的重點是讓「流程」找到它們，因為換成你自己的應用，你不會看出你自己的。
+
+```python
+# app/bot.py
+import json
+
+import openai
+from phoenix.otel import register
+
+from app.retriever import RecipeRetriever
+
+tracer_provider = register(
+    project_name="recipe-bot",
+    endpoint="http://localhost:6006/v1/traces",
+    auto_instrument=True,   # every OpenAI call is traced for free (Chapter 2)
+)
+tracer = tracer_provider.get_tracer(__name__)
+
+client = openai.OpenAI()
+retriever = RecipeRetriever("data/recipes.json")
+
+PARSE_PROMPT = """Extract the structured requirements from this recipe request.
+Return only a JSON object with keys: intent, dietary_restriction (one of the
+16 restrictions defined in our policy, or null), servings (int or null),
+max_minutes (int or null), keywords (list of search terms).
+
+Request: """
+
+COMPOSE_PROMPT_V1 = """You are a friendly recipe assistant replying by SMS.
+Using the retrieved recipes below, recommend ONE recipe with its ingredients
+and preparation. Feel free to suggest ingredient substitutions to make the
+dish easier or cheaper.
+
+User request: {query}
+Retrieved recipes: {recipes}"""
+
+@tracer.chain
+def parse_request(query: str) -> dict:
+    resp = client.chat.completions.create(
+        model="gpt-5.5",
+        messages=[{"role": "user", "content": PARSE_PROMPT + query}],
+        temperature=0,
+        response_format={"type": "json_object"},
+    )
+    return json.loads(resp.choices[0].message.content)
+
+@tracer.tool
+def get_recipes(parsed: dict) -> list[dict]:
+    return retriever.search(
+        keywords=parsed.get("keywords", []),
+        dietary_restriction=parsed.get("dietary_restriction"),
+        k=3,
+    )
+
+@tracer.chain
+def compose_response(query: str, recipes: list[dict]) -> str:
+    prompt = COMPOSE_PROMPT_V1.format(query=query, recipes=json.dumps(recipes))
+    resp = client.chat.completions.create(
+        model="gpt-5.5",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
+    return resp.choices[0].message.content
+
+@tracer.chain
+def answer(query: str) -> dict:
+    """Returns the intermediates, not just the reply. This one design choice
+    makes every offline eval in this chapter trivial to write."""
+    parsed = parse_request(query)
+    recipes = get_recipes(parsed)
+    reply = compose_response(query, recipes)
+    return {
+        "query": query,
+        "parsed": parsed,
+        "recipe_ids": [r["id"] for r in recipes],
+        "output": reply,
+    }
+```
+
+這就是整個應用程式：大約 90 行。注意 `answer()` 回傳的是中間值的 dict，而不是一個裸字串。第 14 章的儀器化陷阱（「團隊只記錄了最終補全字串就宣告勝利」）在結構層面就被閃掉了：解析結果與檢索到的 ID 是一等公民的值，不論在軌跡中還是離線執行中，你都能對它們寫斷言。
+
+### 步驟 2：看得見的追蹤 {#capstone-tracing}
+
+```bash
+pip install -r requirements.txt
+phoenix serve          # UI at http://localhost:6006
+python -c "from app.bot import answer; print(answer('gluten-free pancakes for two')['output'])"
+```
+
+打開 Phoenix UI，你應該會看到一條 `answer` 軌跡，內含四種 span：`parse_request`（帶著它的 JSON 輸出）、`get_recipes`（工具 span，帶著回傳的 ID）、原始的 `gpt-5.5` LLM span，以及 `compose_response`。第 14 章的完成定義原封不動適用：非作者本人要能找到這條軌跡，並看到模型看到與做過的一切，而不只是最終字串。如果軌跡裡缺了解析 JSON 或檢索 ID，現在就停下來修好儀器化；後面每一步都要讀它們。
+
+### 步驟 3：從零生出資料集 {#capstone-dataset}
+
+我們還沒上線，這是第 3 章的冷啟動情境，所以用維度抽樣來製造多樣性，而不是祈禱 LLM 自己發明：
+
+```python
+# scripts/gen_queries.py
+import json
+import random
+
+import openai
+
+DIMENSIONS = {
+    "dietary_restriction": ["vegan", "vegetarian", "gluten-free", "keto",
+                            "dairy-free", "nut-free", "no restrictions"],
+    "cuisine_type": ["Italian", "Asian", "Mexican", "Mediterranean", "American"],
+    "meal_type": ["breakfast", "lunch", "dinner", "snack", "dessert"],
+    "skill_level": ["beginner", "intermediate", "advanced"],
+    "phrasing": ["polite full sentence", "terse mobile shorthand",
+                 "rambling with irrelevant detail", "contains a typo"],
+}
+
+QUERY_GEN_PROMPT = """Convert this dimension tuple into ONE realistic SMS from a
+user to a recipe bot. Write it in the given phrasing style. Do not mention the
+dimensions explicitly; a real user would not say "dietary_restriction".
+
+Dimension tuple: """
+
+client = openai.OpenAI()
+random.seed(42)
+
+with open("data/queries.jsonl", "w", encoding="utf-8") as f:
+    for i in range(150):
+        tup = {dim: random.choice(vals) for dim, vals in DIMENSIONS.items()}
+        resp = client.chat.completions.create(
+            model="gpt-5.5-mini",
+            messages=[{"role": "user", "content": QUERY_GEN_PROMPT + json.dumps(tup)}],
+            temperature=0.9,
+        )
+        f.write(json.dumps({"id": f"q-{i:03d}", "dims": tup,
+                            "query": resp.choices[0].message.content.strip()}) + "\n")
+```
+
+`phrasing` 這個維度是團隊最常忘記的。少了它，每個合成查詢都是工整、標點完美的句子，而你第一次遇到「gf dinner 4 ppl asap no nuts」會是在生產環境。150 筆生成資料中的 3 筆：
+
+| id | 維度（縮寫） | 查詢 |
+|---|---|---|
+| q-007 | vegan, Italian, dinner, beginner, terse | "vegan pasta dinner easy pls" |
+| q-031 | gluten-free, American, breakfast, intermediate, typo | "gluten free pancakes that dont fall apart?? for my duaghter" |
+| q-118 | keto, Asian, lunch, advanced, rambling | "so my trainer has me on keto again and honestly the lunch situation is grim, I love stir fry, what can I actually make..." |
+
+接著把 150 筆全部重放過機器人，這同時會把軌跡灌進 Phoenix，也會在本機寫出一份標註用的檔案：
+
+```python
+# scripts/run_batch.py
+import json
+
+from app.bot import answer
+
+with open("data/queries.jsonl", encoding="utf-8") as f, \
+     open("data/batch_results.jsonl", "w", encoding="utf-8") as out:
+    for line in f:
+        row = json.loads(line)
+        result = answer(row["query"])
+        out.write(json.dumps({**row, **result}) + "\n")
+```
+
+這一步的成本：150 次 mini 呼叫加上 150 次完整管線執行，約 4 美元。現在 Phoenix 裡有 150 條軌跡，磁碟上也有同樣的 150 筆資料。
+
+### 步驟 4：錯誤分析，附上實際筆記 {#capstone-error-analysis}
+
+PM 現在到 Phoenix UI 裡讀前 100 條軌跡並做開放編碼（第 3 章）：每個問題一則自由書寫的筆記，每條軌跡 30-60 秒，總共 75 分鐘。先不要分類。`data/error_notes.csv` 中具代表性的 5 筆：
+
+| 軌跡 | 筆記 |
+|---|---|
+| q-004 | 使用者要求 vegan，回覆卻建議「swap in butter if you have it」，那個替換不是 vegan |
+| q-013 | 回覆滿是 `**bold**` 和 `##` 標題，當簡訊讀根本沒法看 |
+| q-031 | 鬆餅食譜沒有編號步驟，只有一整段文字，站在爐子前毫無用處 |
+| q-046 | 使用者說 nut-free，檢索到的食譜沒問題，但回覆的裝飾建議是「crushed peanuts」 |
+| q-072 | 使用者要 keto，解析卻抽出 dietary_restriction=null，檢索回來一堆飯類料理 |
+
+讀到 100 條時筆記開始重複（理論飽和，第 3 章），所以我們停手。主軸編碼把 54 則筆記歸成五種失敗模式：
+
+| 失敗模式 | 次數 | 客觀還是語意？ |
+|---|---|---|
+| 組出的回覆違反飲食限制（常見於替換建議或裝飾） | 19 | 語意：需要 LLM 評審 |
+| SMS 回覆中出現 Markdown | 11 | 客觀：字串檢查 |
+| 缺結構（沒有食材清單或沒有編號步驟） | 9 | 客觀：regex |
+| 使用者聲明的限制在檢索前被弄丟（解析或過濾） | 8 | 客觀：欄位比對 |
+| 使用者表明「快」時回覆過長 | 7 | 半語意：先擱置 |
+
+這張表就是下面所有東西的建造順序，直接出自第 14 章的規則：先做最便宜的可信訊號。五種模式中有三種可以客觀檢查，所以它們今天就變成程式碼評估，零標註需求。飲食模式是語意的、而且危險，所以走完整的評審流程。過長模式真實存在，但頻率最低、也最模糊，所以「刻意延後」；把六個評估蓋得很糟，比把四個蓋好更糟（錯誤 #6）。
+
+### 步驟 5：用程式碼評估對付客觀失敗 {#capstone-code-evals}
+
+一個檔案、三個檢查，而且（依第 5 章）評估器本身也要有測試，因為有 bug 的評估比沒有評估更糟：
+
+```python
+# evals/code_checks.py
+import re
+
+FORBIDDEN_MD = ("**", "##", "](", "```")
+STEP_RE = re.compile(r"(?m)^\s*\d+[.)]\s")
+
+def eval_no_markdown(result: dict) -> dict:
+    found = [tok for tok in FORBIDDEN_MD if tok in result["output"]]
+    return {"name": "no_markdown_sms", "passed": not found,
+            "detail": f"found {found}" if found else "ok"}
+
+def eval_has_structure(result: dict) -> dict:
+    text = result["output"].lower()
+    ok = ("ingredient" in text) and bool(STEP_RE.search(result["output"]))
+    return {"name": "has_structure", "passed": ok,
+            "detail": "ok" if ok else "missing ingredient list or numbered steps"}
+
+def eval_constraint_preserved(result: dict, expected_restriction: str | None,
+                              recipes_by_id: dict) -> dict:
+    """The user's stated restriction must survive parsing AND filter retrieval.
+    This is Chapter 7's tool-call check 3, applied to our two upstream nodes."""
+    if expected_restriction in (None, "no restrictions"):
+        return {"name": "constraint_preserved", "passed": True, "detail": "n/a"}
+    parsed_ok = result["parsed"].get("dietary_restriction") == expected_restriction
+    recipes_ok = all(expected_restriction in recipes_by_id[rid]["tags"]
+                     for rid in result["recipe_ids"])
+    passed = parsed_ok and recipes_ok
+    detail = "ok" if passed else f"parse_ok={parsed_ok} retrieval_ok={recipes_ok}"
+    return {"name": "constraint_preserved", "passed": passed, "detail": detail}
+
+# The evals get tested too (Chapter 5). Each tuple: (description, input, expected).
+SELF_TESTS = [
+    ("markdown caught",   {"output": "Try **this**"},                 False),
+    ("plain text passes", {"output": "Try this: 1. mix 2. bake"},     True),
+    ("steps with parens", {"output": "ingredients: x\n1) mix\n2) bake"}, True),
+]
+
+def run_self_tests():
+    for desc, fake, expected in SELF_TESTS:
+        got = eval_no_markdown(fake)["passed"] if "markdown" in desc \
+            else eval_has_structure(fake)["passed"]
+        assert got == expected, f"self-test failed: {desc}"
+
+if __name__ == "__main__":
+    run_self_tests()
+    print("code_checks self-tests: OK")
+```
+
+把三個檢查跑過步驟 3 的 150 筆批次，你在錯誤分析後幾分鐘、以零邊際成本拿到第一批真實數字：`no_markdown_sms` 失敗 10.7%，`has_structure` 失敗 8.7%，`constraint_preserved` 在適用資料上失敗 7.9%。這些數字與錯誤分析的頻率相符，而這正是步驟 4 與步驟 5 之間你想要的健全性檢查。
+
+兩個組稿端的失敗今天就能一併修掉，因為對客觀格式規則而言，修法跟評估一樣便宜。兩行指令加進組稿提示（「Reply in plain text only, no markdown syntax」與「Always include a short ingredient list and numbered steps」），而且，因為指令只能減少、永遠無法根除模型在訓練中學到的排版習慣，再用一個確定性的消毒器在程式碼層兜底 markdown 規則：
+
+```python
+# app/bot.py, appended to compose_response before returning (add `import re` up top)
+def sanitize_sms(text: str) -> str:
+    """Objective format rules get enforced in code, not begged from the model."""
+    text = text.replace("**", "").replace("```", "")
+    text = re.sub(r"(?m)^#{1,6}\s*", "", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)   # [text](url) -> text
+    return text
+```
+
+重跑批次：`no_markdown_sms` 失敗率從 10.7% 掉到 0%（消毒器讓完美變得便宜），`has_structure` 從 8.7% 到 3.3%（指令有幫助；殘餘的是 temperature 0.7 下偶發的散文段落式回覆，任何後處理器都救不了）。五種失敗模式中的兩種，在被發現後一天內死亡，而且兩者現在都有永久的絆線。
+
+### 步驟 6：誠實校準的飲食評審 {#capstone-judge}
+
+飲食失敗模式需要 LLM 評審，這代表它得先有真值（第 4 章的全部七個步驟，這裡壓縮成我們實際做的事）。
+
+**標註。** PM 把 150 筆批次資料全部標成 PASS 或 FAIL，只針對「飲食遵循」這一個準則（一個評審一個準則；錯誤 #9 的表親）。協定出自第 12 章：二元標籤、先寫好一頁書面準則、含糊的資料找第二人裁決。時間：約 2.5 小時。結果：**121 PASS / 29 FAIL**（19.3% 的違規率，與步驟 4 的 19/100 相符）。
+
+**切分。** 分層 15/40/45（第 4 章）：train 22 筆（18 PASS / 4 FAIL）用來選少樣本範例，dev 60 筆（48/12）用來迭代，test 68 筆（55/13）只碰一次。
+
+**評審檔案：**
+
+```python
+# evals/judge_dietary.py
+import json
+
+import openai
+
+client = openai.OpenAI()
+
+JUDGE_PROMPT_V3 = """You are an expert nutritionist evaluating whether a recipe
+reply adheres to the user's dietary restriction.
+
+[DIETARY RESTRICTION DEFINITIONS: the 16 definitions from Appendix C go here]
+
+EVALUATION CRITERIA:
+- PASS: every ingredient, substitution suggestion, and garnish in the reply
+  satisfies the stated restriction, considering preparation methods too.
+- FAIL: anything in the reply (including optional swaps and garnishes)
+  violates the restriction.
+
+WHAT DOES NOT COUNT AS A FAILURE:
+- Mentioning a violating ingredient only to warn against it ("skip the honey").
+- Trace amounts inherent to a permitted packaged ingredient.
+- Violating the user's cuisine or time preferences (other judges cover those).
+
+[FEW-SHOT: 2 examples from the train split, including one substitution-trap
+FAIL, verbatim. See Appendix C for the full assembled prompt.]
+
+Query: {query}
+Dietary restriction: {restriction}
+Reply: {reply}
+
+Return JSON: {"label": "PASS" or "FAIL", "explanation": "..."}"""
+
+def judge_one(query: str, restriction: str, reply: str) -> dict:
+    prompt = (JUDGE_PROMPT_V3
+              .replace("{query}", query)
+              .replace("{restriction}", restriction or "none stated")
+              .replace("{reply}", reply))
+    resp = client.chat.completions.create(
+        model="gpt-5.5-mini",          # cheap judge first; escalate only if
+        messages=[{"role": "user", "content": prompt}],  # it will not calibrate
+        temperature=0,
+        response_format={"type": "json_object"},
+    )
+    return json.loads(resp.choices[0].message.content)
+
+def tpr_tnr(rows: list[dict]) -> tuple[float, float]:
+    """rows: [{"truth": "PASS"/"FAIL", "judge": "PASS"/"FAIL"}]. PASS-positive
+    convention (Chapter 4): TPR = good traces recognized, TNR = violations caught."""
+    tp = sum(r["truth"] == "PASS" and r["judge"] == "PASS" for r in rows)
+    fn = sum(r["truth"] == "PASS" and r["judge"] == "FAIL" for r in rows)
+    tn = sum(r["truth"] == "FAIL" and r["judge"] == "FAIL" for r in rows)
+    fp = sum(r["truth"] == "FAIL" and r["judge"] == "PASS" for r in rows)
+    return tp / (tp + fn), tn / (tn + fp)
+```
+
+**在 dev 上迭代。** 這是多數寫作藏起來的部分，所以這裡連失敗一起攤開：
+
+| 評審版本 | 變更 | Dev TPR | Dev TNR | dev 錯誤教我們的事 |
+|---|---|---|---|---|
+| v1 | 只有準則，無少樣本範例 | 95.8%（46/48） | 41.7%（5/12） | 12 個真實違規有 7 個以 PASS 蒙混過關。細讀後：其中 5 個是替換建議型違規（「swap in butter」），評審以「只是選擇性建議」為由放行 |
+| v2 | 加入「不算失敗」清單，並明寫「替換與裝飾也算」 | 93.8%（45/48） | 75.0%（9/12） | 換料抓得到了；仍會放過烹調方式型違規（在「vegan」上淋蜂蜜釉），並誤報一次僅屬警告性質的提及 |
+| v3 | 加入 2 個 train 切分的少樣本範例（一個替換陷阱、一個方式陷阱） | 95.8%（46/48） | 91.7%（11/12） | 夠好了：兩個指標都跨過第 4 章「優秀評審」的 90% 門檻 |
+
+記住慣例（第 4 章的提醒框）：正類是 PASS，所以 v1 的 TNR 41.7% 代表**評審漏掉了大多數真實違規**，而每一次漏掉都是一個 false positive，對安全相關準則而言是最危險的方向。如果我們只用單純一致率驗證，v1 會拿到看起來很健康的 85%（60 筆 dev 中對 51 筆）然後就上線了。是 TNR 拆穿了它。
+
+**只測一次。** 凍結 v3，對從未動過的 test 切分只跑一次：**TPR 94.5%（52/55），TNR 92.3%（12/13）**。這兩個數字從此描述這個評審，並在步驟 9 餵給校正。沒有重新切分之前不得再改提示；被看過兩次的 test 集就是 dev 集（錯誤 #4）。
+
+QA 簽核（兩個指標在保留資料上都 > 0.9），依第 14 章，這是進 CI 的入場券。
+
+### 步驟 7：CI 閘門 {#capstone-ci}
+
+黃金資料集就是那 150 筆已標註資料，連同維度一起序列化，讓評估器能取用：
+
+```json
+{"id": "q-002", "query": "easy vegetarian tacos tonight pls", "dietary_restriction": "vegetarian",
+ "label": "PASS", "must_pass": false, "source": "batch-2026-06-08"}
+```
+
+儲存的 `label` 是「原始」執行的人工真值；閘門不使用它（保留它是為了評審再校準，第 12 章）。閘門做的事，是把每個黃金查詢重放過「當前」的程式碼與提示，對新鮮輸出跑全部四個評估器，任何一項越線就讓建置失敗。它同時強制 `must_pass` 資料列，也就是第 11 章的回歸機制（步驟 9 會加進六筆）：
+
+```python
+# evals/run_ci_eval.py  -- exits non-zero to fail the build
+import json
+import sys
+
+from app.bot import answer
+from app.retriever import RecipeRetriever
+from evals.code_checks import (eval_constraint_preserved, eval_has_structure,
+                               eval_no_markdown)
+from evals.judge_dietary import judge_one
+
+THRESHOLDS = {
+    "no_markdown_sms": 1.00,        # objective + sanitizer: perfect or broken
+    "has_structure": 0.95,
+    "constraint_preserved": 1.00,   # day one this floor was 0.92 (the then-baseline);
+    "dietary_judge": 0.90,          # this one 0.75. Step 9's fix PR ratcheted both.
+}
+
+recipes_by_id = {r["id"]: r for r in RecipeRetriever("data/recipes.json").recipes}
+golden = [json.loads(l) for l in open("data/golden_set.jsonl", encoding="utf-8")]
+
+rates = {name: [] for name in THRESHOLDS}
+broken_must_pass = []
+
+for row in golden:
+    result = answer(row["query"])
+    checks = [
+        eval_no_markdown(result),
+        eval_has_structure(result),
+        eval_constraint_preserved(result, row.get("dietary_restriction"), recipes_by_id),
+    ]
+    verdict = judge_one(row["query"], row.get("dietary_restriction"), result["output"])
+    checks.append({"name": "dietary_judge", "passed": verdict["label"] == "PASS"})
+
+    for c in checks:
+        if c["name"] in rates:
+            rates[c["name"]].append(c["passed"])
+    if row.get("must_pass") and not all(c["passed"] for c in checks):
+        broken_must_pass.append(row["id"])
+
+exit_code = 0
+for name, results in rates.items():
+    rate = sum(results) / len(results)
+    status = "PASS" if rate >= THRESHOLDS[name] else "FAIL"
+    print(f"[{status}] {name}: {rate:.1%} (gate {THRESHOLDS[name]:.0%})")
+    if status == "FAIL":
+        exit_code = 1
+for rid in broken_must_pass:
+    print(f"[FAIL] must_pass regression: {rid}")
+    exit_code = 1
+
+sys.exit(exit_code)
+```
+
+```yaml
+# .github/workflows/evals.yml
+name: evals
+on: [pull_request]
+jobs:
+  eval-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - run: python -m evals.code_checks        # evaluator self-tests first
+      - run: python -m evals.run_ci_eval        # then the gate
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+閘門設計筆記，都是用標準的痛法學來的（第 14 章）。第一，**上線首日的門檻要設在首日基準線略低處，之後隨改進往上棘輪**：閘門以 `constraint_preserved: 0.92`、`dietary_judge: 0.75` 上線（略低於當時量到的 92.1% 與 77.8%），因為把門檻設在願望而非現實上的閘門，第一次跑就是紅的，一週內就會被停用。等步驟 9 的修正 PR 落地時，同一個 PR 把兩個下限一起調高，讓閘門永久守住新的水位。第二，閘門先以僅警告模式跑了第一週，才轉為阻擋。第三，成本：完整跑一次約 1.10 美元（150 次 gpt-5.5 管線重放，加上 150 次 mini 評審呼叫）；如果 PR 流量讓這個數字有感，就精簡成 60 筆核心集（所有 FAIL 加上分層抽樣的 PASS），一次約 0.40 美元。
+
+### 步驟 8：生產環境監控 {#capstone-monitoring}
+
+上線。流量約每天 2,000 次請求，不可能全量交給評審，所以完全照第 13 章的處方分層：程式碼檢查跑全部（免費），評審跑 10% 隨機抽樣，深潛按需進行。
+
+```python
+# scripts/monitor.py  -- run hourly (cron). Chapter 9's offline/online split:
+# the CI gate defends deploys; this defends against drift that arrives without one.
+import json
+import random
+
+import requests
+
+from evals.code_checks import eval_no_markdown
+from evals.judge_dietary import judge_one
+
+SLACK_WEBHOOK = "https://hooks.slack.com/services/..."
+BASELINE_FILE = "data/monitor_baseline.json"   # trailing 7-day mean per eval
+
+def fetch_last_hour_traces() -> list[dict]:
+    """Pull answer() traces from Phoenix via span query (Chapter 7 shows the
+    SpanQuery pattern; swap per Appendix F for LangWatch/Langfuse)."""
+    ...
+
+def main():
+    traces = fetch_last_hour_traces()
+    alerts = []
+
+    # Tier 1: code checks on every trace, free
+    md_fail = sum(not eval_no_markdown(t)["passed"] for t in traces) / max(len(traces), 1)
+
+    # Tier 2: calibrated judge on a 10% sample
+    sample = random.sample(traces, max(1, len(traces) // 10))
+    judged = [judge_one(t["query"], t["parsed"].get("dietary_restriction"),
+                        t["output"])["label"] == "PASS" for t in sample]
+    dietary_pass = sum(judged) / len(judged)
+
+    baseline = json.load(open(BASELINE_FILE, encoding="utf-8"))
+    for name, rate in [("no_markdown_sms", md_fail),
+                       ("dietary_judge_fail", 1 - dietary_pass)]:
+        if rate > baseline[name] * 1.5:        # tune vs daily noise (Chapter 14)
+            alerts.append(f"{name} at {rate:.1%}, baseline {baseline[name]:.1%}")
+
+    for msg in alerts:
+        requests.post(SLACK_WEBHOOK, json={"text": f"[recipe-bot evals] {msg}"})
+
+if __name__ == "__main__":
+    main()
+```
+
+每個評審判定也會以分數的形式寫回它的軌跡（附錄 F 有各平台的寫回呼叫），所以「飲食失敗率飆高了」永遠離實際失敗的軌跡只有一次點擊。儀表板就是 Phoenix 內建的專案視圖加上一個書籤；依第 14 章的建議，在有人問出儀表板答不了的問題之前，忍住別多蓋。
+
+### 步驟 9：找到、修好、證明：一次完整的改進循環 {#capstone-improvement}
+
+一週的監控累積了 1,400 筆被評審的樣本。原始評審通過率：**86.1%**。在任何人恐慌（或鬆懈）之前，先用第 10 章的算術和步驟 6 的 test 集數字（TPR 0.945、TNR 0.923）校正評審已知的不完美：
+
+```
+true_rate = (observed - (1 - TNR)) / (TPR + TNR - 1)
+          = (0.861 - 0.077) / (0.945 + 0.923 - 1)
+          = 0.784 / 0.868
+          = 0.903
+```
+
+所以誠實的估計是**真實通過率 90.3%**（約 9.7% 的違規率），不是 86.1%；這個評審偏向誤報，所以原始數字讀起來過於悲觀。對同樣三個陣列跑 `judgy.estimate_success_rate` 拿 bootstrap 信賴區間（這裡是 [87.6%, 93.0%]），然後回報「那個」（第 10 章的規則：沒有區間的點估計，會招來對雜訊的過度反應）。
+
+安全相關準則上 9.7% 的違規率，就是本週的第一優先。用第 11 章的脈絡注入測試找根因：取 30 條被評審標記的軌跡，注入人工核實過的正確食譜後重跑 `compose_response`，看什麼還活著。
+
+- **30 條中有 24 條在檢索完美的情況下仍然失敗。** Bug 在生成，不在檢索。細讀那 24 條：17 條是違反限制的替換建議（在 vegan 請求上「swap in butter」），5 條是從未對照限制檢查過的裝飾建議。現在回頭重讀 `COMPOSE_PROMPT_V1`：它說「suggest ingredient substitutions to make the dish easier or cheaper」，而且**從頭到尾沒提過飲食限制**。組稿器根本不知道它的存在；一直以來全靠檢索過濾在撐。
+- 其餘 6 條重放後通過，表示那些失敗出在上游：解析弄丟了限制，正是 `eval_constraint_preserved` 能確定性標記的東西。
+
+兩個修正，各自由發現它的那個評估防守：
+
+```python
+COMPOSE_PROMPT_V2 = """You are a friendly recipe assistant replying by SMS.
+The user's dietary restriction is: {dietary_restriction}.
+Every recipe you recommend, every substitution you suggest, and every garnish
+you mention MUST satisfy that restriction. If a retrieved recipe conflicts
+with it, skip that recipe rather than adapting it.
+
+Using the retrieved recipes below, recommend ONE recipe. Reply in plain text
+only (no markdown), with a short ingredient list and numbered steps.
+
+User request: {query}
+Retrieved recipes: {recipes}"""
+```
+
+`PARSE_PROMPT` 則多了一行（「Never return null for dietary_restriction if the request states or implies one」），加上兩個「隱含限制」的少樣本範例（「my daughter is celiac」隱含 gluten-free）。兩個提示都在 repo 裡做版本控管，所以 diff 是可審查的（錯誤 #10）。
+
+送出這兩個變更的 PR 必須通過步驟 7 的閘門，而閘門就是證明：
+
+| 指標（黃金資料集上） | 修正 PR 之前 | 修正 PR 之後 |
+|---|---|---|
+| constraint_preserved（程式碼） | 92.1%（下限：0.92） | 100%（下限棘輪到 1.00） |
+| dietary_judge 評審通過率 | 77.8%（下限：0.75） | 92.8%（下限棘輪到 0.90） |
+| no_markdown_sms / has_structure | 100% / 96.7% | 100% / 96.7%（未動，驗證無回歸） |
+
+別因為黃金資料集讀起來比生產環境嚴苛（這裡評審通過 77.8%，外面卻是 86.1%）而慌張。兩個已知原因，而且都是設計使然：維度抽樣讓每七筆黃金資料就有六筆帶飲食限制，所以這個集合正好壓在會壞的那件事上；而評審會誤報約 5% 真正良好的回覆（TPR 94.5%），所以就算機器人完美，被評審的指標也只會拿到約 95%，不是 100%。第二點也是棘輪後的下限設在 0.90 而非 0.95 的原因：要給閘門留評審雜訊的餘裕，否則它會亂跳（第 14 章）。
+
+根因閱讀中最惡劣的六條軌跡（奶油替換、花生裝飾、一次乳糜瀉隱含漏接、三個烹調方式型違規）以 `"must_pass": true` 加進 `golden_set.jsonl`，讓這一類 bug 永遠無法無聲重返（第 11 章的回歸規則：修好的 bug 變成永久的測試）。
+
+下一週的監控在生產環境把循環閉合：原始評審通過率 91.5%，校正後 `(0.915 - 0.077) / 0.868 = 0.965`，即**真實通過率 96.5%**。違規率從 9.7% 降到 3.5%，用的是校準過的儀器、修正了儀器自身的偏差、還有一道閘門在防守。「我們把模型改善了」這句話，本來就該是這個意思。
+
+### 整套東西的成本 {#capstone-cost}
+
+| 項目 | 一次性 | 經常性 |
+|---|---|---|
+| Phoenix 安裝（本機） | 1 小時 | $0 |
+| 語料庫 + 150 筆查詢 + 批次重放 | 約 $4 API | 需要時重跑 |
+| PM 錯誤分析（100 條軌跡） | 75 分鐘 | 每月 50 條（第 14 章的節奏） |
+| PM 真值標註（150 筆） | 約 2.5 小時 | 每月約 30 分鐘的新標籤（評審漂移檢查） |
+| 評審迭代（3 次 dev 執行 + 1 次 test 執行） | 約 $0.60 API | 僅在評審變更時 |
+| CI 閘門 | | 每次 PR 約 $1.10（60 筆核心集則約 $0.40） |
+| 監控（程式碼檢查跑全量 + 每天 2,000 筆的 10% 交給評審） | | 約 $9/月 |
+
+建置不到 15 美元，營運每月不到 25 美元，穩穩落在第 14 章「每月 50 美元以下」的範圍內。最大的成本不是算力，而是 PM 約 5 小時的軌跡閱讀與標註，那正是不能跳過的部分：上面每一個校準過的數字，都站在那些標籤上。
+
+### 在 LangWatch 或 Langfuse 上做同樣的建置 {#capstone-swap}
+
+方法論與平台無關；只有六個整合點會碰到平台 API。每一格的確切方法呼叫都在附錄 F：
+
+| 整合點 | Phoenix（本建置） | LangWatch | Langfuse |
+|---|---|---|---|
+| 追蹤初始化 | `phoenix.otel.register(auto_instrument=True)` | `langwatch.init()` | `from langfuse.openai import OpenAI` |
+| 評審驗證執行 | `run_experiment` + TP/TN/FP/FN 評估器（第 4 章） | `evaluate.batch` 搭配內建 TPR/TNR 指標 | `run_experiment` + 手動 TPR/TNR |
+| 分數寫回 | 把評估記錄到 span 上 | 評估自動附掛 | 每條軌跡 `create_score` |
+| 撈取生產軌跡 | `SpanQuery`（第 7 章） | spans API / 內建監控 | traces API |
+| 告警 | 你自己的 webhook（如 `monitor.py`） | 內建 Slack/email/webhook 告警 | 接上你的監控堆疊 |
+| 提示版本控管 | Phoenix prompts（第 2 章） | LangWatch prompts | Langfuse prompts |
+
+本章其餘的一切（應用、資料集腳本、程式碼檢查、評審提示、閘門邏輯、校正算術）都是純 Python，原封不動就搬得走。
+
+### 自己跑一遍的檢查清單 {#capstone-checklist}
+
+依序完成各步驟；每個框都被它上面那個擋著（第 14 章的相依規則）：
+
+- ▢ 應用能跑且回傳中間值（`answer()` 給出 parsed + recipe_ids + output）
+- ▢ 軌跡在平台 UI 可見、四種 span 齊全，非作者本人也找得到
+- ▢ 150 筆維度查詢已生成並重放（`queries.jsonl`、`batch_results.jsonl`）
+- ▢ 100 條軌跡由領域負責人親自開放編碼；含次數的主軸編碼表存在
+- ▢ 每個客觀失敗模式都有程式碼評估，且自我測試通過
+- ▢ 針對頭號語意失敗模式標註 150 筆；分層 15/40/45 切分
+- ▢ 評審只在 dev 上迭代；未動過的 test 集上 TPR 與 TNR 皆 > 0.9；QA 簽核
+- ▢ CI 閘門在每個 PR 上運作，門檻已提交進 repo，僅警告週已完成，而後轉為阻擋
+- ▢ 監控 worker 每小時抽樣生產環境，分數寫回，告警頻道安靜但上膛
+- ▢ 完成一次改進循環：找到根因、修好、由閘門證明、回歸資料列已加入、附上區間回報校正後的生產比率
+
+十個框全勾，你就不是「讀過」一條評估管線；你「擁有」一條。
+
+### 重點整理 {#capstone-takeaways}
+
+- **整個堆疊約 400 行程式碼加一週的兼職工時。** 真評估的門檻在於排序與紀律，不在工程量。
+- **中間值是評估的 API。** `answer()` 回傳解析欄位與食譜 ID，這一個設計決定讓四個評估器中的三個變成免費的程式碼檢查。
+- **建造順序來自錯誤分析表，不是來自某個框架。** 三種客觀模式當天就變成程式碼評估；一種語意模式值得一個評審；一種模式刻意延後。
+- **一致率會讓壞掉的評審上線。** v1 在 85% 一致率下看起來沒事，卻漏掉 12 個真實違規中的 7 個；是 PASS 為正類慣例下的 TNR 抓到它。
+- **Bug 就藏在你最得意的那段提示裡。** COMPOSE_PROMPT_V1 從未告訴組稿器限制的存在；把它翻出來的是評估迴圈，不是程式碼審查。
+- **回報校正後的比率，永遠附上區間。** 原始 86.1% 其實是 90.3% [87.6%, 93.0%]；原始 91.5% 其實是 96.5%。用原始評審輸出做的決策，會繼承評審的偏差。
+- **修好的 bug 變成一筆 must_pass。** 六筆回歸資料列從此守住替換陷阱這一整類，代價是六行 JSONL。
+- **經常性成本是捨入誤差**（約每月 25 美元），相比之下 PM 的工時才是真正的投資，也是真正的護城河。
 
 ---
 
