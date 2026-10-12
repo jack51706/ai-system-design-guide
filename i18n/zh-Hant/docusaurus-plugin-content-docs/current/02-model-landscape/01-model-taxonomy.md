@@ -2,7 +2,11 @@
 
 本章提供一份截至 **2026 年 6 月** 的完整模型生態指南，涵蓋模型家族、能力，以及生產系統的選型準則。
 
-> **最後驗證：2026 年 6 月 28 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+> **最後驗證：2026 年 10 月 12 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+>
+> **2026 年 10 月初更新（查核於 2026 年 10 月 12 日）：** Anthropic 發布了 Claude 5.5 家族的第三款模型 **Claude Haiku 5.5**（10 月 7 日，`claude-haiku-5-5`），接續 Claude Sonnet 5.5（9 月 28 日）與 Claude Opus 5.5（9 月下旬）。Haiku 5.5 採用依提示長度分級的定價：提示在 100K token 以內每 1M 為 $0.10/$0.50，超過 100K token 則為每 1M $0.50/$2.50，相較 Haiku 4.5 統一價每 1M $1/$5，依 Anthropic 說法平均降價約 75%。這是首款具備可調效力控制（Low、Med、High、Xhigh、Max）的 Haiku 級模型，Anthropic 回報 OSWorld 2.1（離線子集）達 72.4%，相較 Haiku 4.5 的 15.7% 與 OpenAI GPT-6 Luna 的 48.9%（皆為 Anthropic 自行回報的數據，尚待獨立驗證）。來源：[Anthropic](https://www.anthropic.com/claude-haiku-5-5)。
+>
+> 另外，**Mistral Large 4** 於 10 月 6 日透過 Mistral Studio 與 Mistral API 進入公開預覽：一個約 1.05T 參數、原生多模態的 Mixture-of-Experts 模型（各媒體回報的啟用參數不一致，介於 49B 至 52B 之間），開放權重預計於 10 月稍晚釋出，但 Mistral 尚未確認具體日期。目前流傳的基準測試與價格數字（輸入約每 1M $0.68 至 $1.36、輸出每 1M $2.09 至 $4.18）皆來自第三方媒體報導，並非 Mistral 官方定價頁面公布的數字，應視為初步資訊，有待確認。來源：[Let's Data Science](https://letsdatascience.com/news/mistral-debuts-large-4-open-weight-model-preview-cbf9e0b5)、[Le Monde Informatique](https://www.lemondeinformatique.fr/actualites/lire-mistral-devoile-large-4-un-modele-a-plus-de-1-000-milliards-de-parametres-100838.html)。
 >
 > **2026 年 6 月重點：** Anthropic 發布了 **Claude Fable 5**（6 月 9 日，`claude-fable-5`，每 1M 為 $10/$50，1M 上下文），這是其能力最強的廣泛發布模型：一款經過安全處理、可供一般使用的 Mythos 級模型，在敏感主題上配有 Opus 4.8 後援保護機制。**Claude Mythos 5** 於同日推出，作為提供給 Project Glasswing 合作夥伴的無限制版本，以不到 Mythos Preview 一半的價格接替之。
 >
