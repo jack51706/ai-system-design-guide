@@ -2,7 +2,11 @@
 
 This chapter provides a comprehensive guide to the model landscape as of **June 2026**, covering model families, capabilities, and selection criteria for production systems.
 
-> **Last verified: June 28, 2026.** The model landscape evolves rapidly. Always cross-check with provider pricing pages and release notes.
+> **Last verified: October 12, 2026.** The model landscape evolves rapidly. Always cross-check with provider pricing pages and release notes.
+>
+> **Early October 2026 update (verified October 12, 2026):** Anthropic shipped the third model in its Claude 5.5 family, **Claude Haiku 5.5** (October 7, `claude-haiku-5-5`), following Claude Sonnet 5.5 (September 28) and Claude Opus 5.5 (late September). Haiku 5.5 uses prompt-length tiered pricing: $0.10/$0.50 per 1M tokens for prompts up to 100K tokens, $0.50/$2.50 above that, versus Haiku 4.5's flat $1/$5, a roughly 75% average cost cut per Anthropic. It's the first Haiku-class model with an adjustable effort control (Low, Med, High, Xhigh, Max), and Anthropic reports OSWorld 2.1 (offline subset) at 72.4% versus 15.7% for Haiku 4.5 and 48.9% for OpenAI's GPT-6 Luna (all Anthropic's own figures, independent verification pending). Source: [Anthropic](https://www.anthropic.com/claude-haiku-5-5).
+>
+> Separately, **Mistral Large 4** entered public preview on October 6 via Mistral Studio and the Mistral API: a roughly 1.05T-parameter, natively multimodal Mixture-of-Experts model (active-parameter count reported inconsistently across outlets, 49B to 52B), with downloadable open weights promised later in October and no confirmed date yet from Mistral itself. Benchmark and pricing figures circulating (roughly $0.68 to $1.36 input, $2.09 to $4.18 output per 1M tokens) come from third-party coverage, not Mistral's own published pricing page, so treat them as preliminary. Sources: [Let's Data Science](https://letsdatascience.com/news/mistral-debuts-large-4-open-weight-model-preview-cbf9e0b5), [Le Monde Informatique](https://www.lemondeinformatique.fr/actualites/lire-mistral-devoile-large-4-un-modele-a-plus-de-1-000-milliards-de-parametres-100838.html).
 >
 > **June 2026 headline:** Anthropic released **Claude Fable 5** (June 9, `claude-fable-5`, $10/$50 per 1M, 1M context), its most capable widely released model: a Mythos-class model made safe for general availability, with an Opus 4.8 fallback safeguard on sensitive topics. **Claude Mythos 5** ships the same day as the unrestricted variant for Project Glasswing partners, succeeding Mythos Preview at less than half its price.
 >
