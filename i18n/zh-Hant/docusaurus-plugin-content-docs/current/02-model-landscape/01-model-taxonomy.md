@@ -2,7 +2,9 @@
 
 本章提供一份截至 **2026 年 6 月** 的完整模型生態指南，涵蓋模型家族、能力，以及生產系統的選型準則。
 
-> **最後驗證：2026 年 10 月 12 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+> **最後驗證：2026 年 10 月 19 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+>
+> **2026 年 10 月中更新（查核於 2026 年 10 月 19 日）：** OpenAI 於 9 月預覽的新世代產品線 **GPT-6 Astra**，已於 10 月 7 日在 ChatGPT 的 Chat 分頁正式推出 **GPT-6 Sol**（Plus、Pro、Business、Enterprise 方案）與 **GPT-6 Luna**（Free、Go 方案，自 10 月 8 日起），同時推出新功能「Intelligent UI」，讓回覆得以呈現互動式元件（計算機、比較表、小工具），而非僅限純文字。Astra 本身僅供 Pro 方案的推理模式使用；依 OpenAI 自家 Preparedness Framework 系統卡所述，Astra 是首款在網路安全能力上被評為「Critical」等級的模型，Sol 與 Luna 則在網路安全與生物／化學領域被評為「High」等級（AI 自我提升能力則未達 High）。依 OpenAI 定價頁面（由多個第三方追蹤站回報，本次查證環境未能直接重新驗證）：Sol 每 1M token 為 $2.00/$10.00，Luna 標準為每 1M token $0.10/$0.50，超過 272K 上下文則為 $0.20/$0.75。這是 OpenAI 首款廣泛推出的「6 代」模型；GPT-5.6（Sol/Terra/Luna）仍是前一代產品線，且在 Chat 以外的場景不受影響。來源：[OpenAI: Introducing GPT-6 Sol and Luna](https://openai.com/index/introducing-gpt-6-sol-and-luna/)、[OpenAI: GPT-6 Astra](https://openai.com/index/gpt-6-astra/)。
 >
 > **2026 年 10 月初更新（查核於 2026 年 10 月 12 日）：** Anthropic 發布了 Claude 5.5 家族的第三款模型 **Claude Haiku 5.5**（10 月 7 日，`claude-haiku-5-5`），接續 Claude Sonnet 5.5（9 月 28 日）與 Claude Opus 5.5（9 月下旬）。Haiku 5.5 採用依提示長度分級的定價：提示在 100K token 以內每 1M 為 $0.10/$0.50，超過 100K token 則為每 1M $0.50/$2.50，相較 Haiku 4.5 統一價每 1M $1/$5，依 Anthropic 說法平均降價約 75%。這是首款具備可調效力控制（Low、Med、High、Xhigh、Max）的 Haiku 級模型，Anthropic 回報 OSWorld 2.1（離線子集）達 72.4%，相較 Haiku 4.5 的 15.7% 與 OpenAI GPT-6 Luna 的 48.9%（皆為 Anthropic 自行回報的數據，尚待獨立驗證）。來源：[Anthropic](https://www.anthropic.com/claude-haiku-5-5)。
 >
