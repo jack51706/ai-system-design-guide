@@ -2,7 +2,9 @@
 
 本章提供一份截至 **2026 年 6 月** 的完整模型生態指南，涵蓋模型家族、能力，以及生產系統的選型準則。
 
-> **最後驗證：2026 年 10 月 19 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+> **最後驗證：2026 年 10 月 26 日。** 模型生態變動快速。請務必對照各供應商的價格頁面與發布說明再做交叉查核。
+>
+> **2026 年 10 月下旬更新（查核於 2026 年 10 月 26 日）：** DeepSeek 發布了 **DeepSeek-V4.1-Flash-1017**（10 月 17 日），是對 9 月 V4.1-Flash 的訓練後更新版本，於 DeepSeek 網頁版、行動應用程式與 API 以 `deepseek-flash` 名稱提供，開放權重已上架 Hugging Face，採 MIT 授權。DeepSeek 自家模型卡回報 DeepSWE v1.1 達 77.0 分（較前一版 V4.1-Flash 的 74.2 分提升，且優於 Kimi K3 的 67.5、GLM-5.3 的 66.9、GPT-5.6 Sol 的 73.0，以及 Claude Opus 5 的 74.0，皆採同一測試框架），同時新增供代理式網路檢索使用的 Search API 與 Fetch API。第三方追蹤站回報其情境窗為 1M token、最大輸出 384K token，價格為每 1M token $0.30/$1.20；本次查核環境無法直接連上 huggingface.co 或 DeepSeek 官方 API 文件重新驗證，因此情境窗與價格數字應視為第三方來源，有待確認。本週同時查核了其他實驗室（Anthropic、OpenAI、Google/DeepMind、Meta、Moonshot、Alibaba/Qwen、Mistral、xAI、Z.ai、Cohere）：過去 7 到 10 天內沒有其他消息達到查證門檻。Anthropic 新聞頁僅在 10 月 18 日至 22 日間發布政策／治理類文章（Agent Skills 捐贈、Long-Term Benefit Trust 新任成員、public benefit fund 更新），未見新模型。另有傳聞中的 OpenAI「GPT-6.1 Terra」僅見於 10 月 19 日一則引述 The Information 的社群貼文，並非 OpenAI 官方公告，故暫不納入，待有官方來源再補上。來源：[DeepSeek-V4.1-Flash-1017（Hugging Face）](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017)、[TechNode: DeepSeek releases V4.1-Flash-1017 with stronger coding and agent capabilities](https://technode.com/2026/10/19/deepseek-releases-v4-1-flash-1017-with-stronger-coding-and-agent-capabilities/)。
 >
 > **2026 年 10 月中更新（查核於 2026 年 10 月 19 日）：** OpenAI 於 9 月預覽的新世代產品線 **GPT-6 Astra**，已於 10 月 7 日在 ChatGPT 的 Chat 分頁正式推出 **GPT-6 Sol**（Plus、Pro、Business、Enterprise 方案）與 **GPT-6 Luna**（Free、Go 方案，自 10 月 8 日起），同時推出新功能「Intelligent UI」，讓回覆得以呈現互動式元件（計算機、比較表、小工具），而非僅限純文字。Astra 本身僅供 Pro 方案的推理模式使用；依 OpenAI 自家 Preparedness Framework 系統卡所述，Astra 是首款在網路安全能力上被評為「Critical」等級的模型，Sol 與 Luna 則在網路安全與生物／化學領域被評為「High」等級（AI 自我提升能力則未達 High）。依 OpenAI 定價頁面（由多個第三方追蹤站回報，本次查證環境未能直接重新驗證）：Sol 每 1M token 為 $2.00/$10.00，Luna 標準為每 1M token $0.10/$0.50，超過 272K 上下文則為 $0.20/$0.75。這是 OpenAI 首款廣泛推出的「6 代」模型；GPT-5.6（Sol/Terra/Luna）仍是前一代產品線，且在 Chat 以外的場景不受影響。來源：[OpenAI: Introducing GPT-6 Sol and Luna](https://openai.com/index/introducing-gpt-6-sol-and-luna/)、[OpenAI: GPT-6 Astra](https://openai.com/index/gpt-6-astra/)。
 >
